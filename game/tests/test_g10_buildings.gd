@@ -175,3 +175,31 @@ func test_save_load_preserves_revealed_and_underground_hp() -> void:
 	check_eq(int(row.underground_hp), before_ug, "underground hp preserved")
 	check(Bld.underground_alive(loaded, ug), "underground still alive after load")
 	check_eq(Bld.production_reason(loaded, ug), "", "prod still ok (hatch not fully destroyed)")
+
+
+func test_covert_building_art_is_viewer_specific() -> void:
+	var RenderSnap = preload("res://sim/render_snap.gd")
+	var G5Art = preload("res://presentation/art/g5_art.gd")
+	var w := _coalition_world()
+	var bid := _spawn(w, "x_safehouse", 0, Vector2i(12, 12))
+	var hatch := _spawn(w, "x_bunker_hatch", 0, Vector2i(16, 12))
+	w.step()
+	var before := w.state_hash()
+	RenderSnap.build(w)
+	check_eq(w.state_hash(), before, "building art queries do not mutate simulation")
+	var sn := RenderSnap.latest(w)
+	var appearances: Dictionary = sn.get("g10_building_art", {})
+	check(appearances.has(bid) and appearances.has(hatch), "covert appearances are in the snapshot")
+	if not appearances.has(bid) or not appearances.has(hatch):
+		return
+	var spec: Dictionary = ArtCatalog.manifest().buildings.x_safehouse
+	check_eq(appearances[bid].get(1, ""), "hidden", "foreign observer sees cover")
+	check_eq(appearances[bid].get(0, ""), "", "owner sees working facility")
+	var hidden: String = G5Art.building_state(spec.states, sn.statics[bid], "rot", "hidden")
+	check(hidden.ends_with("_hidden"), "cover selects a rotated hidden sprite")
+	Bld.reveal(w, bid, 1, "scout")
+	Bld.damage_hatch(w, hatch, 9999, 1)
+	RenderSnap.build(w)
+	sn = RenderSnap.latest(w)
+	check_eq(sn.g10_building_art[bid].get(1, ""), "", "scout reveal switches the viewer to working facility")
+	check_eq(sn.g10_building_art[hatch].get(1, ""), "damaged", "hatch loss selects the damaged entry")

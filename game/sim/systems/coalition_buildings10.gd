@@ -230,6 +230,40 @@ static func render_state(w: SimWorld, building_id: int, observer_fid: int) -> St
 	return "revealed"
 
 
+## Per-viewer cover art for the snapshot. Reads only saved records, including untracked legacy buildings.
+static func display_snapshot(w: SimWorld, statics: Dictionary) -> Dictionary:
+	var out := {}
+	var rules := _rules()
+	var disguised: Array = rules.get("disguised_defs", [])
+	var hatch_defs: Array = rules.get("hatch_surface_defs", [])
+	var rows: Dictionary = w.sys_state.get(KEY, {}).get("buildings", {})
+	for id in statics:
+		var e: Dictionary = statics[id]
+		if e.kind != "building" or not String(e.def).begins_with("x_"):
+			continue
+		if e.def not in disguised and e.def not in hatch_defs:
+			continue
+		var row: Dictionary = rows.get(str(id), {})
+		var revealed: Dictionary = row.get("revealed_to", {})
+		var viewers := {}
+		for fid in w.factions:
+			if int(fid) == int(e.owner) or w.is_ally(fid, e.owner) or revealed.has(str(fid)):
+				if bool(row.get("hatch_destroyed", false)):
+					viewers[fid] = "damaged"
+			else:
+				viewers[fid] = "hidden"
+		out[id] = viewers
+	return out
+
+
+static func reveal_on_damage(w: SimWorld, building: Dictionary, attacker: int) -> void:
+	if attacker < 0 or attacker == int(building.owner) or w.is_ally(attacker, int(building.owner)):
+		return
+	var def_id := String(building.def)
+	if (_disguised_def(def_id) or _hatch_surface_def(def_id)) and is_hidden_from(w, int(building.id), attacker):
+		reveal(w, int(building.id), attacker, "damage")
+
+
 static func underground_alive(w: SimWorld, building_id: int) -> bool:
 	var row := _row(w, building_id)
 	if row.is_empty():

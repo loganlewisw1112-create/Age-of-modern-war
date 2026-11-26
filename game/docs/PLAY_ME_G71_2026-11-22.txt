@@ -38,3 +38,4 @@ G10.1 IN PROGRESS
   Stealth Transport: land, board infantry, fly to a deployment point and reboard for extraction.
   Coalition NVGs lower at dusk and night. Green aiming lasers appear when firing.
   Ghost Infiltrators shimmer while concealed. Trackers and sensors can reveal them nearby.
+  Technicals and concealed facilities use candidate art. Owner look approval is pending.

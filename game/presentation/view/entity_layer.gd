@@ -1738,6 +1738,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 	rs_used = use_rs
 	rs_hits = 0
 	var n_st := statics.size()
+	var g10_building_art: Dictionary = sn.get("g10_building_art", {})
 	if use_rs:
 		var skey := [pf, allies.hash(), _fac_e.is_empty(), n_st, _fac_e_tick, _wall_gen, _wall_dirty, _wall_nstat]
 		if not is_same(sn, _rs_sn) or skey != _rs_key:
@@ -1880,7 +1881,8 @@ func _refresh(rc: bool, rs: bool) -> void:
 				ww_front += 1
 			continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
-		art.resolve_static(e, col, String(_ck.get(ow, "x")))
+		var appearance := String(g10_building_art.get(id, {}).get(pf, "")) if g10_building_art.has(id) else ""
+		art.resolve_static(e, col, String(_ck.get(ow, "x")), appearance)
 		if art.out_page >= 0:
 			# LPFIN7: a helipad is a flat deck: drawn under everything standing on it like the dropship pad (it sorted
 			# by its centre, so a helicopter parked on it sorted behind and only its tail showed past the pad's corner)
@@ -2086,7 +2088,8 @@ func _push_ghosts(statics: Dictionary, mem: Dictionary, vr: Rect2, neutral: Colo
 		if not vr.has_point(gs):
 			continue
 		var ow := int(g.owner)
-		art.resolve_static(g, _team.get(ow, neutral), String(_ck.get(ow, "x")))
+		var appearance := "hidden" if String(g.def).begins_with("x_") else ""
+		art.resolve_static(g, _team.get(ow, neutral), String(_ck.get(ow, "x")), appearance)
 		if art.out_page >= 0:
 			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, bld_mod(true))
 	for eid in _ghosts.keys():

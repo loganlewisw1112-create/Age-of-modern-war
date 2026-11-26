@@ -356,6 +356,8 @@ static func build(w) -> void:
 	snap["wnd"] = wnd  # G7 WOUND7: z zone bits, f flags, p panic (see Wounds.render_entry)
 	if w.sys_state.has("creep"):
 		snap["creep"] = SimWorld.Creep.snap(w)  # G7 CREEP7 CR: creep field for presentation/view/creep_layer.gd
+	if w.sys_state.has("coalition_buildings10") or w.factions.values().any(func(side): return side.get("faction_def", "") == "shadow_coalition"):
+		snap["g10_building_art"] = SimWorld.CoalitionBuildings10.display_snapshot(w, statics)
 	if w.sys_state.has("coalition10"):
 		# G10: readable Coalition doctrine board (view-only; never hashed). Lazy — absent when no Coalition match.
 		snap["coalition10"] = Coalition10.snap_provider(w, snap)

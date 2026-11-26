@@ -6,6 +6,7 @@ extends SceneTree
 const GEN = preload("res://tools/gen_art.gd")
 const SAMPLES = preload("res://tools/art/g10_coalition_samples.gd")
 const AIR = preload("res://tools/art/g10_coalition_air.gd")
+const DEFERRED = preload("res://tools/art/g10_coalition_deferred.gd")
 
 const GROUP := "g10_coalition"
 const ART := "res://assets/art/"
@@ -159,6 +160,7 @@ func _init() -> void:
 	_write_air_states_strip(out)
 	SAMPLES._write_anim_boards(out)
 	SAMPLES._write_air_compare(out)
+	DEFERRED.write_contact(out, LOOK)
 	print("G10_BULK_ANIM_AIR ids=%d ghost=%d air=%d files=%d deferred=%d marked=%d ms=%d out=%s" % [
 		_approved_count() + AIR_UNIQUE_IDS.size() - 1, GHOST_SET.size(), AIR_UNIQUE_IDS.size(),
 		n, DEFERRED_IDS.size(), _marked_count(), Time.get_ticks_msec() - t0, dir,
@@ -195,6 +197,7 @@ static func build_bulk() -> Dictionary:
 		"approved_core": ["CELL", "DEATH", "WALKER", "CLOSE AIR"],
 		"deferred": ["TECHNICAL", "SAFEHOUSE", "HATCH"],
 		"deferred_ids": DEFERRED_IDS.duplicate(),
+		"candidate_look_ids": DEFERRED_IDS.duplicate(),
 		"style_source": "Human A real anim boards + unique air silhouettes (g10_coalition_air); no purple; technical/buildings deferred",
 		"anim_frames_inf": FRAMES_INF.duplicate(),
 		"anim_frames_air": FRAMES_AIR.duplicate(),
@@ -223,6 +226,8 @@ static func build_bulk() -> Dictionary:
 	_copy_unique_air(out, base)
 	_build_ghost_set(out, base)
 	_build_anim_states(out)
+	DEFERRED.build_vehicles(out)
+	DEFERRED.build_buildings(out)
 	return out
 
 

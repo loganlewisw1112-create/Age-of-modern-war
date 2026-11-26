@@ -303,18 +303,32 @@ func test_g10_approved_art_catalog_coverage() -> void:
 		check(icons.has(id), "%s icon present" % id)
 
 
-func test_g10_deferred_art_allowed_as_placeholder() -> void:
-	ArtCatalog.load_all()
+func test_g10_deferred_art_is_drawable_and_pending_approval() -> void:
+	var BatchArt = preload("res://presentation/view/batch_art.gd")
+	var art = BatchArt.new()
+	var man := ArtCatalog.manifest()
 	check_eq(G10_DEFERRED_ART_IDS.size(), 31, "deferred art id count")
-	## Deferred subjects may be absent from catalog (placeholder_for at runtime) — that is OK.
-	for id in G10_DEFERRED_ART_IDS:
+	for i in G10_DEFERRED_ART_IDS.size():
+		var id: String = G10_DEFERRED_ART_IDS[i]
 		var spec := _g10_art_spec(id)
-		if spec.is_empty():
-			continue
-		## If present, must not claim approved_core lock.
-		var g10 = spec.get("g10", {})
-		if g10 is Dictionary:
-			check(not bool(g10.get("approved_core", false)), "deferred %s must not be approved_core" % id)
+		var style: Dictionary = spec.get("g10", {})
+		check(bool(style.get("candidate_look", false)) and not bool(style.get("approved_core", false)),
+			"%s has candidate art pending approval" % id)
+		check(man.icons.has(id), "%s has an icon" % id)
+		if man.buildings.has(id):
+			for facing in 4:
+				for state in ["", "_hidden", "_damaged", "_build_0", "_build_1", "_build_2"]:
+					var name := "rot_%d%s" % [facing, state]
+					var entry: Dictionary = spec.states.get(name, {})
+					check(not entry.is_empty(), "%s has %s" % [id, name])
+			var b := {"kind": "building", "owner": 0, "id": i, "def": id, "built": true}
+			art.resolve_static(b, Color.WHITE, "test", "hidden")
+			check(art.out_page >= 0, "%s cover sprite resolves" % id)
+		else:
+			var u := {"kind": "unit", "owner": 0, "id": i, "def": id}
+			var cached: Array = art.cache_unit(u, Color.WHITE, "test")
+			check(int(cached[2]) >= 0 and int(cached[41]) == 4, "%s uses a four-facing atlas sheet" % id)
+			check(int(cached[7]) >= 0 and int(cached[11]) >= 0, "%s has motion and fire frames" % id)
 
 
 ## Post-lock anim/air overhaul — Ghost Wing real poses + unique air fleet.

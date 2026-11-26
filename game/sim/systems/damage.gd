@@ -171,6 +171,8 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 			SimWorld.Gore71.limb_hit(w, target, String(zr.get("zone", "")), dmg / maxf(SimWorld.Wounds.max_hp(target), 1.0))   # G7.1 J1: severed limbs
 	else:
 		target.hp = snappedf(float(target.hp) - dmg, Q)
+	if target.kind == "building" and String(target.def).begins_with("x_") and dmg > 0.0:
+		SimWorld.CoalitionBuildings10.reveal_on_damage(w, target, int(shooter.get("owner", -1)))
 	var cev = w.cache.get("cmb_ev")   # SIM10K: Combat.tick wakes skipped shooters hit / aiming at this
 	if cev != null:
 		cev[int(target.id)] = true
@@ -269,6 +271,8 @@ static func wound_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, dmg:
 		target.hp = snappedf(float(target.hp) - dmg, Q)
 		if target.has("p71"):
 			Parts71.note_damage(w, target)   # G7.1 DAMAGE71: splash on an LP Machine; it may regrow after the lull
+	if target.kind == "building" and String(target.def).begins_with("x_") and dmg > 0.0:
+		SimWorld.CoalitionBuildings10.reveal_on_damage(w, target, int(shooter.get("owner", -1)))
 	var cev = w.cache.get("cmb_ev")
 	if cev != null:
 		cev[int(target.id)] = true

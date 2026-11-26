@@ -657,13 +657,13 @@ func resolve_sheet(spec: Dictionary, col: int, row: int) -> bool:
 
 
 ## Buildings, resources, wrecks (and remembered-building ghosts). Cached per id + art state.
-func resolve_static(e: Dictionary, team: Color, ck: String) -> void:
+func resolve_static(e: Dictionary, team: Color, ck: String, appearance := "") -> void:
 	var kind := String(e.kind)
-	var stamp := "%s|%s|%d" % [String(e.get("def", "")), ck, _state_code(e, kind)]
+	var stamp := "%s|%s|%d|%s" % [String(e.get("def", "")), ck, _state_code(e, kind), appearance]
 	var c = _ec.get(int(e.id))
 	if c == null or c[0] != stamp:
 		c = [stamp, -2, Rect2(), Vector2.ZERO]
-		_static_art(e, kind, team, ck)
+		_static_art(e, kind, team, ck, appearance)
 		if out_page >= 0:
 			c = [stamp, out_page, out_src, out_off]
 		_ec[int(e.id)] = c
@@ -696,7 +696,7 @@ func _state_code(e: Dictionary, kind: String) -> int:
 	return 0
 
 
-func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
+func _static_art(e: Dictionary, kind: String, team: Color, ck: String, appearance: String) -> void:
 	out_page = -1
 	var man: Dictionary = ArtCatalog.manifest()
 	var def := String(e.get("def", ""))
@@ -708,7 +708,7 @@ func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
 			var st := "built"
 			var g5v := G5Art.variant_of(b)
 			if g5v != "":
-				st = G5Art.building_state(b.states, e, g5v)  # G5 (VIEW5): ART-BLD state_rules
+				st = G5Art.building_state(b.states, e, g5v, appearance)  # G5 (VIEW5): ART-BLD state_rules
 			elif not bool(e.get("built", true)):
 				st = "build_%d" % clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
 			elif e.has("conn"):

@@ -87,7 +87,7 @@ static func variant_of(b: Dictionary) -> String:
 ## Building art state for the ART-BLD state_rules: lvl_<n> (hangar level), rot_<f> (field facing_i),
 ## water_<d> (shore side), each with _damaged under 50% hp and build_<0..2> while under construction
 ## (a hangar still being bought into a slot, air_build > 0, shows build_1). Falls back to built.
-static func building_state(states: Dictionary, e: Dictionary, variant: String) -> String:
+static func building_state(states: Dictionary, e: Dictionary, variant: String, appearance := "") -> String:
 	var dmg := float(e.get("hp", 1.0)) < 0.5
 	var base := ""
 	match variant:
@@ -111,6 +111,8 @@ static func building_state(states: Dictionary, e: Dictionary, variant: String) -
 			return base + "_build_%d" % n
 		if states.has("build_%d" % n):
 			return "build_%d" % n
+	if appearance != "" and states.has(base + "_" + appearance):
+		return base + "_" + appearance
 	# G7 TURRET7B (13.9c-30): turret heads are drawn on the SIMULATED turret bearing (render_snap static "tb", world
 	# radians, sim/systems/traverse7.gd) so the barrel visibly swings onto its target before it fires: aim_<k>[_fire]
 	# heads (yaw k * 45 deg) and wall-turret heads rot_<m>_a<n> (n - 1 = aim step across the 180 deg front of mount

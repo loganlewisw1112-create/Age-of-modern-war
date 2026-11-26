@@ -11,6 +11,8 @@ Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, **Pre-G10**, and **G10
 
 G10.1 stabilization is in progress. Coalition infantry and the six Coalition aircraft use their authored four-direction sprites in the battle view as the camera rotates. The eight-seat Stealth Transport can land, pick up infantry, deploy them at a new landing zone and return with them aboard. Coalition infantry switch to lowered NVGs at dusk and night, and the green laser appears in the firing pose. Ghost Infiltrators shimmer while concealed, and Counter-Ghost trackers and sensors can expose them nearby. The Silent Rotor visibly deploys its weapons when it first fires.
 
+The 31 previously deferred Coalition vehicles and facilities have candidate art in the playable catalog. The Safehouse and concealed facilities show cover art until revealed to that player. Review the designs in [G10.1 deferred art candidates](game/docs/G10_1_DEFERRED_ART.md). Owner look approval is pending.
+
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">
 </p>
