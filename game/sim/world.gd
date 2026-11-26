@@ -230,6 +230,8 @@ const COMMANDS := {
 	"disband_army": Companies,
 	"set_company_refill": Companies,
 	"set_loadout": Exo,
+	"coalition_intent": Coalition10,
+	"ghost_card": GhostConductor10,
 	"resuit": Exo,
 	"lay_minefield": Mines,
 	"sweep": Mines,

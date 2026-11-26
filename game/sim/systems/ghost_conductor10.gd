@@ -65,6 +65,84 @@ static func set_workshop(w: SimWorld, fid: int, ok: bool, suits: int = 4) -> voi
 	s.suits_ready = maxi(suits, 0)
 
 
+static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
+	var fid := int(cmd.get("issuer", -1))
+	if not Coalition10.active(w, fid) or int(w.factions.get(fid, {}).get("stage", 0)) < 8:
+		return "Ghost Command requires a Stage 8 Coalition side."
+	if String(cmd.get("template", "")) not in TEMPLATES or String(cmd.get("roe", "")) not in ROES:
+		return "Choose a valid mission card and rules of engagement."
+	var st: Dictionary = w.sys_state.get(KEY, {})
+	var side: Dictionary = st.get("factions", {}).get(str(fid), {})
+	if int(side.get("last_mission", -1)) in st.get("active", []):
+		return "A Ghost mission is already active."
+	if not w.buildings_of(fid, "x_ghost_complex").any(func(site): return bool(site.get("built", false))):
+		return "Build the Ghost Complex before launching a mission."
+	if _ready_suits(w, fid).size() < 4:
+		return "Field four healthy Ghost operators before launching a mission."
+	if _field_contact(w, fid).is_empty() or _field_intel(w, fid, side) == "rumour":
+		return "Scout an enemy structure to establish pattern intel."
+	return ""
+
+
+static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	var fid := int(cmd.issuer)
+	var side := _side(w, fid)
+	var suits := _ready_suits(w, fid)
+	var contact := _field_contact(w, fid)
+	set_workshop(w, fid, true, suits.size())
+	set_intel(w, fid, _field_intel(w, fid, side))
+	var base: Dictionary = w.buildings_of(fid, "x_ghost_complex").filter(func(site): return bool(site.get("built", false)))[0]
+	contact["home"] = base.pos
+	contact["unit_ids"] = suits.slice(0, 4)
+	var result := submit_card(w, fid, {"template": String(cmd.template), "roe": String(cmd.roe),
+		"target": String(cmd.get("target", "structure")), "field": contact})
+	side.last_mission = int(result.get("mission_id", -1))
+
+
+static func latest_player_mission(w: SimWorld, fid: int) -> Dictionary:
+	var side: Dictionary = w.sys_state.get(KEY, {}).get("factions", {}).get(str(fid), {})
+	var id := int(side.get("last_mission", -1))
+	return GhostMission10.mission(w, id) if id >= 0 else {}
+
+
+static func _ready_suits(w: SimWorld, fid: int) -> Array:
+	var ids := []
+	for e in w.units_of(fid):
+		if GhostExo10.is_ghost_suit_def(String(e.def)) and not bool(e.get("wounded", false)) and float(e.hp) > float(e.max_hp) * 0.5:
+			ids.append(int(e.id))
+	ids.sort()
+	return ids
+
+
+static func _field_contact(w: SimWorld, fid: int) -> Dictionary:
+	var home := Vector2(w.factions.get(fid, {}).get("spawn", Vector2.ZERO))
+	var memory: Dictionary = w.memory.get(fid, {})
+	var ids := memory.keys()
+	ids.sort()
+	var best := {}
+	var distance := INF
+	for id in ids:
+		var e: Dictionary = memory[id]
+		if not w.is_enemy(fid, int(e.get("owner", SimWorld.NEUTRAL))):
+			continue
+		var position := Vector2(e.get("pos", Vector2.ZERO))
+		var d := position.distance_squared_to(home)
+		if d < distance:
+			distance = d
+			best = {"id": int(id), "position": position, "name": String(Content.building(String(e.get("def", ""))).get("name", "enemy structure"))}
+	return best
+
+
+static func _field_intel(w: SimWorld, fid: int, side: Dictionary) -> String:
+	var grade := String(side.get("intel_grade", "rumour"))
+	if grade != "rumour":
+		return grade
+	for record in (w.memory.get(fid, {}) as Dictionary).values():
+		if w.is_enemy(fid, int(record.get("owner", SimWorld.NEUTRAL))):
+			return "pattern"
+	return "rumour"
+
+
 ## Card → mission. Returns {ok, mission_id, reason, phase}.
 static func submit_card(w: SimWorld, fid: int, card: Dictionary) -> Dictionary:
 	if not Coalition10.active(w, fid):
@@ -89,6 +167,8 @@ static func submit_card(w: SimWorld, fid: int, card: Dictionary) -> Dictionary:
 		"risk_budget": int(card.get("risk_budget", _rules().get("risk_budget", 3))),
 		"stance": String(card.get("stance", side.get("stance", "ghost"))),
 	}
+	if card.has("field"):
+		full.field = (card.field as Dictionary).duplicate(true)
 	var mid := GhostMission10.create(w, fid, full)
 	var st := _st(w)
 	var active: Array = st.get("active", [])
@@ -205,7 +285,8 @@ static func disrupt_conductor(w: SimWorld, stage: String) -> Dictionary:
 static func board(w: SimWorld, fid: int) -> Dictionary:
 	if not Coalition10.active(w, fid):
 		return {}
-	var s := _side(w, fid)
+	var st: Dictionary = w.sys_state.get(KEY, {})
+	var s: Dictionary = st.get("factions", {}).get(str(fid), {})
 	return {
 		"intel_grade": String(s.get("intel_grade", "rumour")),
 		"workshop_ok": bool(s.get("workshop_ok", true)),
@@ -215,5 +296,5 @@ static func board(w: SimWorld, fid: int) -> Dictionary:
 		"abort_threshold": float(s.get("abort_threshold", 0.4)),
 		"legend_pin": String(s.get("legend_pin", "")),
 		"learned": (s.get("learned", []) as Array).duplicate(),
-		"conductor_degraded": bool(_st(w).get("conductor_degraded", false)),
+		"conductor_degraded": bool(st.get("conductor_degraded", false)),
 	}

@@ -404,3 +404,45 @@ func test_anchor_drones_kits() -> void:
 	check(bool(GhostMission10.kit_apply(ctx.w, ctx.mid, "backdoor_spike", "syndicate_compromised").ok), "backdoor ok")
 	var vehicles_rules: Dictionary = Content.rules().get("g10_ghost", {}).get("vehicles", {})
 	check(vehicles_rules.has("drones") and vehicles_rules.has("kits"), "rules vehicles block")
+
+
+func test_live_ghost_card_orders_operators_against_scouted_target() -> void:
+	var w := _coalition_world()
+	var view = preload("res://presentation/match_view.gd").new()
+	view._world = w
+	var order := {"type": "ghost_card", "template": "QuietDecap", "roe": "stealth"}
+	check(view.issue(order.duplicate()).ok, "live command can be queued")
+	w.step()
+	check(GhostConductor10.latest_player_mission(w, 0).is_empty(), "no mission without the workshop")
+	var workshop := w.spawn_building("x_ghost_complex", 0, Vector2i(13, 17), true)
+	var target := w.spawn_building(Content.role("human_a", "barracks"), 1, Vector2i(21, 17), true)
+	var operators: Array = []
+	for i in 4:
+		operators.append(w.spawn_unit("x_death_strike", 0, Vector2(17, 16 + i)))
+	w.step()
+	w.memory[0][target] = {"def": w.entities[target].def, "owner": 1, "pos": w.entities[target].pos, "kind": "building"}
+	check(view.issue(order).ok, "prepared field mission queues through MatchView")
+	view.free()
+	var mission := {}
+	var approached := false
+	var acted := false
+	for tick in 350:
+		w.step()
+		mission = GhostConductor10.latest_player_mission(w, 0)
+		if mission.is_empty():
+			continue
+		check_eq(mission.field.unit_ids, operators, "uses the four live operators")
+		if mission.phase == "approach":
+			approached = true
+		if mission.phase == "action" and not acted:
+			acted = true
+			if w.entities.has(target):
+				w.entities[target].hp = 1.0
+		if bool(mission.get("done", false)):
+			break
+	check(approached and acted, "approach and action occur through the live phase loop")
+	check(not w.entities.has(target), "operators destroyed the target")
+	check(bool(mission.get("success", false)) and bool(mission.get("done", false)), "Ghosts finish and report the field mission")
+	check(bool(mission.get("field", {}).get("extracted", false)), "survivors returned to the workshop area")
+	check(Vector2(w.entities[workshop].pos).distance_to(Vector2(w.entities[operators[0]].pos)) <= 6.0,
+		"exfil moved the operators home")

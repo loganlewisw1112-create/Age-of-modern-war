@@ -96,6 +96,37 @@ static func layer(w: SimWorld, fid: int) -> String:
 	return String(s.get("layer", "cells"))
 
 
+static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
+	var fid := int(cmd.get("issuer", -1))
+	if not active(w, fid):
+		return "Coalition command is faction-specific."
+	var want := String(cmd.get("intent", ""))
+	if want not in INTENTS:
+		return "Unknown Coalition intent."
+	var rows: Dictionary = w.sys_state.get(KEY, {}).get("factions", {})
+	return "" if _intent_allowed(rows.get(str(fid), {}), want) else "This intent needs more battlefield evidence."
+
+
+static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	set_intent(w, int(cmd.issuer), String(cmd.intent))
+
+
+static func _intent_allowed(s: Dictionary, want: String) -> bool:
+	if want == String(s.get("intent", "harry")) or want == "harry":
+		return true
+	var evidence: Dictionary = s.get("evidence", {})
+	match want:
+		"bleed":
+			return int(evidence.get("probes", 0)) >= 1 or int(s.get("resources_seen", 0)) >= 1
+		"flex":
+			return int(evidence.get("gap", 0)) >= 1 or int(s.get("patron_favour", 0)) >= 10
+		"strike":
+			return int(evidence.get("weak_point", 0)) >= 1 and String(s.get("intel_grade", "")) in ["pattern", "fix", "keyhole"]
+		"exfil":
+			return int(evidence.get("pressure", 0)) >= 1 or bool(s.get("ghost_ready", false))
+	return false
+
+
 static func set_intent(w: SimWorld, fid: int, intent: String) -> void:
 	if not active(w, fid):
 		return
@@ -105,24 +136,8 @@ static func set_intent(w: SimWorld, fid: int, intent: String) -> void:
 	var s := _side(w, fid)
 	if s.is_empty():
 		return
-	# Doctrine transitions only from evidence/resources — not free spam.
-	if want != String(s.get("intent", "harry")):
-		var evidence: Dictionary = s.get("evidence", {})
-		var resources_seen := int(s.get("resources_seen", 0))
-		var ok := false
-		match want:
-			"harry":
-				ok = true
-			"bleed":
-				ok = int(evidence.get("probes", 0)) >= 1 or resources_seen >= 1
-			"flex":
-				ok = int(evidence.get("gap", 0)) >= 1 or int(s.get("patron_favour", 0)) >= 10
-			"strike":
-				ok = int(evidence.get("weak_point", 0)) >= 1 and String(s.get("intel_grade", "")) in ["pattern", "fix", "keyhole"]
-			"exfil":
-				ok = int(evidence.get("pressure", 0)) >= 1 or bool(s.get("ghost_ready", false))
-		if not ok:
-			return
+	if not _intent_allowed(s, want):
+		return
 	s.intent = want
 	_refresh_layer(s)
 	w.emit("Coalition10Intent", {"fid": fid, "intent": want, "layer": String(s.layer)})
@@ -165,9 +180,8 @@ static func _refresh_layer(s: Dictionary) -> void:
 static func board(w: SimWorld, fid: int) -> Dictionary:
 	if not active(w, fid):
 		return {}
-	var s := _side(w, fid)
-	if s.is_empty():
-		return {}
+	var rows: Dictionary = w.sys_state.get(KEY, {}).get("factions", {})
+	var s: Dictionary = rows.get(str(fid), {})
 	return {
 		"intent": String(s.get("intent", "harry")),
 		"layer": String(s.get("layer", "cells")),

@@ -342,10 +342,11 @@ static func board(w: SimWorld, fid: int) -> Dictionary:
 ## Snapshot for difficulty equality tests (no multipliers applied).
 static func stock_snapshot(w: SimWorld, fid: int) -> Dictionary:
 	var f: Dictionary = w.factions.get(fid, {})
-	var rifle: Dictionary = Content.unit("x_cell_rifle")
+	var infantry := Content.role(Coalition10.FACTION_ID, "infantry")
+	var rifle: Dictionary = Content.unit(infantry)
 	var cost: Dictionary = rifle.get("cost", {})
 	if cost.is_empty():
-		cost = Content.production("x_cell_rifle").get("cost", {})
+		cost = Content.production(infantry).get("cost", {})
 	var weapon_id := String(rifle.get("weapon", "rifle"))
 	var wpn: Dictionary = Content.weapon(weapon_id)
 	var dmg := int(wpn.get("damage", rifle.get("damage", 0)))

@@ -10,6 +10,7 @@ const INTENTS := [
 	["exfil", "EXFIL", "Break contact and recover"],
 ]
 
+var match_view
 var world_override: SimWorld = null
 var fid_override := 0
 var advanced_open := false
@@ -68,7 +69,7 @@ func _ensure_ui() -> void:
 	_adv_box = VBoxContainer.new()
 	_adv_box.visible = false
 	var adv_note := Label.new()
-	adv_note.text = "Advanced doctrine, contracts and Ghost boards open here later."
+	adv_note.text = "Intent changes depend on battlefield evidence and patron support."
 	_adv_box.add_child(adv_note)
 	root.add_child(_adv_box)
 
@@ -114,6 +115,10 @@ func _set_intent(intent_id: String) -> void:
 	var w := _world()
 	if w == null:
 		return
-	Coalition10.set_intent(w, _fid(), intent_id)
-	sent.append({"type": "coalition_intent", "intent": intent_id})
+	var cmd := {"type": "coalition_intent", "intent": intent_id}
+	if match_view != null:
+		match_view.issue(cmd)
+	else:
+		Coalition10.set_intent(w, _fid(), intent_id)
+	sent.append(cmd)
 	refresh()

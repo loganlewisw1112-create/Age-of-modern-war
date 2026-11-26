@@ -16,6 +16,7 @@ const ROES := [
 	["aggressive", "PUSH"],
 ]
 
+var match_view
 var world_override: SimWorld = null
 var fid_override := 0
 var advanced_open := false
@@ -26,6 +27,7 @@ var last_result: Dictionary = {}
 var _built := false
 var _status: Label
 var _adv_box: VBoxContainer
+var _go: Button
 
 
 static func attach(parent: Control) -> Control:
@@ -68,10 +70,10 @@ func _ensure_ui() -> void:
 		var rid := String(row[0])
 		b2.pressed.connect(func() -> void: selected_roe = rid; refresh())
 		roes.add_child(b2)
-	var go := Button.new()
-	go.text = "EXECUTE"
-	go.pressed.connect(_execute)
-	root.add_child(go)
+	_go = Button.new()
+	_go.text = "Execute mission"
+	_go.pressed.connect(_execute)
+	root.add_child(_go)
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_status)
@@ -82,7 +84,7 @@ func _ensure_ui() -> void:
 	_adv_box = VBoxContainer.new()
 	_adv_box.visible = false
 	var adv_note := Label.new()
-	adv_note.text = "Stance / abort threshold / Legend pin / learned habits."
+	adv_note.text = "Scout an enemy structure, build a Ghost Complex and field four healthy Ghost operators."
 	_adv_box.add_child(adv_note)
 	root.add_child(_adv_box)
 
@@ -104,6 +106,9 @@ func _execute() -> void:
 	var w := _world()
 	if w == null:
 		return
+	if match_view != null:
+		last_result = match_view.issue({"type": "ghost_card", "template": selected_template, "roe": selected_roe})
+		return
 	last_result = GhostConductor10.submit_card(w, _fid(), {
 		"template": selected_template,
 		"target": selected_target,
@@ -124,7 +129,19 @@ func refresh() -> void:
 	var bits := "Card %s · ROE %s · target %s · intel %s" % [
 		selected_template, selected_roe, selected_target, String(b.get("intel_grade", "?")),
 	]
-	if not last_result.is_empty():
+	if match_view != null:
+		var cmd := {"issuer": fid, "template": selected_template, "roe": selected_roe}
+		var gate := GhostConductor10.validate_command(w, cmd)
+		_go.disabled = gate != ""
+		_go.tooltip_text = gate
+		var mission := GhostConductor10.latest_player_mission(w, fid)
+		if not mission.is_empty():
+			var status := "Complete" if bool(mission.get("done", false)) else String(mission.get("phase", "")).capitalize()
+			bits += "\n%s · %s" % [String(mission.get("template", "")), status]
+			bits += "\nTarget: %s" % String(mission.get("field", {}).get("name", "enemy structure"))
+		if gate != "":
+			bits += "\n" + gate
+	elif not last_result.is_empty():
 		bits += "\nLast: ok=%s mission=%s phase=%s" % [
 			str(bool(last_result.get("ok", false))),
 			str(last_result.get("mission_id", -1)),

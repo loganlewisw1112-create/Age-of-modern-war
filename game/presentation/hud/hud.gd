@@ -66,6 +66,9 @@ var _power: Label
 var _pop: Label
 var _stage: Label
 var _clock: Label
+var _coalition_panel: PanelContainer
+var _coalition_command
+var _ghost_command
 var _btn_pause: Button
 var _btn_speed: Array = []
 var _paused_banner: Label
@@ -215,6 +218,17 @@ func _build_ui() -> void:
 	cb.name = "CommandersButton"
 	cb.pressed.connect(func(): ui6a.toggle("commanders"))
 	hb.add_child(cb)
+	var w := _world()
+	if w != null and SimWorld.Coalition10.active(w, _pf()):
+		_build_coalition_panel(root)
+		var g10 := UiKit.button("Coalition", "", "Coalition intent and Ghost missions")
+		g10.name = "CoalitionButton"
+		g10.pressed.connect(func():
+			_coalition_panel.visible = not _coalition_panel.visible
+			if _coalition_panel.visible and mv.world_readable():
+				_refresh_coalition()
+		)
+		hb.add_child(g10)
 	var mb := UiKit.button("Menu", "Esc", "Pause menu: save, load, settings, quit")
 	mb.pressed.connect(func(): menu_requested.emit())
 	hb.add_child(mb)
@@ -328,6 +342,30 @@ func _build_ui() -> void:
 	left.resized.connect(_cap_stacks)
 	right.resized.connect(_cap_stacks)
 	layer.root.resized.connect(_cap_stacks)
+
+
+func _build_coalition_panel(root: Control) -> void:
+	_coalition_panel = UiKit.panel("CoalitionPanel")
+	root.add_child(_coalition_panel)
+	_coalition_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_coalition_panel.offset_left = -475
+	_coalition_panel.offset_right = -EDGE_M
+	_coalition_panel.offset_top = TOP_H + 8
+	_coalition_panel.offset_bottom = TOP_H + 8
+	var stack := VBoxContainer.new()
+	_coalition_panel.add_child(stack)
+	_coalition_command = preload("res://presentation/ui10/coalition_command.gd").attach(stack)
+	_ghost_command = preload("res://presentation/ui10/ghost_command.gd").attach(stack)
+	for card in [_coalition_command, _ghost_command]:
+		card.match_view = mv
+	_coalition_panel.hide()
+
+
+func _refresh_coalition() -> void:
+	for card in [_coalition_command, _ghost_command]:
+		card.world_override = _world()
+		card.fid_override = _pf()
+		card.refresh()
 
 
 func _build_bottom(root: Control) -> void:
@@ -611,6 +649,8 @@ func _refresh() -> void:
 	var w := _world()
 	if w == null or not w.factions.has(_pf()):
 		return
+	if _coalition_panel != null and _coalition_panel.visible:
+		_refresh_coalition()
 	var f: Dictionary = w.factions[_pf()]
 	_credits.text = "CR %d" % int(f.credits)
 	_salvage.text = "SALV %d" % int(f.stock.get("salvage", 0))

@@ -67,6 +67,10 @@ static func create(w: SimWorld, fid: int, card: Dictionary) -> int:
 		"vehicles": _blank_vehicles(),
 		"warnings": [],
 	}
+	if card.has("field"):
+		m.field = (card.field as Dictionary).duplicate(true)
+		m.vehicles.insert = "foot"
+		m.vehicles.exfil = "foot"
 	st.missions[str(mid)] = m
 	w.emit("GhostMissionCreated", {"fid": fid, "mission": mid, "template": m.template})
 	return mid
@@ -134,6 +138,8 @@ static func advance(w: SimWorld, mission_id: int) -> Dictionary:
 		m.phase = phase
 		return {"ok": false, "reason": m.refuse_reason, "phase": phase, "refused": true}
 	m.ticks_in_phase = int(m.get("ticks_in_phase", 0)) + 1
+	if bool(result.get("wait", false)):
+		return {"ok": true, "phase": phase, "detail": result}
 	var need := int(_rules().get("ticks_per_phase", 2))
 	if int(m.ticks_in_phase) >= need or bool(result.get("force_advance", false)):
 		m.ticks_in_phase = 0
@@ -153,6 +159,8 @@ static func advance(w: SimWorld, mission_id: int) -> Dictionary:
 
 
 static func _run_phase(w: SimWorld, m: Dictionary, phase: String) -> Dictionary:
+	if m.has("field") and phase in ["approach", "action", "exfil"]:
+		return _field_phase(w, m, phase)
 	match phase:
 		"tasking":
 			return {
@@ -184,6 +192,48 @@ static func _run_phase(w: SimWorld, m: Dictionary, phase: String) -> Dictionary:
 		"echo":
 			return _echo(w, m)
 	return {"force_advance": true}
+
+
+## Orders real operators through the same movement and combat paths used by player commands.
+static func _field_phase(w: SimWorld, m: Dictionary, phase: String) -> Dictionary:
+	var field: Dictionary = m.field
+	var fid := int(m.fid)
+	var operators: Array = []
+	for id in field.unit_ids:
+		var e = w.entities.get(int(id))
+		if e != null and int(e.owner) == fid and float(e.hp) > 0.0:
+			operators.append(e)
+	m.suit_loss = (field.unit_ids as Array).size() - operators.size()
+	if operators.is_empty():
+		m.success = false
+		return {"force_advance": true, "outcome": "squad_lost"}
+	var at := Vector2(field.home if phase == "exfil" else field.position)
+	var elapsed := int(m.ticks_in_phase)
+	if elapsed == 0:
+		var ot := "attack_move" if phase == "action" else "move"
+		var ids := operators.map(func(e): return int(e.id))
+		w.submit({"type": ot, "issuer": fid, "unit_ids": ids, "target": at})
+	var arrived := operators.any(func(e): return Vector2(e.pos).distance_squared_to(at) <= 36.0)
+	var over_loss := int(m.suit_loss) > int(m.get("max_suit_loss", 2))
+	match phase:
+		"approach":
+			field.approached = arrived and not over_loss
+			if field.approached or over_loss or elapsed >= 600:
+				return {"force_advance": true, "approached": field.approached}
+		"action":
+			if arrived and not w.entities.has(int(field.id)):
+				m.success = true
+				return {"force_advance": true, "primary": true}
+			if over_loss or not bool(field.get("approached", false)) or elapsed >= 400:
+				m.success = false
+				return {"force_advance": true, "primary": false}
+		"exfil":
+			if operators.all(func(e): return Vector2(e.pos).distance_squared_to(at) <= 36.0) or elapsed >= 600:
+				m.field["extracted"] = arrived
+				if not arrived:
+					m.success = false
+				return _phase_exfil(m)
+	return {"wait": true}
 
 
 static func _intel_rank(grade: String) -> int:
