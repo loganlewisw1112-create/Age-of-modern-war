@@ -9,7 +9,7 @@ Offline single-player real-time strategy in **Godot 4.7.2**, with a Rust native 
 
 Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, **Pre-G10**, and **G10 Shadow Coalition** are closed (`g10.lock`).
 
-G10.1 stabilization is in progress. Coalition infantry and the six Coalition aircraft use their authored four-direction sprites in the battle view as the camera rotates.
+G10.1 stabilization is in progress. Coalition infantry and the six Coalition aircraft use their authored four-direction sprites in the battle view as the camera rotates. The eight-seat Stealth Transport can land, pick up infantry, deploy them at a new landing zone and return with them aboard.
 
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">

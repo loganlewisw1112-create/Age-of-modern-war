@@ -1080,7 +1080,8 @@
       "aircraft": "heli",
       "fuel_max": 180,
       "fuel_burn": 1.6,
-      "transport_slots": 8
+      "cargo_slots": 8,
+      "cargo_accepts": ["foot"]
     },
     "x_patron_cas": {
       "name": "Patron CAS",

@@ -35,3 +35,4 @@ HARNESS
 
 G10.1 IN PROGRESS
   Authored Coalition infantry and aircraft sprites follow all four camera views.
+  Stealth Transport: land, board infantry, fly to a deployment point and reboard for extraction.

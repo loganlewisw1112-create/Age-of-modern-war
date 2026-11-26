@@ -390,3 +390,49 @@ func test_determinism() -> void:
 	if hashes.size() == 2:
 		check_eq(hashes[0], hashes[1], "native == fallback hash")
 	NativeCore.force_off = false
+
+
+func test_coalition_stealth_transport_deployment_and_extraction() -> void:
+	var cfg := SimWorld.default_config()
+	cfg.sides = [
+		{"faction": "shadow_coalition", "stage": 10, "ai": false, "team": 0},
+		{"faction": "human_a", "stage": 10, "ai": false, "team": 1},
+	]
+	var w := SimWorld.new_match(cfg)
+	var Air = preload("res://sim/systems/air.gd")
+	var craft := Content.unit("x_stealth_transport")
+	var launch_zones: Array[Vector2i] = []
+	for y in range(6, 25):
+		for x in range(6, 25):
+			var cell := Vector2i(x, y)
+			if Air.landing_ok(w, cell, craft) and (launch_zones.is_empty() or cell.distance_to(launch_zones[0]) >= 8.0):
+				launch_zones.append(cell)
+				if launch_zones.size() == 2:
+					break
+		if launch_zones.size() == 2:
+			break
+	check_eq(launch_zones.size(), 2, "two valid open landing zones")
+	if launch_zones.size() != 2:
+		return
+	var start := Vector2(launch_zones[0]) + Vector2(0.5, 0.5)
+	var destination := Vector2(launch_zones[1]) + Vector2(0.5, 0.5)
+	var cid := w.spawn_unit("x_stealth_transport", 0, start)
+	var uid := w.spawn_unit("x_death_strike", 0, start + Vector2.RIGHT)
+	w.step()
+	var carrier: Dictionary = w.entities[cid]
+	check_eq(Transport.capacity(carrier.def), 8, "transport carries eight slots")
+	check(w.submit({"type": "land_at", "issuer": 0, "unit_ids": [cid], "cell": [launch_zones[0].x, launch_zones[0].y]}).ok,
+		"initial land order accepted")
+	check(_run_until(w, 100, func(): return bool(carrier.air_landed)) > 0, "lands for boarding")
+	var board := {"type": "load", "issuer": 0, "carrier": cid, "unit_ids": [uid]}
+	check(w.submit(board).ok, "Death squad can board")
+	check(_run_until(w, 160, func(): return Transport.cargo_ids(carrier) == [uid]) > 0, "squad boards")
+	check(w.submit({"type": "unload", "issuer": 0, "carrier": cid, "target": destination}).ok, "deployment order accepted")
+	check(_run_until(w, 300, func(): return w.entities.has(uid) and Transport.cargo_ids(carrier).is_empty()) > 0, "squad deploys with the same ID")
+	check(Vector2(carrier.pos).distance_to(destination) <= 1.0 and bool(carrier.air_landed), "craft reaches the deployment LZ")
+	check(w.submit(board).ok, "extraction boarding accepted")
+	check(_run_until(w, 160, func(): return Transport.cargo_ids(carrier) == [uid]) > 0, "squad reboards for extraction")
+	check(w.submit({"type": "move", "issuer": 0, "unit_ids": [cid], "target": start}).ok, "transport can depart")
+	check(_run_until(w, 300, func(): return not bool(carrier.air_landed) and Vector2(carrier.pos).distance_to(start) <= 1.0) > 0,
+		"transport extracts with the squad still aboard")
+	check_eq(Transport.cargo_ids(carrier), [uid], "extracted squad stays aboard")
