@@ -30,22 +30,14 @@ static func persona_for(w: SimWorld, fid: int) -> Dictionary:
 
 
 static func adapt_bias(w: SimWorld, fid: int) -> Dictionary:
-	## Read Adapt9 pressure for this side (and optionally mirror foe pressure if recorded).
+	## Counter choices come from this side’s battle losses and its own combat history.
 	var self_p: Dictionary = Adapt9.pressure(w, fid)
-	var foe_p := {}
-	for other in w.factions:
-		var ofid := int(other)
-		if ofid == fid or w.is_ally(fid, ofid):
-			continue
-		var p: Dictionary = Adapt9.pressure(w, ofid)
-		if not p.is_empty():
-			foe_p = p
-			break
+	var foe_p := Adapt9.observed_pressure(w, fid)
 	return {
 		"self": self_p.duplicate(true),
 		"foe": foe_p.duplicate(true),
-		"counter_bias": String(self_p.get("counter_bias", foe_p.get("counter_bias", "combined"))),
-		"kill_mix": (self_p.get("kill_mix", foe_p.get("kill_mix", {})) as Dictionary).duplicate(true),
+		"counter_bias": String(foe_p.get("counter_bias", self_p.get("counter_bias", "combined"))),
+		"kill_mix": (foe_p.get("kill_mix", self_p.get("kill_mix", {})) as Dictionary).duplicate(true),
 	}
 
 

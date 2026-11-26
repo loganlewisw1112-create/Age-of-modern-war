@@ -17,6 +17,8 @@ Use **Q / E** during a match to rotate the battlefield around the point under th
 
 The G10.1 Machine and combat checks cover the hive roster and network, all 13 countermeasures, persistent terrain damage, vehicle recovery, siege skirmish and friendly-fire alerts.
 
+Diplomacy now responds to Machine combat strength. AI adaptation gathers evidence from the side’s own combat history and losses.
+
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">
 </p>

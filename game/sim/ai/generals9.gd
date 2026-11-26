@@ -2,7 +2,6 @@ extends RefCounted
 ## Named rival generals: deterministic selection and doctrine data shared by AI, UI and AAR.
 
 const IDS := ["iron_wall", "storm_spear", "long_reach", "swarm_tide", "ghost_knife"]
-const OP_PHASES := ["recon", "fix", "assault", "exploit"]
 
 
 static func R() -> Dictionary:
@@ -46,9 +45,12 @@ static func board(w: SimWorld) -> Dictionary:
 
 ## Compact phase contract used by commander objectives and scripted tests.
 static func advance_operation(w: SimWorld, fid: int, op: Dictionary) -> String:
-	var i := OP_PHASES.find(String(op.get("phase", "")))
-	i = 0 if i < 0 else mini(i + 1, OP_PHASES.size() - 1)
-	op.phase = OP_PHASES[i]
+	var phases: Array = Content.rules().get("g71_ai9", {}).get("operations", {}).get("phases", [])
+	if phases.is_empty():
+		return ""
+	var i := phases.find(String(op.get("phase", "")))
+	i = 0 if i < 0 else mini(i + 1, phases.size() - 1)
+	op.phase = phases[i]
 	op.phase_tick = w.tick
 	w.emit("AiGeneralOp", {"fid": fid, "slot": int(op.get("slot", -1)), "op": String(op.get("type", "attack")),
 		"phase": String(op.phase), "target": op.get("target", Vector2.ZERO), "reason": "ai9_phase"})

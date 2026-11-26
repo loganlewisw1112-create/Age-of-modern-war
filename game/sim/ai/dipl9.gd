@@ -13,18 +13,20 @@ static func evaluate_machine_threat(w: SimWorld) -> float:
 	var score := 0.0
 	var mfs := Creep.machine_fids(w)
 	for fid in mfs:
-		for e in w.units_of(int(fid)):
+		for e in w.units_of(fid):
 			var d := Content.unit(String(e.def))
+			if String(d.get("weapon", "")) == "":
+				continue
 			score += maxf(float(e.get("hp", 1.0)) / maxf(float(d.get("hp", 100.0)), 1.0), 0.1)
-		for b in w.buildings_of(int(fid)):
-			if bool(b.get("built", true)):
+		for b in w.buildings_of(fid):
+			if bool(b.get("built", true)) and String(Content.building(String(b.def)).get("weapon", "")) != "":
 				score += 1.5
 	return snappedf(score, 0.01)
 
 
 static func human_fids(w: SimWorld) -> Array:
 	var out := []
-	for fid in w.factions:
+	for fid in w.factions.keys():
 		if not Creep.is_machine(w, int(fid)) and bool(w.factions[fid].get("alive", true)):
 			out.append(int(fid))
 	out.sort()
@@ -51,4 +53,5 @@ static func tick(w: SimWorld) -> void:
 			w.emit("Dipl9TruceBroken", {"threat": threat})
 		return
 	if humans.size() >= 2 and threat >= float(R().get("form_at", 5.0)):
-		propose_truce(w, humans.slice(0, 2), "machine_threat")
+		if humans.any(func(fid): return not w.is_ally(int(humans[0]), int(fid))):
+			propose_truce(w, humans, "machine_threat")

@@ -154,6 +154,8 @@ static func build(w) -> void:
 						dfl |= DEF_G4B
 					dfl |= _g5_def_bits(ud)
 					dfl |= _g6_def_bits(ud)
+					if String(ud.get("faction", "")) == "shadow_coalition":
+						dfl |= DEF_COALITION
 					def_fl.append(dfl)
 					if s7_on:
 						def_inf.append(1 if _sys("senses7")._inf_def(dname) else 0)
@@ -199,10 +201,11 @@ static func build(w) -> void:
 				fl |= FLAG_MOVING
 			if e.firing > 0:
 				fl |= FLAG_FIRING
-			if dname.begins_with("x_") and int(w.tick) - int(e.get("last_hit_tick", -1000)) < 4:
-				fl |= FLAG_RECENT_HIT
-			if dname == "x_silent_rotor" and e.has("last_fired_tick"):
-				fl |= FLAG_WEAPONS_OPEN
+			if dfl2 & DEF_COALITION:
+				if int(w.tick) - int(e.get("last_hit_tick", -1000)) < 4:
+					fl |= FLAG_RECENT_HIT
+				if dname == "x_silent_rotor" and e.has("last_fired_tick"):
+					fl |= FLAG_WEAPONS_OPEN
 			if dfl2 & DEF_G4B:
 				if e.get("hid", false):
 					fl |= FLAG_HID
@@ -851,6 +854,7 @@ static func _water_sides(w, statics: Dictionary) -> void:
 #   copy + {pos (captain), r (cohesion radius)}}, ai_cmd {fid: AiCommand.slots}, airdef {fid: [aircraft ids]}
 #   (radar picture), height (w.map.height ref, COW) + ramps for the entity height offset.
 const FLAG_G6 := 1 << 6   # unit has an entry in snap.g6u
+const DEF_COALITION := 1 << 23  # def table only: Coalition-specific battle poses
 const DEF_G6 := 1 << 24   # def table only: cloak / disguise / submersible / sonar / art override candidates
 const G6_SYS := {"airfield": "res://sim/systems/airfield.gd", "machine_g6": "res://sim/systems/machine_g6.gd",
 	"hooks": "res://sim/systems/g6_hooks.gd", "sonar": "res://sim/systems/sonar.gd",

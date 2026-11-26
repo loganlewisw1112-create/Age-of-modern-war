@@ -357,3 +357,6 @@
 {"seq":310,"ts":"2026-11-26T21:18:05.7490719Z","from":"ORCH","to":"*","type":"FACT","topic":"g10.1.visual_finalization","data":{"rotation_ms":"21-33","presentation_harness":"director_pip=1 highlight_reel=1 creep_timelapse=1","pass":19,"readme":true,"fail":0,"commit":"3040d0be"}}
 {"seq":311,"ts":"2026-11-26T21:18:05.7543185Z","from":"ORCH","to":"*","type":"RELEASE","topic":"g10.1.visual_finalization","data":{"slice":"Phase C"}}
 {"seq":312,"ts":"2026-11-26T21:18:05.7544851Z","from":"ORCH","to":"*","type":"CLAIM","topic":"g10.1.machine_combat","data":{"paths":["game/sim/systems","game/tests","game/content"]}}
+{"seq":313,"ts":"2026-11-26T21:19:58.9213925Z","from":"ORCH","to":"*","type":"FACT","topic":"g10.1.machine_combat","data":{"suites":["test_accuracy8","test_combat9","test_count9","test_crew71","test_hive9","test_machine_g6","test_skirm9"],"fail":0,"pass":74,"commit":"e1ee9600","readme":true}}
+{"seq":314,"ts":"2026-11-26T21:19:58.9264278Z","from":"ORCH","to":"*","type":"RELEASE","topic":"g10.1.machine_combat","data":{"slice":"Phase D"}}
+{"seq":315,"ts":"2026-11-26T21:19:58.9266128Z","from":"ORCH","to":"*","type":"CLAIM","topic":"g10.1.strategy_economy","data":{"paths":["game/sim/ai","game/sim/systems","game/tests","game/tools"]}}

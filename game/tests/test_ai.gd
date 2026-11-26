@@ -22,7 +22,7 @@ const G2_TICKS := 12000
 
 ## Forbidden patterns on the code part of a line (comment-only lines are skipped).
 const FORBIDDEN := [
-	["\\bfactions\\b(?!\\[fid\\])", "factions indexed with something other than [fid]"],
+	["\\bw\\.factions\\b(?!\\[fid\\]|\\.(?:has|get)\\(fid\\b|\\.keys\\(\\))", "reads another side’s faction state"],
 	["\\bfog\\b(?!\\[fid\\])", "fog indexed with something other than [fid]"],
 	["\\bmemory\\b(?!\\[fid\\])", "memory indexed with something other than [fid]"],
 	["1\\s*-\\s*fid", "the other side's fid computed"],

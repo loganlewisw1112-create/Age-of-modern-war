@@ -42,6 +42,8 @@ func test_named_generals_have_distinct_doctrine() -> void:
 
 func test_diplomacy_forms_and_breaks_machine_truce() -> void:
 	var w := _three_side()
+	Dipl9.tick(w)
+	check(not Count9.coalition_active(w), "opening workers and HQ do not trigger a truce")
 	var mfs := Creep.machine_fids(w)
 	check(not mfs.is_empty(), "machine faction found")
 	for i in 6:
@@ -74,3 +76,18 @@ func test_multiphase_operation_contract() -> void:
 	for i in 4:
 		got.append(Generals9.advance_operation(w, 1, op))
 	check_eq(got, ["recon", "fix", "assault", "exploit"], "recon-fix-assault-exploit")
+
+
+func test_adaptation_counts_each_battle_tick_and_limits_observers() -> void:
+	var w := _three_side()
+	for i in 2:
+		w.events.clear()
+		w.tick += 1
+		w.emit("EntityDestroyed", {"id": 100 + i, "owner": 0, "killer_owner": 2, "def": "rifleman", "weapon_tag": "laser"})
+		Adapt9.tick(w)
+		Adapt9.tick(w)
+	var victim := Adapt9.observed_pressure(w, 0)
+	check_eq(victim.get("kill_mix", {}).get("laser", 0), 2, "each tick counts once, including repeated batch sizes")
+	check_eq(victim.get("counter_bias", ""), "smoke", "laser losses inform counters")
+	check(Adapt9.observed_pressure(w, 1).is_empty(), "third party has no intelligence from an unseen kill")
+	check_eq(Adapt9.pressure(w, 2).get("kill_mix", {}).get("laser", 0), 2, "aggressor retains its own evidence")
