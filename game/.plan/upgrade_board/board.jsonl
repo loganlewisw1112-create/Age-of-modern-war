@@ -354,3 +354,6 @@
 {"seq":307,"ts":"2026-11-26T21:16:15.7858493Z","from":"ORCH","to":"*","type":"FACT","topic":"g10.1.deferred_art","data":{"commit":"5ea3aea7","candidate_ids":31,"readme":true,"fail":0,"owner_look":"pending","pass":35}}
 {"seq":308,"ts":"2026-11-26T21:16:15.7913760Z","from":"ORCH","to":"*","type":"RELEASE","topic":"g10.1.deferred_art","data":{"slice":"Phase B candidate art"}}
 {"seq":309,"ts":"2026-11-26T21:16:15.7915622Z","from":"ORCH","to":"*","type":"CLAIM","topic":"g10.1.visual_finalization","data":{"paths":["game/presentation/view","game/presentation/match_view.gd","game/tests/test_view8.gd"]}}
+{"seq":310,"ts":"2026-11-26T21:18:05.7490719Z","from":"ORCH","to":"*","type":"FACT","topic":"g10.1.visual_finalization","data":{"rotation_ms":"21-33","presentation_harness":"director_pip=1 highlight_reel=1 creep_timelapse=1","pass":19,"readme":true,"fail":0,"commit":"3040d0be"}}
+{"seq":311,"ts":"2026-11-26T21:18:05.7543185Z","from":"ORCH","to":"*","type":"RELEASE","topic":"g10.1.visual_finalization","data":{"slice":"Phase C"}}
+{"seq":312,"ts":"2026-11-26T21:18:05.7544851Z","from":"ORCH","to":"*","type":"CLAIM","topic":"g10.1.machine_combat","data":{"paths":["game/sim/systems","game/tests","game/content"]}}

@@ -702,11 +702,8 @@ func test_friend_down_the_line_hittable() -> void:
 ## HUD: "Friendly fire!" alert on our FriendlyFire event, at most one per 8 s; none for another side's.
 func test_hud_friendly_fire_alert_throttle() -> void:
 	var w := _world(9292)
-	var src := GDScript.new()
-	src.source_code = "extends Node\nvar world = null\nvar player_fid := 0\n"
-	src.reload()
-	var mvn: Node = src.new()
-	mvn.world = w
+	var mvn = preload("res://presentation/match_view.gd").new()
+	mvn._world = w
 	var hud = load("res://presentation/hud/hud.gd").new()
 	hud.mv = mvn
 	for i in 400:   # 20 s, an FF event on us and on side 1 every tick

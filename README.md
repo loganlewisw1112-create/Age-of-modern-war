@@ -15,6 +15,8 @@ The 31 previously deferred Coalition vehicles and facilities have candidate art 
 
 Use **Q / E** during a match to rotate the battlefield around the point under the camera. Terrain, fog and tactical markers follow the new view, and the minimap stays oriented to the map.
 
+The G10.1 Machine and combat checks cover the hive roster and network, all 13 countermeasures, persistent terrain damage, vehicle recovery, siege skirmish and friendly-fire alerts.
+
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">
 </p>
