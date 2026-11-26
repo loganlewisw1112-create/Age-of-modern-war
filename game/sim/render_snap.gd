@@ -47,6 +47,7 @@ const FLAG_EVAC := 1 << 23      # carrier with wounded aboard (medical carriers)
 const FLAG_NEEDY := 1 << 24     # unit flagged needy by Support (auto resupply scan): supply icon
 const FLAG_RESUP := 1 << 25     # unit claimed by a resupply truck (e.resup_by): supply icon (served)
 const FLAG_TACTICAL := 1 << 26  # Drone Team in tactical mode (G5Mech.mode == "tactical"): tactical frame
+const FLAG_WEAPONS_OPEN := 1 << 29  # Silent Rotor has fired and deployed its weapons
 const FLAG_RECENT_HIT := 1 << 28  # Coalition hit reaction window
 const FLAG_SLUNG := 1 << 27     # sling carrier with a vehicle under it (snap.sling[id] lists the defs)
 const DEF_AIRCRAFT := 1 << 28   # def table only: G5 aircraft (def `aircraft`) or launched drone
@@ -200,6 +201,8 @@ static func build(w) -> void:
 				fl |= FLAG_FIRING
 			if dname.begins_with("x_") and int(w.tick) - int(e.get("last_hit_tick", -1000)) < 4:
 				fl |= FLAG_RECENT_HIT
+			if dname == "x_silent_rotor" and e.has("last_fired_tick"):
+				fl |= FLAG_WEAPONS_OPEN
 			if dfl2 & DEF_G4B:
 				if e.get("hid", false):
 					fl |= FLAG_HID
@@ -1043,6 +1046,8 @@ static func _g6_unit(w, e: Dictionary, id: int, dfl: int, g6: Dictionary, hid_sp
 		if bool(e.get("cloaked", false)):
 			var hid := bool(e.get("cloak_hid", false))
 			r["cloak"] = 2 if hid else 1
+			if String(e.def) == "x_ghost_infiltrator":
+				r["ghost"] = true
 			conceal = conceal or hid
 		if e.has("submerged"):
 			r["sub"] = true

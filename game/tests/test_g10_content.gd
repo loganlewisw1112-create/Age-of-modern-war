@@ -469,3 +469,46 @@ func test_g10_runtime_poses_follow_snapshot_state() -> void:
 	check_eq(air_frames[BatchArt.coalition_pose(tc, RenderSnap.FLAG_LANDED, false, false, 0.0, 0)], "idle", "landed ramp closed")
 	check_eq(air_frames[BatchArt.coalition_pose(tc, RenderSnap.FLAG_LANDED | RenderSnap.FLAG_UNLOAD, false, false, 0.0, 0)],
 		"unload", "deployment opens the transport ramp")
+
+
+func test_g10_ghost_cloak_reacts_to_observers_and_fire() -> void:
+	var w := _coalition_world()
+	var GhostVis = preload("res://presentation/art/g6_vis.gd")
+	var GhostCloak = preload("res://sim/systems/machine_g6.gd")
+	var p := Vector2(17.5, 22.5)
+	var id := w.spawn_unit("x_ghost_infiltrator", 0, p)
+	var ghost: Dictionary = w.entities[id]
+	check(w.submit({"type": "cloak", "issuer": 0, "unit_ids": [id]}).ok, "Ghost can activate cloak")
+	for i in 28:
+		w.step()
+	var hidden := not GhostCloak.cloak_visible(w, 1, ghost)
+	check(hidden, "stationary Ghost hides from an observer")
+	RenderSnap.build(w)
+	var sn := RenderSnap.latest(w)
+	var cloaked: Dictionary = sn.g6u.get(id, {})
+	check_eq(int(cloaked.get("cloak", 0)), 2, "hidden state reaches the renderer")
+	check(GhostVis.modulate(cloaked, true).a < 1.0, "hidden Ghost has translucent shimmer")
+	var detector := w.spawn_unit("a_cg_tracker", 1, p + Vector2(3, 0))
+	for i in 3:
+		w.step()
+	check(GhostCloak.cloak_visible(w, 1, ghost), "Counter-Ghost tracker reveals beyond ordinary proximity")
+	check(GhostVis.modulate(cloaked, false) != Color.WHITE, "detected Ghost has a reveal tint")
+	w.entities.erase(detector)
+	ghost.last_fired_tick = w.tick
+	w.step()
+	RenderSnap.build(w)
+	var revealed: Dictionary = RenderSnap.latest(w).g6u.get(id, {})
+	check_eq(int(revealed.get("cloak", 0)), 1, "firing disrupts cloak")
+	check_eq(GhostVis.modulate(revealed, true), Color.WHITE, "disrupted cloak restores full opacity")
+	var rid := w.spawn_unit("x_silent_rotor", 0, p + Vector2(2, 3))
+	var rotor: Dictionary = w.entities[rid]
+	var BatchArt = preload("res://presentation/view/batch_art.gd")
+	var cache: Array = BatchArt.new().cache_unit(rotor, Color.WHITE, "test")
+	var frames: Array = _g10_art_spec("x_silent_rotor").frames
+	check_eq(frames[BatchArt.coalition_pose(cache, 0, false, false, 0.0, rid)], "flight", "rotor starts quiet")
+	rotor.last_fired_tick = w.tick
+	RenderSnap.build(w)
+	sn = RenderSnap.latest(w)
+	var flags: int = sn.flags[sn.ids.find(rid)]
+	check_eq(frames[BatchArt.coalition_pose(cache, flags, false, false, 0.0, rid)], "gunship",
+		"the weapons-open silhouette persists after firing")

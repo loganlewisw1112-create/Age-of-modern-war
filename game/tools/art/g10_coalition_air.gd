@@ -232,19 +232,21 @@ static func _draw_silent_rotor(cv, k: int, frame: String) -> void:
 		C.fpt(R, -6.4, 0.0, 4.9), C.fpt(R, -7.6, 0.0, 5.0),
 		C.fpt(R, -7.5, 0.0, 7.0), C.fpt(R, -6.6, 0.0, 6.9),
 	]), C.ramp(STEEL), 2, true)
-	## Stub wings + gun pods (quiet→gunship).
-	for s in [-1.0, 1.0]:
+	## The side bay opens into the gunship's narrow wing. The hull covers the far bay.
+	var s := 1.0 if C.fpt(R, 0, 1.0, 0).y > C.fpt(R, 0, -1.0, 0).y else -1.0
+	if fire or frame == "gunship":
 		C.face(cv, PackedVector2Array([
 			C.fpt(R, 0.8, s * 0.3, 4.3), C.fpt(R, -1.2, s * 0.35, 4.2),
 			C.fpt(R, -0.9, s * 3.4, 3.6), C.fpt(R, 0.5, s * 3.1, 3.7),
-		]), C.ramp(VOID_L if s < 0.0 else BLK_L), 2, s < 0.0)
+		]), C.ramp(VOID_L), 2, s < 0.0)
 		C.tube(cv, C.fpt(R, -0.2, s * 2.6, 3.5), C.fpt(R, 1.6, s * 2.7, 3.3), 0.32 * Z, C.ramp(BLK_D))
 		_muzzle(cv, C.fpt(R, 1.75, s * 2.7, 3.3), fire)
-	## Skids (helo — never CAS gear).
-	for s in [-1.0, 1.0]:
-		C.tube(cv, C.fpt(R, -1.6, s * 1.1, 3.2), C.fpt(R, 2.2, s * 1.15, 3.1), 0.12 * Z, C.ramp(STEEL))
-		C.tube(cv, C.fpt(R, -0.4, s * 0.6, 4.0), C.fpt(R, -0.4, s * 1.1, 3.25), 0.1 * Z, C.ramp(STEEL_L))
-		C.tube(cv, C.fpt(R, 1.4, s * 0.6, 4.1), C.fpt(R, 1.4, s * 1.1, 3.2), 0.1 * Z, C.ramp(STEEL_L))
+	else:
+		C.tube(cv, C.fpt(R, -1.1, s * 0.75, 3.9), C.fpt(R, 0.9, s * 0.75, 4.1), 0.13 * Z, C.ramp(BLK_L))
+	## Near skid and supports.
+	C.tube(cv, C.fpt(R, -1.6, s * 1.1, 3.2), C.fpt(R, 2.2, s * 1.15, 3.1), 0.12 * Z, C.ramp(STEEL))
+	C.tube(cv, C.fpt(R, -0.4, s * 0.6, 4.0), C.fpt(R, -0.4, s * 1.1, 3.25), 0.1 * Z, C.ramp(STEEL_L))
+	C.tube(cv, C.fpt(R, 1.4, s * 0.6, 4.1), C.fpt(R, 1.4, s * 1.1, 3.2), 0.1 * Z, C.ramp(STEEL_L))
 	_team(cv, C.fpt(R, 0.2, -0.7, 5.0), 0.22 * Z)
 	_hit_scar(cv, R, Z, hit)
 

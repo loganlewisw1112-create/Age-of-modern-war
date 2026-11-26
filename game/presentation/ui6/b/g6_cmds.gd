@@ -37,7 +37,7 @@ const UNIT_ACTIONS := {
 	"loadout": ["", "loadout", "panel", "Change the squads' loadout at a nearby barracks or Company HQ (opens the loadout panel)."],
 	"designate": ["designate", "designate", "click an enemy", "Mark a target: friendly strikes and artillery on it are more accurate and arrive sooner."],
 	"breach": ["breach", "breach", "click a wall", "Plant a breaching charge on a wall, gate or building (x2 vs walls and gates)."],
-	"cloak": ["", "cloak", "", "Cloak: the Stalker Synth is invisible while it stands still."],
+	"cloak": ["", "cloak", "", "Cloak: stay still and hold fire to hide. Nearby observers can reveal your unit."],
 	"strike": ["strike", "strike", "click a target", "Launch loitering munitions / a rocket salvo at the clicked enemy or cell."],
 	"deploy_bridge": ["deploy_bridge", "deploy_bridge", "click across water", "Lay the assault bridge from the bank toward the click (up to 6 water tiles)."],
 	"pack_bridge": ["", "deploy_bridge", "", "Pick the bridge back up (nobody may be on it)."],

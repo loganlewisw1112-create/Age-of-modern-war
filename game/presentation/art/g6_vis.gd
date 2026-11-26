@@ -29,9 +29,16 @@ static func art_def(ent, pf: int, dname: String) -> String:
 ## Draw modulate for unit g6u entry ent seen by pf (own = owner or ally): own cloaked translucent,
 ## own submerged dim blue; enemies only ever get here when they spot it (FLAG_HID rule), drawn plain.
 static func modulate(ent, own: bool) -> Color:
-	if ent == null or not own:
+	if ent == null:
 		return Color.WHITE
-	if int(ent.get("cloak", 0)) > 0:
+	var cloak := int(ent.get("cloak", 0))
+	if bool(ent.get("ghost", false)):
+		if cloak == 2:
+			return Color(0.64, 0.93, 0.90, CLOAK_OWN_ALPHA) if own else Color(0.78, 0.94, 1.0)
+		return Color.WHITE
+	if not own:
+		return Color.WHITE
+	if cloak > 0:
 		return Color(1, 1, 1, CLOAK_OWN_ALPHA)
 	if bool(ent.get("sub", false)):
 		return Color(SUB_TINT.r, SUB_TINT.g, SUB_TINT.b, SUB_OWN_ALPHA)

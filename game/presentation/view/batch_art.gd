@@ -67,7 +67,7 @@ func _unit_spec(def: String) -> Dictionary:
 			# G6.1 (ANIMA61): infantry animation set columns ({} = none) / ANIMB61 vehicle anim61 selectors
 			"a61": inf_cols(frames), "v61": veh_cols(spec, frames)}
 		if bool(spec.get("g10", {}).get("anim_board", false)):
-			s.g10 = {"hit": frames.find("hit"), "flight": frames.find("flight"), "run": [frames.find("run_0"), frames.find("run_3")],
+			s.g10 = {"hit": frames.find("hit"), "flight": frames.find("flight"), "gunship": frames.find("gunship"), "run": [frames.find("run_0"), frames.find("run_3")],
 				"die": [frames.find("die_0"), frames.find("die_1"), frames.find("die_2")], "nvg": int(spec.get("nvg_offset", 0))}
 			s.wnd = s.g10.hit
 		if (s.a61 as Dictionary).has("swalk"):   # EXO7-3 CR 6346: walk cadence matched to ground speed (cycles / s at full speed)
@@ -589,6 +589,8 @@ static func coalition_pose(c: Array, flags: int, nvg_down: bool, running: bool, 
 		frame = int(c[15])
 	elif flags & RenderSnap.FLAG_FIRING:
 		frame = int(c[7])
+	elif flags & RenderSnap.FLAG_WEAPONS_OPEN and int(poses.gunship) >= 0:
+		frame = int(poses.gunship)
 	elif int(poses.flight) >= 0 and not (flags & RenderSnap.FLAG_LANDED):
 		frame = int(poses.flight)
 	elif flags & RenderSnap.FLAG_MOVING and bool(c[8]):

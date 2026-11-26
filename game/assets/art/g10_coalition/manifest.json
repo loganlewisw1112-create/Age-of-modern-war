@@ -142,7 +142,7 @@
     "icons/x_shadow_pathfinder.png": "288d78106c5a7f5fe7134d2029c04758",
     "icons/x_shadow_signal.png": "9aaf55d792c8cfa0c94e66dd4fa8edeb",
     "icons/x_shock_drone.png": "cd8df7818462216f35cae50c9ba966a6",
-    "icons/x_silent_rotor.png": "d7e14334cc40178e4a10a098b63e8666",
+    "icons/x_silent_rotor.png": "0d9f317b6b72ba5c7c66c1f1e5b9cc9a",
     "icons/x_sleeper_cell.png": "0d8289dcf883a93d34fcfafe01043df7",
     "icons/x_stealth_drone.png": "301112edf5531d38866d79833c169673",
     "icons/x_stealth_transport.png": "2049f6e8df996db4bd9c8c8d4ee5e639",
@@ -470,8 +470,8 @@
     "units/x_shadow_signal_mask.png": "940e08815473dbcc06c5d2b8ff013cc4",
     "units/x_shock_drone.png": "fee738cd6efaa174108e5eb0ea9eee18",
     "units/x_shock_drone_mask.png": "89ee1f3250ebf72169a0a495e3566022",
-    "units/x_silent_rotor.png": "f1ad61ecf65f47569824e3e5f74e9d9c",
-    "units/x_silent_rotor_mask.png": "253bd8e50bd3ba7ad603b87cd9dbe79b",
+    "units/x_silent_rotor.png": "226e9bfaf6d8855fae2f2f685c4b62b4",
+    "units/x_silent_rotor_mask.png": "b66034af05571cfd667a840b7de4f800",
     "units/x_sleeper_cell.png": "4c48c2f220c88c7544d5be00a9249b91",
     "units/x_sleeper_cell_mask.png": "90664e4117d6aafafef139dc74c87c37",
     "units/x_stealth_drone.png": "3d8ba1d77547c1cbf19f3e85f9f3514f",
@@ -4142,7 +4142,8 @@
         "idle",
         "flight",
         "fire",
-        "hit"
+        "hit",
+        "gunship"
       ],
       "fw": 80,
       "g10": {

@@ -21,6 +21,7 @@ const PIVOT := Vector2i(40, 54)
 ## Real animation board frames (Human A FIG pose names; hit → wounded).
 const FRAMES_INF := ["idle", "walk_a", "walk_b", "run_0", "fire", "hit", "die_0", "run_3", "die_1", "die_2"]
 const FRAMES_TRANSPORT := ["idle", "flight", "fire", "hit", "unload"]
+const FRAMES_ROTOR := ["idle", "flight", "fire", "hit", "gunship"]
 const FRAMES_AIR := AIR.FRAMES_AIR
 ## Sample-gate scale: Human A g7_cn_fig at sc_mul (native ~18 px → readable strip mass).
 ## CLOSE AIR = AIR_Z (~3× infantry strip presence). VEH_Z/BLD_Z kept for deferred drawers only.
@@ -145,7 +146,11 @@ static func build_samples() -> Dictionary:
 	_sheet_anim(out, "x_death_strike", "infantry", _draw_death_strike, FRAMES_INF, true)
 	_sheet_anim(out, "x_prototype_walker", "vehicles", _draw_walker, FRAMES_INF, true)
 	for aid in AIR_SAMPLES:
-		var frames: Array = FRAMES_TRANSPORT if aid == "x_stealth_transport" else FRAMES_AIR
+		var frames: Array = FRAMES_AIR
+		if aid == "x_stealth_transport":
+			frames = FRAMES_TRANSPORT
+		elif aid == "x_silent_rotor":
+			frames = FRAMES_ROTOR
 		_sheet_anim(out, aid, "vehicles", func(cv, k, fname): AIR.draw(cv, aid, k, fname), frames)
 	## TECHNICAL + SAFEHOUSE/HATCH intentionally omitted from look package (deferred).
 	return out

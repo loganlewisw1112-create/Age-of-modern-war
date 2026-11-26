@@ -427,7 +427,19 @@ static func _cloak_step(w: SimWorld, st: Dictionary, rr: Dictionary) -> void:
 		var quiet := w.tick - int(e.get("last_fired_tick", -1000000))
 		var hid := still >= _ticks(float(cr.get("still_s", 1.0))) and quiet >= _ticks(float(cr.get("fire_reveal_s", 2.0)))
 		if hid:
-			e.cloak_spot = _spot(w, e, float(cr.get("detect_range", 2.0)))
+			var radius := float(cr.get("detect_range", 2.0))
+			var spotted := _spot(w, e, radius)
+			if String(e.def) == "x_ghost_infiltrator":
+				var own_team := _team(w, int(e.owner))
+				for observer in _g4b().near_units(w, e.pos, radius * 2.0):
+					var fid := int(observer.owner)
+					var team := _team(w, fid)
+					if fid == SimWorld.NEUTRAL or team == own_team or spotted.has(team):
+						continue
+					if String(_def(observer).get("cg_support", "")) in ["tracker", "sensor"]:
+						spotted.append(team)
+				spotted.sort()
+			e.cloak_spot = spotted
 		elif bool(e.get("cloak_hid", false)):
 			e.cloak_spot = []
 		e.cloak_hid = hid
@@ -452,13 +464,13 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		"cloak":
 			var ids = cmd.get("unit_ids", [])
 			if not (ids is Array) or (ids as Array).is_empty():
-				return "Select Stalker Synths to cloak."
+				return "Select units with camouflage."
 			for id in ids:
 				var e = w.entities.get(int(id))
 				if e == null or e.kind != "unit" or int(e.owner) != fid:
 					return "Select your own units."
 				if not Content.unit(String(e.def)).has("cloak"):
-					return "Only Stalker Synths can cloak."
+					return "This unit has no camouflage."
 			return ""
 	return "unknown_command"
 
