@@ -1,7 +1,7 @@
 extends SceneTree
 ## E4 batch A closest 100-squad stress: spawn 100+ Death 4-ops under g10_100_squad caps.
 ## Full Task-22 g10_100_squad_soak.gd not present — config+spawn+short-run invariant probe.
-## Usage: godot --headless --path game -s res://tools/g10_e4_100_squad_stress.gd
+## Usage: godot --headless --path game -s res://tools/g10_e4_100_squad_stress.gd -- --squads=120 --ticks=900
 
 const Economy = preload("res://sim/systems/economy.gd")
 
@@ -31,6 +31,12 @@ func _init() -> void:
 	w.factions[0].credits = int(stress.credits)
 	Economy.tick(w)
 	var need := int(stress.min_squads)
+	var ticks := 120
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--squads="):
+			need = maxi(need, int(arg.substr(9)))
+		elif arg.begins_with("--ticks="):
+			ticks = maxi(1, int(arg.substr(8)))
 	var squad_size := int(stress.get("squad_size", 4))
 	var death_id := "x_death_strike"
 	if Content.unit(death_id).is_empty():
@@ -54,7 +60,9 @@ func _init() -> void:
 		if members.size() < squad_size:
 			break
 		spawned_squads += 1
-	w.run_ticks(120)
+	var started := Time.get_ticks_msec()
+	w.run_ticks(ticks)
+	var elapsed_ms := Time.get_ticks_msec() - started
 	var ordinary_cap := int(Content.rules().get("pop_cap_max", 0))
 	var ok: bool = (
 		spawned_squads >= need
@@ -72,7 +80,8 @@ func _init() -> void:
 		"ordinary_skirmish_pop_cap_max": ordinary_cap,
 		"units0": w.units_of(0).size(),
 		"tick": int(w.tick),
-		"note": "stress_only closest probe; dedicated g10_100_squad_soak.gd absent",
+		"elapsed_ms": elapsed_ms,
+		"mean_tick_ms": snappedf(float(elapsed_ms) / ticks, 0.01),
 	}
 	print("G10_E4_100_FACT " + JSON.stringify(fact))
 	quit(0 if ok else 1)

@@ -1,89 +1,72 @@
-# G7.1 playable package: import -> export-pack -> exe+dll+PLAY_ME -> build/ + Downloads + zip.
-# Usage: powershell -NoProfile -File game/.plan/package_g71.ps1
-param([string]$Note = "")
+# Build a Windows package from this checkout and keep earlier packages intact.
+param(
+  [string]$Note = "",
+  [string]$Destination = (Join-Path ([Environment]::GetFolderPath("UserProfile")) "Downloads\Age of Modern War")
+)
+
 $ErrorActionPreference = "Stop"
-$root = "C:\CODING\PROJECTS - CURRENTLY WORKING ON\RTS Age of Modern Warfare"
-$godot = "C:\Users\logan\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe"
-$godotWin = "C:\Users\logan\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64.exe"
+$root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..")).Path
+$game = Join-Path $root "game"
+$godot = (Get-Command "Godot*stable*win64_console.exe" -CommandType Application | Select-Object -First 1).Source
+$godotWin = $godot.Replace("_console.exe", ".exe")
+if (-not (Test-Path -LiteralPath $godotWin)) { throw "Godot Windows runner is missing." }
+
 $sha = (git -C $root rev-parse --short HEAD).Trim()
-$day = Get-Date -Format "yyyy-MM-dd"
-$tag = "G71_${day}_$sha"
-# Keep only the newest KeepN packages so disk does not fill with ~100MB pcks each commit.
-$KeepN = 2
-$dstParent = "C:\Users\logan\Downloads\Age of Modern War"
-foreach ($parent in @((Join-Path $root "build"), $dstParent)) {
-  if (-not (Test-Path $parent)) { continue }
-  $dirs = @(Get-ChildItem $parent -Directory -Filter "RTS_Age_of_Modern_War_G71_*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime)
-  if ($dirs.Count -gt $KeepN) {
-    $dirs | Select-Object -First ($dirs.Count - $KeepN) | ForEach-Object {
-      Write-Host "PRUNE $($_.FullName)"
-      Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
-    }
-  }
-  $zips = @(Get-ChildItem $parent -Filter "RTS_Age_of_Modern_War_G71_*.zip" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime)
-  if ($zips.Count -gt $KeepN) {
-    $zips | Select-Object -First ($zips.Count - $KeepN) | ForEach-Object {
-      Write-Host "PRUNE $($_.FullName)"
-      Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-    }
-  }
+if ($LASTEXITCODE -ne 0) { throw "Could not determine the package commit." }
+$tag = "G71_{0}_{1}" -f (Get-Date -Format "yyyy-MM-dd"), $sha
+$baseName = "RTS_Age_of_Modern_War_$tag"
+$build = Join-Path $root "build"
+$out = Join-Path $build $baseName
+$dst = Join-Path $Destination $baseName
+$zip = Join-Path $Destination "$baseName.zip"
+foreach ($path in @($out, $dst, $zip)) {
+  if (Test-Path -LiteralPath $path) { throw "Package path already exists: $path" }
 }
-$out = Join-Path $root "build\RTS_Age_of_Modern_War_$tag"
-New-Item -ItemType Directory -Force -Path $out | Out-Null
-$docsPlay = Join-Path $root "game\docs\PLAY_ME_G71_2026-11-22.txt"
-$playPath = Join-Path $root "build\PLAY_ME_G71.txt"
-if (Test-Path $docsPlay) {
-  Copy-Item $docsPlay $playPath -Force
-} elseif (-not (Test-Path $playPath)) {
-  @(
-    "RTS: Age of Modern War - G7.1 playable ($sha)"
-    "PLAY: double-click RTS_Age_of_Modern_War.exe"
-    "Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it."
-    "LAST PROTOCOL: main menu > Last Protocol."
-  ) | Set-Content -Path $playPath -Encoding ascii
-}
+
+New-Item -ItemType Directory -Path $out -Force | Out-Null
+$docsPlay = Join-Path $game "docs\PLAY_ME_G71_2026-11-22.txt"
+$play = Get-Content -LiteralPath $docsPlay -Raw
+("Commit: $sha" + [Environment]::NewLine + [Environment]::NewLine + $play.TrimEnd()) |
+  Set-Content -LiteralPath (Join-Path $out "PLAY_ME.txt") -Encoding utf8
 if ($Note -ne "") {
-  Add-Content -Path $playPath -Value $Note -Encoding ascii
+  Add-Content -LiteralPath (Join-Path $out "PLAY_ME.txt") -Value $Note -Encoding utf8
 }
-$play = Get-Content $playPath -Raw
-if ($play -notmatch [regex]::Escape($sha)) {
-  Set-Content -Path $playPath -Value ("Commit: $sha`r`n`r`n" + $play) -Encoding ascii
+$lookSrc = Join-Path $game ".plan\shots\G71_LOOK"
+$lookDoc = Join-Path $game "docs\G71_LOOK_CHECKPOINT.md"
+if (Test-Path -LiteralPath $lookSrc) {
+  Copy-Item -LiteralPath $lookSrc -Destination (Join-Path $out "G71_LOOK_CHECKPOINT") -Recurse
 }
-Copy-Item $playPath (Join-Path $out "PLAY_ME.txt") -Force
-$lookSrc = Join-Path $root "game\.plan\shots\G71_LOOK"
-$lookDoc = Join-Path $root "game\docs\G71_LOOK_CHECKPOINT.md"
-if (Test-Path $lookDoc) {
-  Copy-Item $lookDoc (Join-Path $out "G71_LOOK_CHECKPOINT.md") -Force
+if (Test-Path -LiteralPath $lookDoc) {
+  Copy-Item -LiteralPath $lookDoc -Destination $out
 }
-if (Test-Path $lookSrc) {
-  $lookOut = Join-Path $out "G71_LOOK_CHECKPOINT"
-  New-Item -ItemType Directory -Force -Path $lookOut | Out-Null
-  Copy-Item (Join-Path $lookSrc "*") $lookOut -Force
-  $lookDstParent = Join-Path $dstParent "G71_LOOK_CHECKPOINT"
-  New-Item -ItemType Directory -Force -Path $lookDstParent | Out-Null
-  Copy-Item (Join-Path $lookSrc "*") $lookDstParent -Force
+$blueprint = Join-Path $game "docs\G10_1_DEFERRED_ART.md"
+if (Test-Path -LiteralPath $blueprint) {
+  $doc = (Get-Content -LiteralPath $blueprint -Raw).Replace("../.plan/shots/G71_LOOK/", "G71_LOOK_CHECKPOINT/")
+  $doc | Set-Content -LiteralPath (Join-Path $out "G10_1_DEFERRED_ART.md") -Encoding utf8
 }
-Set-Location (Join-Path $root "game")
-Write-Host "IMPORT_START $sha -> $out"
-& $godot --headless --path . --import *> (Join-Path $root "build\import_G71.log")
-Write-Host "IMPORT_EXIT $LASTEXITCODE"
+
+$importLog = Join-Path $build "import_$tag.log"
+$exportLog = Join-Path $build "export_$tag.log"
 $pck = Join-Path $out "RTS_Age_of_Modern_War.pck"
-& $godot --headless --path . --export-pack "Windows Desktop" $pck *> (Join-Path $root "build\export_G71.log")
-Write-Host "EXPORT_EXIT $LASTEXITCODE"
-if (-not (Test-Path $pck)) { throw "export failed: no pck" }
-Copy-Item $godotWin (Join-Path $out "RTS_Age_of_Modern_War.exe") -Force
-Copy-Item $godot (Join-Path $out "RTS_Age_of_Modern_War_console.exe") -Force
-Copy-Item (Join-Path $root "game\bin\rts_core.dll") (Join-Path $out "rts_core.dll") -Force
-$md5 = (Get-FileHash $pck -Algorithm MD5).Hash.ToLower()
-$len = (Get-Item $pck).Length
-Write-Host "PCK_MD5 $md5 SIZE $len"
-New-Item -ItemType Directory -Force -Path $dstParent | Out-Null
-$dst = Join-Path $dstParent "RTS_Age_of_Modern_War_$tag"
-if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
-Copy-Item $out $dst -Recurse -Force
-$zip = Join-Path $dstParent "RTS_Age_of_Modern_War_$tag.zip"
-if (Test-Path $zip) { Remove-Item $zip -Force }
-Compress-Archive -Path $dst -DestinationPath $zip -Force
+& $godot --headless --path $game --import *> $importLog
+if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath $importLog -Pattern "SCRIPT ERROR|^ERROR:" -Quiet)) {
+  throw "Godot import failed. See $importLog"
+}
+& $godot --headless --path $game --export-pack "Windows Desktop" $pck *> $exportLog
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $pck)) { throw "Export failed. See $exportLog" }
+
+Copy-Item -LiteralPath $godotWin -Destination (Join-Path $out "RTS_Age_of_Modern_War.exe")
+Copy-Item -LiteralPath $godot -Destination (Join-Path $out "RTS_Age_of_Modern_War_console.exe")
+Copy-Item -LiteralPath (Join-Path $game "bin\rts_core.dll") -Destination $out
+$bin = Join-Path $out "bin"
+New-Item -ItemType Directory -Path $bin | Out-Null
+Copy-Item -LiteralPath (Join-Path $game "bin\rts_core.dll") -Destination $bin
+
+New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+Copy-Item -LiteralPath $out -Destination $dst -Recurse
+Compress-Archive -LiteralPath $dst -DestinationPath $zip
+$sha256 = (Get-FileHash -LiteralPath $pck -Algorithm SHA256).Hash.ToLowerInvariant()
+Write-Host "PCK_SHA256 $sha256"
 Write-Host "DOWNLOADS $dst"
 Write-Host "ZIP $zip"
 Write-Host "PACKAGE_DONE $tag"

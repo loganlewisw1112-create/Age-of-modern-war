@@ -9,7 +9,7 @@ Offline single-player real-time strategy in **Godot 4.7.2**, with a Rust native 
 
 Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, **Pre-G10**, and **G10 Shadow Coalition** are closed (`g10.lock`).
 
-G10.1 stabilization is in progress. Coalition infantry and the six Coalition aircraft use their authored four-direction sprites in the battle view as the camera rotates. The eight-seat Stealth Transport can land, pick up infantry, deploy them at a new landing zone and return with them aboard. Coalition infantry switch to lowered NVGs at dusk and night, and the green laser appears in the firing pose. Ghost Infiltrators shimmer while concealed, and Counter-Ghost trackers and sensors can expose them nearby. The Silent Rotor visibly deploys its weapons when it first fires.
+The G10.1 stabilization build is available for review. Coalition infantry and the six Coalition aircraft use their authored four-direction sprites in the battle view as the camera rotates. The eight-seat Stealth Transport can land, pick up infantry, deploy them at a new landing zone and return with them aboard. Coalition infantry switch to lowered NVGs at dusk and night, and the green laser appears in the firing pose. Ghost Infiltrators shimmer while concealed, and Counter-Ghost trackers and sensors can expose them nearby. The Silent Rotor visibly deploys its weapons when it first fires.
 
 The 31 previously deferred Coalition vehicles and facilities have candidate art in the playable catalog. The Safehouse and concealed facilities show cover art until revealed to that player. Review the designs in [G10.1 deferred art candidates](game/docs/G10_1_DEFERRED_ART.md). Owner look approval is pending.
 
@@ -217,6 +217,8 @@ Detail and acceptance live in `game/docs/ROADMAP.md`. Design contracts and older
 ---
 
 ## Play the packaged build
+
+For G10.1, extract the fresh `RTS_Age_of_Modern_War_G71_<date>_<commit>.zip` and open `RTS_Age_of_Modern_War.exe`. The accompanying `PLAY_ME.txt` identifies the commit and describes the new controls.
 
 Latest Windows package (auto-refreshed every ship):
 

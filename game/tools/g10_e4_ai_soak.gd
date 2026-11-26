@@ -8,10 +8,18 @@ const G3bData = preload("res://presentation/hud/g3b_data.gd")
 
 func _init() -> void:
 	var ticks := 900
+	var four_faction := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--ticks="):
 			ticks = int(a.substr(8))
+		elif a == "--four-faction":
+			four_faction = true
 	Content.load_all()
+	if four_faction:
+		var result := _four_faction_soak(ticks)
+		print("G10_E4_FOUR_FACTION_FACT " + JSON.stringify(result))
+		quit(0 if result.ok else 1)
+		return
 	var rows: Array = []
 	var all_ok := true
 	for pair in [
@@ -79,3 +87,42 @@ func _soak(label: String, foe: String, seed: int, ticks: int) -> Dictionary:
 		"units0": w.units_of(0).size(),
 		"units1": w.units_of(1).size(),
 	}
+
+
+## An extended game uses only the normal AI and simulation entry points.
+func _four_faction_soak(ticks: int) -> Dictionary:
+	var cfg := SimWorld.default_config()
+	cfg.seed = 10113
+	cfg.victory = "endless"
+	cfg.sides = []
+	for faction in ["human_a", "human_b", "machine", "shadow_coalition"]:
+		cfg.sides.append({"faction": faction, "stage": 8, "credits": 5000, "ai": true,
+			"name": faction, "team": cfg.sides.size()})
+	var w := SimWorld.new_match(cfg)
+	if w == null:
+		return {"label": "four_faction", "ok": false, "err": "match creation failed"}
+	var required := ["combat", "training", "coalition_ops"]
+	var observed := {"combat": 0, "training": 0, "coalition_ops": 0}
+	var started := Time.get_ticks_msec()
+	var failure := ""
+	for i in ticks:
+		w.step()
+		for ev in w.events:
+			match String(ev.type):
+				"Damage":
+					observed.combat += 1
+				"ProductionCompleted":
+					observed.training += 1
+				"CoalitionAi10Op":
+					observed.coalition_ops += 1
+		for fid in w.factions:
+			var side: Dictionary = w.factions[fid]
+			if int(side.credits) < 0 or (side.stock as Dictionary).values().any(func(value): return int(value) < 0):
+				failure = "negative stock for side %d at tick %d" % [fid, w.tick]
+				break
+		if failure != "":
+			break
+	if failure == "" and required.any(func(key): return int(observed[key]) == 0):
+		failure = "missing combat, production or Coalition operation"
+	return {"label": "four_faction", "ok": failure == "", "err": failure, "ticks": w.tick,
+		"elapsed_ms": Time.get_ticks_msec() - started, "observed": observed, "hash": w.state_hash()}

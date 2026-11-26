@@ -364,3 +364,5 @@
 {"seq":317,"ts":"2026-11-26T21:29:46.1131737Z","from":"ORCH","to":"*","type":"RELEASE","topic":"g10.1.strategy_economy","data":{"slice":"Phase E"}}
 {"seq":318,"ts":"2026-11-26T21:29:46.1134984Z","from":"ORCH","to":"*","type":"CLAIM","topic":"g10.1.coalition_depth","data":{"paths":["game/presentation/ui10","game/presentation/hud/hud.gd","game/sim/systems/ghost*.gd","game/sim/systems/coalition*.gd","game/tests"]}}
 {"seq":319,"ts":"2026-11-26T21:38:15.4005664Z","from":"ORCH","to":"*","type":"FACT","topic":"g10.1.coalition_depth.ghost","data":{"compatibility_fix":"b0a8a2ee","detail":"MatchView queued a field mission and four live operators approached, fought and returned.","readme":true,"ghost_pass":16,"commit":"9cc6bab7"}}
+{"seq":320,"ts":"2026-11-26T21:38:41.7873753Z","from":"ORCH","to":"*","type":"FACT","topic":"g10.1.coalition_depth.operations","data":{"dark_pass":7,"ghost_pass":16,"mechanics_pass":6,"tech_pass":7,"commit":"f79feb89","readme":true}}
+{"seq":321,"ts":"2026-11-26T21:38:41.7903244Z","from":"ORCH","to":"*","type":"STATUS","topic":"g10.1.package","data":{"slice":"Export and clean-folder verification","owner_look":"pending"}}
