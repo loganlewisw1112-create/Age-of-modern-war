@@ -24,7 +24,6 @@ LOOK / DEFERRED ART (owner 2026-11-24)
   Optional: Ghost strip owner look (non-blocking)
 
 LEFT OPEN
-  TECHNICAL / SAFEHOUSE / HATCH look redesign (owner-deferred)
   Campaign, UNDERSTRIKE, later polish remain future slices
   Peak chase continues (amended gate still held)
 
@@ -38,7 +37,7 @@ G10.1 STABILIZATION BUILD
   Stealth Transport: land, board infantry, fly to a deployment point and reboard for extraction.
   Coalition NVGs lower at dusk and night. Green aiming lasers appear when firing.
   Ghost Infiltrators shimmer while concealed. Trackers and sensors can reveal them nearby.
-  Technicals and concealed facilities use candidate art. Owner look approval is pending.
+  The owner approved all 31 previously deferred Coalition vehicle and facility designs on November 26, 2026.
   Q / E rotates the battlefield while preserving the point under the camera.
   Open Coalition in the match HUD for doctrine and Ghost missions. Scout a structure, build a Ghost Complex and field four healthy operators.
   Coalition Advanced lists dark operations, technology acquisition and patron contracts.
