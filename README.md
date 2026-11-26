@@ -220,17 +220,13 @@ Detail and acceptance live in `game/docs/ROADMAP.md`. Design contracts and older
 
 For G10.1, extract the fresh `RTS_Age_of_Modern_War_G71_<date>_<commit>.zip` and open `RTS_Age_of_Modern_War.exe`. The accompanying `PLAY_ME.txt` identifies the commit and describes the new controls.
 
-Latest Windows package (auto-refreshed every ship):
+Latest Windows stabilization package
 
 `Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_*`
 
-**Package size (latest build):** 282 MB unpacked · 180 MB zip — `RTS_Age_of_Modern_War_G71_2026-11-24_5f55236c` (295539045 bytes folder / 188419151 bytes zip).
+**Verified package:** `RTS_Age_of_Modern_War_G71_2026-11-26_a55edea8` (295462050 bytes folder / 188364190 bytes zip). See the [G10.1 stabilization report](.superpowers/sdd/g10.1-stabilization-report.md).
 
-Keep these three together:
-
-- `RTS_Age_of_Modern_War.exe`
-- `RTS_Age_of_Modern_War.pck`
-- `rts_core.dll`
+Keep the extracted folder together, including the executable, data pack and native engine files.
 
 Double-click the exe. Main menu → **Last Protocol** or **Skirmish**.
 
