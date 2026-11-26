@@ -19,7 +19,8 @@ const FH := 64
 const FACINGS := 4  ## N/E/S/W
 const PIVOT := Vector2i(40, 54)
 ## Real animation board frames (Human A FIG pose names; hit → wounded).
-const FRAMES_INF := ["idle", "walk_a", "walk_b", "run_0", "fire", "hit", "die_0"]
+const FRAMES_INF := ["idle", "walk_a", "walk_b", "run_0", "fire", "hit", "die_0", "run_3", "die_1", "die_2"]
+const FRAMES_TRANSPORT := ["idle", "flight", "fire", "hit", "unload"]
 const FRAMES_AIR := AIR.FRAMES_AIR
 ## Sample-gate scale: Human A g7_cn_fig at sc_mul (native ~18 px → readable strip mass).
 ## CLOSE AIR = AIR_Z (~3× infantry strip presence). VEH_Z/BLD_Z kept for deferred drawers only.
@@ -140,11 +141,12 @@ static func build_samples() -> Dictionary:
 		"notes": "Post-lock polish — exo NVG up/down + green laser + fire hold; stealth transport tilt-rotor redesign; TECHNICAL+SAFEHOUSE/HATCH deferred",
 	}
 	var out := {"images": {}, "manifest": man}
-	_sheet_anim(out, "x_cell_rifle", "infantry", _draw_cell_rifle, FRAMES_INF)
-	_sheet_anim(out, "x_death_strike", "infantry", _draw_death_strike, FRAMES_INF)
-	_sheet_anim(out, "x_prototype_walker", "vehicles", _draw_walker, FRAMES_INF)
+	_sheet_anim(out, "x_cell_rifle", "infantry", _draw_cell_rifle, FRAMES_INF, true)
+	_sheet_anim(out, "x_death_strike", "infantry", _draw_death_strike, FRAMES_INF, true)
+	_sheet_anim(out, "x_prototype_walker", "vehicles", _draw_walker, FRAMES_INF, true)
 	for aid in AIR_SAMPLES:
-		_sheet_anim(out, aid, "vehicles", func(cv, k, fname): AIR.draw(cv, aid, k, fname), FRAMES_AIR)
+		var frames: Array = FRAMES_TRANSPORT if aid == "x_stealth_transport" else FRAMES_AIR
+		_sheet_anim(out, aid, "vehicles", func(cv, k, fname): AIR.draw(cv, aid, k, fname), frames)
 	## TECHNICAL + SAFEHOUSE/HATCH intentionally omitted from look package (deferred).
 	return out
 
@@ -156,14 +158,18 @@ static func _fig_pose(fname: String) -> String:
 	return fname
 
 
-static func _sheet_anim(out: Dictionary, id: String, sec: String, drawer: Callable, frames: Array) -> void:
-	var cols := frames.size()
+static func _sheet_anim(out: Dictionary, id: String, sec: String, drawer: Callable, frames: Array, night_frames := false) -> void:
+	var names := frames.duplicate()
+	if night_frames:
+		for name in frames:
+			names.append(String(name) + "_nvg_down")
+	var cols := names.size()
 	var img := Image.create(FW * cols, FH * FACINGS, false, Image.FORMAT_RGBA8)
 	var msk := Image.create(FW * cols, FH * FACINGS, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	msk.fill(Color(0, 0, 0, 0))
 	for fi in cols:
-		var fname := String(frames[fi])
+		var fname := String(names[fi])
 		for k in FACINGS:
 			var cv = P.Canvas.new(FW, FH)
 			drawer.call(cv, k, fname)
@@ -178,7 +184,7 @@ static func _sheet_anim(out: Dictionary, id: String, sec: String, drawer: Callab
 		"mask": stem + "_mask.png",
 		"fw": FW, "fh": FH,
 		"pivot": [PIVOT.x, PIVOT.y],
-		"frames": frames.duplicate(),
+		"frames": names,
 		"facings": FACINGS,
 		"g10": {
 			"sample": true,
@@ -188,6 +194,8 @@ static func _sheet_anim(out: Dictionary, id: String, sec: String, drawer: Callab
 			"unique_air": id in AIR_SAMPLES,
 		},
 	}
+	if night_frames:
+		spec["nvg_offset"] = frames.size()
 	(out.manifest[sec] as Dictionary)[id] = spec
 	## Icon from idle / E facing.
 	C.icon(out, id, img, FW, FH, 1)
@@ -298,12 +306,12 @@ static func _kit_walker(nvg_down: bool = false) -> Dictionary:
 
 ## CELL: Human A FIG drawer — real pose per anim-board frame (4-facing → even 8-dir index).
 static func _draw_cell_rifle(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_cell(false), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), FIG_SC)
+	FIG.draw(cv, _kit_cell(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), FIG_SC)
 
 
 ## DEATH: same Human A body, sealed elite black kit, slightly taller sample scale (NVG UP / day default).
 static func _draw_death_strike(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_death(false), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), DEATH_SC)
+	FIG.draw(cv, _kit_death(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), DEATH_SC)
 
 
 ## DEFERRED — not emitted to look package / strips (owner 2026-11-24). Kept for later redesign.
@@ -655,7 +663,7 @@ static func _draw_patron_cas(cv, k: int, fname: String = "idle") -> void:
 
 ## WALKER: Human A sealed elite body (taller sample scale) + heavy launcher — NOT stick / digitigrade / mecha.
 static func _draw_walker(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_walker(false), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), WLK_SC)
+	FIG.draw(cv, _kit_walker(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), WLK_SC)
 
 
 ## --- contact strips ----------------------------------------------------------

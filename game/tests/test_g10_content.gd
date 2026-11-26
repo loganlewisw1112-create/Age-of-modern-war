@@ -412,3 +412,60 @@ func test_g10_four_facing_sheets_resolve_at_runtime() -> void:
 			check(pixels != null and pixels.get_size() == Vector2i(size) and pixels.get_used_rect().has_area(),
 				"%s has visible pixels at camera %d" % [ids[i], camera])
 	ViewUtil.view_facing = saved
+
+
+func test_g10_runtime_poses_follow_snapshot_state() -> void:
+	var BatchArt = preload("res://presentation/view/batch_art.gd")
+	var batch = BatchArt.new()
+	var w := _coalition_world()
+	var uid := w.spawn_unit("x_death_strike", 0, Vector2(12, 12))
+	var e: Dictionary = w.entities[uid]
+	var cache: Array = batch.cache_unit(e, Color.WHITE, "test")
+	check(int(cache[2]) >= 0 and not (cache[42] as Dictionary).is_empty(), "Death squad pose sheet loads")
+	if (cache[42] as Dictionary).is_empty():
+		return
+	var day := BatchArt.coalition_pose(cache, 0, false, false, 0.0, uid)
+	var art_spec := _g10_art_spec("x_death_strike")
+	var frames: Array = art_spec.frames
+	var image: Image = ArtCatalog._image(art_spec.file)
+	var size := Vector2i(cache[4], cache[5])
+	var day_pixels := image.get_region(Rect2i(Vector2i(day * size.x, size.y), size))
+	for phase in ["day", "dusk", "night", "dawn"]:
+		w.sys_state["tod71"] = {"phase": phase}
+		RenderSnap.build(w)
+		var down: bool = RenderSnap.latest(w).get("nvg_down", false)
+		check_eq(down, phase in ["dusk", "night"], "%s NVG state" % phase)
+		var fi := BatchArt.coalition_pose(cache, 0, down, false, 0.0, uid)
+		check_eq(frames[fi], "idle_nvg_down" if down else "idle", "%s selects the right NVG frame" % phase)
+		var pixels := image.get_region(Rect2i(Vector2i(fi * size.x, size.y), size))
+		check_eq(pixels.get_data() == day_pixels.get_data(), not down, "%s sprite pixels match the NVG state" % phase)
+	e.last_hit_tick = w.tick
+	RenderSnap.build(w)
+	var sn := RenderSnap.latest(w)
+	var flags: int = sn.flags[sn.ids.find(uid)]
+	var hit := BatchArt.coalition_pose(cache, flags, false, false, 0.0, uid)
+	check_eq(frames[hit], "hit", "recent damage selects the hit reaction")
+	var run := BatchArt.coalition_pose(cache, RenderSnap.FLAG_MOVING, false, true, 0.0, 0)
+	check_eq(frames[run], "run_0", "sprint uses its own pose")
+	check_eq(cache[42].die.size(), 3, "death has three stages")
+	var fire := BatchArt.coalition_pose(cache, RenderSnap.FLAG_FIRING, false, false, 0.0, uid)
+	check_eq(frames[fire], "fire", "firing selects the shouldered weapon pose")
+	var beam_colors := [Color8(40, 220, 72), Color8(72, 255, 120)]
+	var found_beam := false
+	var idle_beam := false
+	for row in 4:
+		for y in size.y:
+			for x in size.x:
+				found_beam = found_beam or image.get_pixel(fire * size.x + x, row * size.y + y) in beam_colors
+				idle_beam = idle_beam or image.get_pixel(day * size.x + x, row * size.y + y) in beam_colors
+	check(found_beam and not idle_beam, "green beam appears only in the firing pose")
+	var t := {"id": -2, "kind": "unit", "owner": 0, "def": "x_stealth_transport"}
+	var tc: Array = batch.cache_unit(t, Color.WHITE, "test")
+	var air_frames: Array = _g10_art_spec(t.def).frames
+	if (tc[42] as Dictionary).is_empty():
+		check(false, "transport pose sheet loads")
+		return
+	check_eq(air_frames[BatchArt.coalition_pose(tc, 0, false, false, 0.0, 0)], "flight", "airborne transport")
+	check_eq(air_frames[BatchArt.coalition_pose(tc, RenderSnap.FLAG_LANDED, false, false, 0.0, 0)], "idle", "landed ramp closed")
+	check_eq(air_frames[BatchArt.coalition_pose(tc, RenderSnap.FLAG_LANDED | RenderSnap.FLAG_UNLOAD, false, false, 0.0, 0)],
+		"unload", "deployment opens the transport ramp")

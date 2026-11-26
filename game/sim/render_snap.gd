@@ -47,6 +47,7 @@ const FLAG_EVAC := 1 << 23      # carrier with wounded aboard (medical carriers)
 const FLAG_NEEDY := 1 << 24     # unit flagged needy by Support (auto resupply scan): supply icon
 const FLAG_RESUP := 1 << 25     # unit claimed by a resupply truck (e.resup_by): supply icon (served)
 const FLAG_TACTICAL := 1 << 26  # Drone Team in tactical mode (G5Mech.mode == "tactical"): tactical frame
+const FLAG_RECENT_HIT := 1 << 28  # Coalition hit reaction window
 const FLAG_SLUNG := 1 << 27     # sling carrier with a vehicle under it (snap.sling[id] lists the defs)
 const DEF_AIRCRAFT := 1 << 28   # def table only: G5 aircraft (def `aircraft`) or launched drone
 const DEF_SQUAD := 1 << 27      # def table only: squad entity (squad_size > 1)
@@ -197,6 +198,8 @@ static func build(w) -> void:
 				fl |= FLAG_MOVING
 			if e.firing > 0:
 				fl |= FLAG_FIRING
+			if dname.begins_with("x_") and int(w.tick) - int(e.get("last_hit_tick", -1000)) < 4:
+				fl |= FLAG_RECENT_HIT
 			if dfl2 & DEF_G4B:
 				if e.get("hid", false):
 					fl |= FLAG_HID
@@ -326,6 +329,9 @@ static func build(w) -> void:
 		# PackedByteArray refs (copy-on-write): terrain changes only via bridge / fire events
 		"terrain": w.map.get("terrain", PackedByteArray()), "biome": w.map.get("biome", PackedByteArray()),
 	}
+	var phase := String(w.sys_state.get("tod71", {}).get("phase", "day"))
+	if phase in ["dusk", "night"]:
+		snap["nvg_down"] = true
 	_g5_out(w, snap, g5)
 	_g6_out(w, snap, g6)
 	if w.sys_state.has("dronebay7"):   # G7 DRONEBAY7 CR 5833: bay drones on / rising from the workshop launch deck (g7u bz = min lift px)

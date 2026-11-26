@@ -416,7 +416,10 @@ func on_destroyed(id: int, def_name: String = "") -> void:
 	if dname.is_empty() and dc is Array and (dc as Array).size() > 0:
 		dname = String(dc[0])
 	var dk := Motion.death_kind_for(dname) if not dname.is_empty() else Motion.DK_NONE
-	if dk != Motion.DK_NONE and mv != null:
+	var poses: Dictionary = dc[42] if dc is Array and dc.size() > 42 else {}
+	if not poses.is_empty() and int(poses.die[0]) >= 0 and mv != null:
+		motion.kill(id, dc, mv.anim_time())
+	elif dk != Motion.DK_NONE and mv != null:
 		motion.kill_machine(id, mv.anim_time(), dk)
 	# EXO7-3 CR 6360: a CN armoured suit (the only infantry-sheet unit with a 12-frame swalk and a sim wreck entity) leaves
 	# its wreck only, never a second infantry corpse beside it
@@ -792,7 +795,7 @@ func _rc_capture() -> Dictionary:
 var rc_reject := 0   # records refused because the derived frame differed from the full path's (should stay 0)
 func _rc_put(i: int, id: int, c: Array, fl: int, a61: Dictionary, row: int, fi: int, ii: int, dname: String, d0: String,
 		sq: bool, ok: bool, t: float) -> int:
-	if not ok or dname != d0 or (_def_flags(d0) & 3) != 0 or int(c[2]) < 0 or int(c[27]) >= 0 \
+	if not ok or not (c[42] as Dictionary).is_empty() or dname != d0 or (_def_flags(d0) & 3) != 0 or int(c[2]) < 0 or int(c[27]) >= 0 \
 			or (fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC | RenderSnap.FLAG_SLUNG | RenderSnap.FLAG_SHIP | RenderSnap.FLAG_ABOARD)) != 0 \
 			or (a61.has("k8_tum") and _k8.has(id)):
 		return -1
@@ -1104,6 +1107,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 	var sq7_n := sq7f.size()
 	var has_x7 := not x7.is_empty()
 	var stick := int(sn.get("tick", 0))
+	var nvg_down := bool(sn.get("nvg_down", false))
 	var units_drawn := 0
 	# G7 PERFFPS7: the snap defs table only appends within one world, but a new world (new match / playtest scene)
 	# builds its own table from scratch: drop the flags when the cached names are no longer its prefix (ORCH fix).
@@ -1492,7 +1496,9 @@ func _refresh(rc: bool, rs: bool) -> void:
 			_g5_markers(sp, fl, id, t, neutral, gc5)
 			continue
 		var fi := 0
-		if g7c >= 0:
+		if not (c[42] as Dictionary).is_empty():
+			fi = BatchArt.coalition_pose(c, fl, nvg_down, (bits & Motion.P_RUN) != 0, t, id)
+		elif g7c >= 0:
 			fi = g7c   # G7 (LOOK7): wound / care / panic / gait / back-off / peek pose
 			gc61.g7 += 1
 		elif fl & RenderSnap.FLAG_WOUNDED:
@@ -1923,7 +1929,8 @@ func _push_corpses(vr: Rect2, t: float, gc61: Dictionary) -> void:
 			continue
 		var cc: Array = cp[1]
 		var age := t - float(cp[4])
-		var dcols: Array = (cc[31] as Dictionary).get("die", [])
+		var poses: Dictionary = cc[42]
+		var dcols: Array = poses.die if not poses.is_empty() else (cc[31] as Dictionary).get("die", [])
 		if dcols.is_empty():
 			continue
 		var crow := int(cp[3])
@@ -1960,7 +1967,10 @@ func _push_corpses(vr: Rect2, t: float, gc61: Dictionary) -> void:
 				else:
 					cfi = k8_lie_col(a8, k8_variant(int(cp[0]), float(th[3])), t, int(cp[0]), false)
 		crow = ViewFacing.sheet_row(crow)   # G8 ANIM8: death / k8 corpse rows follow camera
-		art.frame_src(cc, cfi if cfi >= 0 else int(dcols[Motion.corpse_frame(age)]), crow)
+		var column := cfi if cfi >= 0 else int(dcols[Motion.corpse_frame(age)])
+		if not poses.is_empty() and bool(mv.snap.get("nvg_down", false)):
+			column += int(poses.nvg)
+		art.frame_src(cc, column, crow)
 		if art.out_page < 0:
 			continue
 		var dst: Vector2 = csp + art.out_doff  # G6.1 (ANIMC61): cropped cell offset / signed size from frame_src

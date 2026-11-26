@@ -10,6 +10,7 @@ const ViewUtil = preload("res://presentation/view/view_util.gd")
 const BatchAtlas = preload("res://presentation/view/batch_atlas.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
 const G5Art = preload("res://presentation/art/g5_art.gd")
+const RenderSnap = preload("res://sim/render_snap.gd")
 
 var atlas = BatchAtlas.new()
 var out_page := -1
@@ -65,6 +66,10 @@ func _unit_spec(def: String) -> Dictionary:
 			"cmd": frames.find("command"),
 			# G6.1 (ANIMA61): infantry animation set columns ({} = none) / ANIMB61 vehicle anim61 selectors
 			"a61": inf_cols(frames), "v61": veh_cols(spec, frames)}
+		if bool(spec.get("g10", {}).get("anim_board", false)):
+			s.g10 = {"hit": frames.find("hit"), "flight": frames.find("flight"), "run": [frames.find("run_0"), frames.find("run_3")],
+				"die": [frames.find("die_0"), frames.find("die_1"), frames.find("die_2")], "nvg": int(spec.get("nvg_offset", 0))}
+			s.wnd = s.g10.hit
 		if (s.a61 as Dictionary).has("swalk"):   # EXO7-3 CR 6346: walk cadence matched to ground speed (cycles / s at full speed)
 			var g7s = spec.get("g7", {})
 			var stl := float(g7s.get("stride_tiles", 0.8)) if g7s is Dictionary else 0.8
@@ -491,7 +496,7 @@ func _fallback(e: Dictionary, team: Color) -> void:
 ## squad_alive (0 = full sheet), wounded, tactical, carry, dive, parked, landed, air anim cols, move anim cols, anim fps,
 ## wake, swim, swim_move, ramp, command (G6 officer pose, index 30), G6.1 infantry set cols (31, {} = none),
 ## G6.1 vehicle anim61 cols (32, {} = none), G6.1 split block B: page (33, -1 = none), origin (34), base column (35,
-## NO_BLK = none), column lut (36), block-B cell columns (37), block-B src table col * 8 + row (38), size table (39), offset table (40), sheet facings (41)]
+## NO_BLK = none), column lut (36), block-B cell columns (37), block-B src table col * 8 + row (38), size table (39), offset table (40), sheet facings (41), G10 pose columns (42)]
 ## (page -2 = fallback; frame index -1 = the sheet has no such column).
 func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var def := String(e.def)
@@ -499,7 +504,7 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var alive := int(e.get("squad_alive", 0))
 	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1, -1, -1,
 		alive, -1, -1, -1, -1, -1, -1, [], [], 8.0, {}, -1, -1, -1, -1, {}, {},
-		-1, Vector2.ZERO, NO_BLK, PackedInt32Array(), 1, PackedVector2Array(), PackedVector2Array(), PackedVector2Array(), 8]
+		-1, Vector2.ZERO, NO_BLK, PackedInt32Array(), 1, PackedVector2Array(), PackedVector2Array(), PackedVector2Array(), 8, {}]
 	if not s.is_empty():
 		c[41] = int(s.spec.get("facings", 8))
 		var sh: Dictionary = G5Art.squad_sheet(s.spec, alive)  # G5: alive_sheets[n] for a reduced squad
@@ -568,8 +573,28 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 			c[30] = int(s.get("cmd", -1))
 			c[31] = s.get("a61", {})
 			c[32] = s.get("v61", {})
+			c[42] = s.get("g10", {})
 	_ec[int(e.id)] = c
 	return c
+
+
+## G10 sheets use a short pose set. The snapshot supplies lighting, flight and damage state.
+static func coalition_pose(c: Array, flags: int, nvg_down: bool, running: bool, t: float, id: int) -> int:
+	var poses: Dictionary = c[42]
+	var frame := 0
+	var phase := int(t * (9.0 if running else 6.0) + id * 0.37) & 1
+	if flags & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_RECENT_HIT):
+		frame = int(poses.hit)
+	elif flags & RenderSnap.FLAG_UNLOAD and flags & RenderSnap.FLAG_LANDED and int(c[15]) >= 0:
+		frame = int(c[15])
+	elif flags & RenderSnap.FLAG_FIRING:
+		frame = int(c[7])
+	elif int(poses.flight) >= 0 and not (flags & RenderSnap.FLAG_LANDED):
+		frame = int(poses.flight)
+	elif flags & RenderSnap.FLAG_MOVING and bool(c[8]):
+		var run_col := int(poses.run[phase])
+		frame = run_col if running and run_col >= 0 else int(c[9 + phase])
+	return maxi(0, frame) + (int(poses.nvg) if nvg_down else 0)
 
 
 ## Resolves a unit's current frame. anim_t = MatchView.anim_time().
@@ -700,7 +725,7 @@ func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
 				var img: Image = ArtCatalog._image(String(vw.file))
 				var fw := int(vw.fw)
 				var fh := int(vw.fh)
-				var row := ArtCatalog.facing_index(float(e.get("facing", 0.0)))
+				var row := posmod(int(round(float(e.get("facing", 0.0)) / ArtCatalog.FACING_STEP)), 8)
 				if img != null and img.get_width() >= fw and img.get_height() >= (row + 1) * fh:
 					var key := String(vw.file)
 					var pg := atlas.add(key, img)

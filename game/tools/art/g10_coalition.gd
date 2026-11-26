@@ -247,7 +247,6 @@ static func _copy_unique_air(out: Dictionary, base: Dictionary) -> void:
 		var spec := tspec.duplicate(true)
 		spec["file"] = stem + ".png"
 		spec["mask"] = stem + "_mask.png"
-		spec["frames"] = FRAMES_AIR.duplicate()
 		if not (spec.get("g10") is Dictionary):
 			spec["g10"] = {}
 		(spec["g10"] as Dictionary)["bulk"] = true
@@ -286,11 +285,6 @@ static func _clone_family(out: Dictionary, base: Dictionary, template_id: String
 		var spec := tspec.duplicate(true)
 		spec["file"] = stem + ".png"
 		spec["mask"] = stem + "_mask.png"
-		## Preserve multi-frame anim board from template.
-		if template_id == "x_patron_cas":
-			spec["frames"] = FRAMES_AIR.duplicate()
-		else:
-			spec["frames"] = FRAMES_INF.duplicate()
 		if not (spec.get("g10") is Dictionary):
 			spec["g10"] = {}
 		(spec["g10"] as Dictionary)["bulk"] = true
@@ -336,7 +330,6 @@ static func _build_ghost_set(out: Dictionary, base: Dictionary) -> void:
 		var spec := tspec.duplicate(true)
 		spec["file"] = stem + ".png"
 		spec["mask"] = stem + "_mask.png"
-		spec["frames"] = FRAMES_INF.duplicate()
 		spec["g10"] = {
 			"bulk": true,
 			"bulk_wave": 4,

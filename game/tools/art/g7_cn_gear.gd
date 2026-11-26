@@ -243,9 +243,11 @@ static func _green_laser(cv, wb: Vector2, wt: Vector2, d: Vector2, n: Vector2, Z
 	var unit := _at(wb, wt, 0.58) + n * 0.55 * Z
 	C.blob(cv, unit, 0.32 * Z, C.ramp(Color8(36, 42, 32)))
 	C.tube(cv, unit, unit + d * 0.55 * Z, 0.14 * Z, C.ramp(Color8(48, 56, 40)))
+	if not flash:
+		return
 	cv.px(int(unit.x), int(unit.y), Color8(48, 230, 80))
 	var beam0 := _at(wb, wt, 0.72) + n * 0.28 * Z
-	var beam1 := wt + d * (5.0 if flash else 3.6) * Z + n * 0.12 * Z
+	var beam1 := wt + d * 5.0 * Z + n * 0.12 * Z
 	cv.line_v(beam0, beam1, Color8(40, 220, 72))
 	cv.line_v(beam0 + Vector2(0, 1), beam1 + Vector2(0, 1), Color8(72, 255, 120))
 

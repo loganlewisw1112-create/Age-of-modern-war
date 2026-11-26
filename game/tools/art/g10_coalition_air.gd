@@ -260,7 +260,7 @@ static func _draw_stealth_transport(cv, k: int, frame: String) -> void:
 	C.ground_shadow(cv, Vector2(PIVOT) + Vector2(0, 2), 38.0, 12.0)
 	var fire := frame == "fire"
 	var hit := frame == "hit"
-	var open := frame == "flight" or frame == "fire"
+	var open := frame == "unload"
 	var tilt := 0.08 if frame == "idle" else (1.05 if frame == "flight" else 0.6)
 	## LONG cargo tube fuselage — professional insert craft, not a blended wing mass.
 	C.tube(cv, C.fpt(R, -5.8, 0.0, 3.75), C.fpt(R, 5.0, 0.0, 4.15), 0.88 * Z, C.ramp(BLK))
@@ -299,7 +299,7 @@ static func _draw_stealth_transport(cv, k: int, frame: String) -> void:
 		C.blob(cv, C.fpt(R, nf + 1.4, s * 4.9, nz + 0.12), 0.42 * Z, C.ramp(VOID_D))
 		C.blob(cv, C.fpt(R, nf - 0.8, s * 4.9, nz), 0.4 * Z, C.ramp(STEEL))
 		## Thin prop — two blades only (idle) / edge streak (flight). Never a filled radar disc.
-		if frame == "idle" or frame == "hit":
+		if frame == "idle" or frame == "hit" or open:
 			C.tube(cv, C.fpt(R, nf + 1.35, s * 4.9 - 1.5, nz + 0.15), C.fpt(R, nf + 1.35, s * 4.9 + 1.5, nz + 0.15),
 				0.1 * Z, C.ramp(STEEL_L))
 			C.tube(cv, C.fpt(R, nf + 1.35 - 1.15, s * 4.9, nz + 0.15), C.fpt(R, nf + 1.35 + 1.15, s * 4.9, nz + 0.15),
@@ -330,7 +330,7 @@ static func _draw_stealth_transport(cv, k: int, frame: String) -> void:
 			C.fpt(R, -6.4, 0.75, 4.65), C.fpt(R, -6.4, -0.75, 4.65),
 		]), C.ramp(Color8(118, 96, 64)), 1, false)
 	## Tricycle gear (idle) — grounds it as a real insert craft.
-	if frame == "idle" or frame == "hit":
+	if frame == "idle" or frame == "hit" or open:
 		C.tube(cv, C.fpt(R, 4.6, 0.0, 3.5), C.fpt(R, 4.6, 0.0, 2.2), 0.12 * Z, C.ramp(STEEL))
 		C.blob(cv, C.fpt(R, 4.6, 0.0, 2.05), 0.28 * Z, C.ramp(BLK_D))
 		for s in [-1.0, 1.0]:
