@@ -125,7 +125,7 @@ func refresh() -> void:
 		visible = false
 		return
 	visible = true
-	var b: Dictionary = GhostConductor10.board(w, fid)
+	var b: Dictionary = GhostConductor10.board(w, fid, match_view == null)
 	var bits := "Card %s · ROE %s · target %s · intel %s" % [
 		selected_template, selected_roe, selected_target, String(b.get("intel_grade", "?")),
 	]

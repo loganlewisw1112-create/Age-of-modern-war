@@ -282,11 +282,11 @@ static func disrupt_conductor(w: SimWorld, stage: String) -> Dictionary:
 	return {"ok": false, "reason": "Unknown disrupt stage."}
 
 
-static func board(w: SimWorld, fid: int) -> Dictionary:
+static func board(w: SimWorld, fid: int, initialize := true) -> Dictionary:
 	if not Coalition10.active(w, fid):
 		return {}
+	var s: Dictionary = _side(w, fid) if initialize else w.sys_state.get(KEY, {}).get("factions", {}).get(str(fid), {})
 	var st: Dictionary = w.sys_state.get(KEY, {})
-	var s: Dictionary = st.get("factions", {}).get(str(fid), {})
 	return {
 		"intel_grade": String(s.get("intel_grade", "rumour")),
 		"workshop_ok": bool(s.get("workshop_ok", true)),

@@ -177,11 +177,11 @@ static func _refresh_layer(s: Dictionary) -> void:
 		s.layer = "cells"
 
 
-static func board(w: SimWorld, fid: int) -> Dictionary:
+static func board(w: SimWorld, fid: int, initialize := true) -> Dictionary:
 	if not active(w, fid):
 		return {}
 	var rows: Dictionary = w.sys_state.get(KEY, {}).get("factions", {})
-	var s: Dictionary = rows.get(str(fid), {})
+	var s: Dictionary = _side(w, fid) if initialize else rows.get(str(fid), {})
 	return {
 		"intent": String(s.get("intent", "harry")),
 		"layer": String(s.get("layer", "cells")),

@@ -95,7 +95,7 @@ func refresh() -> void:
 		visible = false
 		return
 	visible = true
-	var b: Dictionary = Coalition10.board(w, fid)
+	var b: Dictionary = Coalition10.board(w, fid, match_view == null)
 	_layer_lbl.text = "Layer: %s · Intent: %s" % [String(b.get("layer", "cells")), String(b.get("intent", "harry"))]
 	_board_lbl.text = "cells=%s  contracts=%s  favour=%s  intel=%s  ghost=%s  tech=%s" % [
 		str(b.get("cells", 0)),
