@@ -385,3 +385,30 @@ func test_g10_close_air_state_polish() -> void:
 		var h := ctx.finish().hex_encode()
 		check(not sil_hashes.has(h), "%s silhouette must be unique vs %s" % [id, sil_hashes.get(h, "")])
 		sil_hashes[h] = id
+
+
+func test_g10_four_facing_sheets_resolve_at_runtime() -> void:
+	var BatchArt = preload("res://presentation/view/batch_art.gd")
+	var ViewUtil = preload("res://presentation/view/view_util.gd")
+	var batch = BatchArt.new()
+	var saved: int = ViewUtil.view_facing
+	var ids := ["x_death_strike", "x_stealth_transport", "x_patron_cas", "x_silent_rotor",
+		"x_stealth_drone", "x_shock_drone", "x_recon_drone"]
+	for i in ids.size():
+		var e := {"id": i, "def": ids[i], "kind": "unit", "owner": 0, "facing": PI * 0.5, "firing": 1}
+		var cached: Array = batch.cache_unit(e, Color.WHITE, "test")
+		check(int(cached[2]) >= 0 and int(cached[41]) == 4, "%s uses a four-facing atlas sheet" % ids[i])
+		if int(cached[2]) < 0:
+			continue
+		var size := Vector2(cached[4], cached[5])
+		for camera in 4:
+			ViewUtil.view_facing = camera
+			batch.resolve_unit(e, Color.WHITE, "test", 0.0)
+			var row := posmod(1 - camera, 4)
+			var expected := Rect2(Vector2(cached[3]) + Vector2(cached[7], row) * size, size)
+			check_eq(batch.out_src, expected, "%s firing region at camera %d" % [ids[i], camera])
+			var sprite := ArtCatalog.entity_sprite(e, Color.WHITE, 0.0)
+			var pixels: Image = sprite.texture.get_image()
+			check(pixels != null and pixels.get_size() == Vector2i(size) and pixels.get_used_rect().has_area(),
+				"%s has visible pixels at camera %d" % [ids[i], camera])
+	ViewUtil.view_facing = saved

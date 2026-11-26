@@ -1278,7 +1278,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 					else:
 						var r_fsz := Vector2(r_c[4], r_c[5])
 						_page[r_ii] = r_c[2]
-						_src[r_ii] = (r_c[3] as Vector2) + Vector2(r_fi if r_fi < int(r_c[35]) else 0, r_row) * r_fsz
+						_src[r_ii] = (r_c[3] as Vector2) + Vector2(r_fi if r_fi < int(r_c[35]) else 0, ArtCatalog.unit_sheet_row(r_row, int(r_c[41]))) * r_fsz
 						_dst[r_ii] = r_sp + (r_c[6] as Vector2)
 						_dsz[r_ii] = r_fsz
 						_size[r_ii] = r_fsz
@@ -1668,7 +1668,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 				gc61.flipped += 1
 		else:
 			_page[ii] = pg
-			_src[ii] = (c[3] as Vector2) + Vector2(fi if fi < int(c[35]) else 0, row) * fsz
+			_src[ii] = (c[3] as Vector2) + Vector2(fi if fi < int(c[35]) else 0, ArtCatalog.unit_sheet_row(row, int(c[41]))) * fsz
 			_dst[ii] = sp + (c[6] as Vector2)
 			_dsz[ii] = fsz
 			_size[ii] = fsz
@@ -2868,6 +2868,9 @@ static func _sw_v(v: Dictionary, k: String) -> int:
 func _sw_reg_unit(id: int, c: Array, dx: int, ow: int, mcls: int, v61: Dictionary, dname: String, d0: String) -> void:
 	_sw_reg[id] = c
 	var a61f := _sw_a61_flat(c[31] as Dictionary) if _sw65 else PackedInt32Array()
+	if int(c[41]) != 8:
+		_sw.forget(id)
+		return
 	var a61_ok: bool = (c[31] as Dictionary).is_empty() or (_sw65 and a61f.size() == 26)
 	if dname != d0 or not a61_ok or bool(c[12]) or int(c[27]) >= 0 or int(c[16]) != 0 \
 			or int(c[2]) < 0 or v61.has("turret") or ApcGun7.DEFS.has(dname) or dx >= _dfl.size() or _dfl[dx] != 0 \

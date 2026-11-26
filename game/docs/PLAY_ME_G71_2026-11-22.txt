@@ -32,3 +32,6 @@ HARNESS
   Smoke: powershell -File game/tools/g71_donewhen_smoke.ps1
   Soak:  godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90
   PRES8: godot --headless --path game -s res://tools/pres8_eor_harness.gd
+
+G10.1 IN PROGRESS
+  Authored Coalition infantry and aircraft sprites follow all four camera views.

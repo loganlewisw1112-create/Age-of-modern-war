@@ -299,7 +299,7 @@ func frame_src(c: Array, fi: int, row: int) -> void:
 			return
 		fi = 0
 	out_page = c[2]
-	out_src = Rect2((c[3] as Vector2) + Vector2(fi, row) * fsz, fsz)
+	out_src = Rect2((c[3] as Vector2) + Vector2(fi, ArtCatalog.unit_sheet_row(row, int(c[41]))) * fsz, fsz)
 	out_flip = false
 	out_off = c[6]
 	out_doff = c[6]
@@ -491,7 +491,7 @@ func _fallback(e: Dictionary, team: Color) -> void:
 ## squad_alive (0 = full sheet), wounded, tactical, carry, dive, parked, landed, air anim cols, move anim cols, anim fps,
 ## wake, swim, swim_move, ramp, command (G6 officer pose, index 30), G6.1 infantry set cols (31, {} = none),
 ## G6.1 vehicle anim61 cols (32, {} = none), G6.1 split block B: page (33, -1 = none), origin (34), base column (35,
-## NO_BLK = none), column lut (36), block-B cell columns (37), block-B src table col * 8 + row (38)]
+## NO_BLK = none), column lut (36), block-B cell columns (37), block-B src table col * 8 + row (38), size table (39), offset table (40), sheet facings (41)]
 ## (page -2 = fallback; frame index -1 = the sheet has no such column).
 func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var def := String(e.def)
@@ -499,8 +499,9 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var alive := int(e.get("squad_alive", 0))
 	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1, -1, -1,
 		alive, -1, -1, -1, -1, -1, -1, [], [], 8.0, {}, -1, -1, -1, -1, {}, {},
-		-1, Vector2.ZERO, NO_BLK, PackedInt32Array(), 1, PackedVector2Array(), PackedVector2Array(), PackedVector2Array()]
+		-1, Vector2.ZERO, NO_BLK, PackedInt32Array(), 1, PackedVector2Array(), PackedVector2Array(), PackedVector2Array(), 8]
 	if not s.is_empty():
+		c[41] = int(s.spec.get("facings", 8))
 		var sh: Dictionary = G5Art.squad_sheet(s.spec, alive)  # G5: alive_sheets[n] for a reduced squad
 		var key: String = String(sh.file) + "|" + ck
 		var split := not (s.get("blk", {}) as Dictionary).is_empty()
@@ -512,7 +513,7 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 				pg = atlas.add(key, simg)
 		elif pg < 0:
 			var img: Image = ArtCatalog._sheet(String(sh.file), String(sh.get("mask", "")), team)
-			if img != null and img.get_width() >= int(s.fw) * maxi(1, int(s.n)) and img.get_height() >= int(s.fh) * 8:
+			if img != null and img.get_width() >= int(s.fw) * maxi(1, int(s.n)) and img.get_height() >= int(s.fh) * int(c[41]):
 				pg = atlas.add(key, img)
 		if pg >= 0 and split:
 			# G6.1 (ANIMC61): block-B tables from the sheet's packed layout (cropped cells, mirrored rows)
@@ -595,7 +596,7 @@ func resolve_unit(e: Dictionary, team: Color, ck: String, anim_t: float) -> void
 		else:
 			fi = int(c[11]) if ph % 2 == 0 else 0
 	fi = maxi(0, fi)
-	var row := posmod(int(round(float(e.get("facing", 0.0)) / ArtCatalog.FACING_STEP)), 8)
+	var row := ArtCatalog.facing_index(float(e.get("facing", 0.0)))
 	frame_src(c, fi, row)
 	if out_flip:  # G6.1: mirrored row; callers draw out_src unflipped, so fall back to the stored row 0/4/3 pose
 		out_flip = false
@@ -699,7 +700,7 @@ func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
 				var img: Image = ArtCatalog._image(String(vw.file))
 				var fw := int(vw.fw)
 				var fh := int(vw.fh)
-				var row := posmod(int(round(float(e.get("facing", 0.0)) / ArtCatalog.FACING_STEP)), 8)
+				var row := ArtCatalog.facing_index(float(e.get("facing", 0.0)))
 				if img != null and img.get_width() >= fw and img.get_height() >= (row + 1) * fh:
 					var key := String(vw.file)
 					var pg := atlas.add(key, img)

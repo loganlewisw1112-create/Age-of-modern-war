@@ -342,6 +342,11 @@ static func facing_index(facing: float) -> int:
 	return VF.sheet_row(row) if VF != null else row
 
 
+## Four-facing sheets store the even rows of the standard eight-facing layout.
+static func unit_sheet_row(row: int, facings: int) -> int:
+	return ((row + 1) >> 1) & 3 if facings == 4 else row
+
+
 static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) -> Dictionary:
 	load_all()
 	var def := String(e.get("def", ""))
@@ -365,7 +370,8 @@ static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) ->
 						fi = frames.find("walk_a") if ph % 2 == 0 else frames.find("walk_b")
 					else:
 						fi = frames.find("move") if ph % 2 == 0 else 0
-				return _sheet_sprite(spec, team_color, maxi(0, fi), facing_index(float(e.get("facing", 0.0))))
+				var row := facing_index(float(e.get("facing", 0.0)))
+				return _sheet_sprite(spec, team_color, maxi(0, fi), unit_sheet_row(row, int(spec.get("facings", 8))))
 		"building":
 			var b: Dictionary = _man.get("buildings", {}).get(def, {})
 			if not b.is_empty():
