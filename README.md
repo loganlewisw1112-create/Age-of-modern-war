@@ -13,6 +13,8 @@ G10.1 stabilization is in progress. Coalition infantry and the six Coalition air
 
 The 31 previously deferred Coalition vehicles and facilities have candidate art in the playable catalog. The Safehouse and concealed facilities show cover art until revealed to that player. Review the designs in [G10.1 deferred art candidates](game/docs/G10_1_DEFERRED_ART.md). Owner look approval is pending.
 
+Use **Q / E** during a match to rotate the battlefield around the point under the camera. Terrain, fog and tactical markers follow the new view, and the minimap stays oriented to the map.
+
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">
 </p>

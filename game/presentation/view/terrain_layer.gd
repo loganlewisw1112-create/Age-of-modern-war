@@ -32,6 +32,7 @@ extends Node2D
 ##  - Maps without height bake and draw exactly as before (Sprite2D chunks).
 
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const ViewFacing = preload("res://presentation/view/view_facing.gd")
 const CHUNK := 16
 const EAGER_MAX := 64
 const CHUNK_CAP := 56
@@ -59,6 +60,15 @@ var _recv: PackedByteArray = PackedByteArray()
 var _masks: Dictionary = {}        # art -> [edge[16], corner[16]] (mask atlases, for per-biome composites)
 var _w := 0
 var _h := 0
+var _facing := 0
+var _rotated := false
+var _world_size := Vector2i.ZERO
+var _world_height: Dictionary = {}
+var _raster_offset := Vector2.ZERO
+var _last_terrain := PackedByteArray()
+var _raster_terrain := PackedByteArray()
+var _last_biome := PackedByteArray()
+var _raster_biome := PackedByteArray()
 var _below := 32
 var _chunks: Dictionary = {}       # Vector2i chunk origin -> Sprite2D
 var _seen: Dictionary = {}         # Vector2i -> frame last in view
@@ -141,27 +151,43 @@ func setup(view: Node2D) -> void:
 	mv = view
 	var t0 := Time.get_ticks_msec()
 	var m0 := _map()
-	_w = int(m0.get("w", 0))
-	_h = int(m0.get("h", 0))
-	_prefill()
-	_load_g6()
+	_world_size = Vector2i(int(m0.get("w", 0)), int(m0.get("h", 0)))
+	_w = _world_size.y if _facing & 1 else _world_size.x
+	_h = _world_size.x if _facing & 1 else _world_size.y
+	_raster_offset = ViewUtil.iso_raw(Vector2(ViewFacing.raster_offset(_world_size, _facing)))
+	_last_terrain = PackedByteArray()
+	_raster_terrain = PackedByteArray()
+	_last_biome = PackedByteArray()
+	_raster_biome = PackedByteArray()
+	if _tile_cache.is_empty():
+		_prefill()
+		_load_g6()
 	_read_height()
 	_update_lift()
 	var biome := _biome_arr()
 	if _any_biome(biome):
 		_load_biomes()
 	var n := ((_w + CHUNK - 1) / CHUNK) * ((_h + CHUNK - 1) / CHUNK)
-	lazy = n > EAGER_MAX
+	lazy = _rotated or n > EAGER_MAX
 	if lazy:
 		_build_base()
 		_show_base = true
 	else:
+		var terrain := _terrain()
 		for cy0 in range(0, _h, CHUNK):
 			for cx0 in range(0, _w, CHUNK):
-				_install(Vector2i(cx0, cy0), _bake(cx0, cy0, m0.terrain, biome, _hg(), _rp()))
+				_install(Vector2i(cx0, cy0), _bake(cx0, cy0, terrain, biome, _hg(), _rp()))
 	bake_ms = Time.get_ticks_msec() - t0
 	print("TERRAIN %s %d chunks (%dx%d)%s in %d ms" % ["lazy base +" if lazy else "baked", _chunks.size(), _w, _h,
 		" height" if not hmap.is_empty() else "", bake_ms])
+
+
+func set_view_facing(facing: int) -> void:
+	if _facing == facing:
+		return
+	_facing = facing
+	_rotated = true
+	rebuild()
 
 
 ## G4 editor: the map was replaced or resized; drop every chunk and bake again.
@@ -169,7 +195,9 @@ func rebuild() -> void:
 	_exit_tree()
 	_results.clear()
 	for k in _chunks:
-		(_chunks[k] as Node).queue_free()
+		var chunk: Node = _chunks[k]
+		remove_child(chunk)
+		chunk.queue_free()
 	_chunks.clear()
 	_seen.clear()
 	_avg.clear()
@@ -193,7 +221,7 @@ func _draw() -> void:
 	var bh := maxf(16000.0, float(_w + _h) * 16.0 + 4000.0)
 	draw_rect(Rect2(Vector2(-bw, -8000), Vector2(2.0 * bw, bh + 8000.0)), Color(0.03, 0.035, 0.04))
 	if _show_base and _base_tex != null:
-		draw_set_transform_matrix(Transform2D(Vector2(32, 16), Vector2(-32, 16), Vector2.ZERO))
+		draw_set_transform_matrix(Transform2D(Vector2(32, 16), Vector2(-32, 16), -_raster_offset))
 		draw_texture_rect(_base_tex, Rect2(Vector2.ZERO, Vector2(_base_img.get_size())), false)
 		draw_set_transform_matrix(Transform2D.IDENTITY)
 
@@ -391,7 +419,12 @@ func _biome_arr() -> PackedByteArray:
 		var m := _map()
 		b = m.get("biome") if not m.is_empty() else null
 	if b is PackedByteArray and b.size() == _w * _h:
-		return b
+		if _facing == 0:
+			return b
+		if b != _last_biome:
+			_last_biome = b
+			_raster_biome = ViewFacing.raster_bytes(b, _world_size, _facing)
+		return _raster_biome
 	return PackedByteArray()
 
 
@@ -408,10 +441,13 @@ func _busy_snap() -> Dictionary:
 
 func _terrain() -> PackedByteArray:
 	var s := _busy_snap()
-	if not s.is_empty():
-		return s.terrain
-	var m := _map()
-	return m.terrain if m.has("terrain") else PackedByteArray()
+	var source: PackedByteArray = s.terrain if not s.is_empty() else _map().get("terrain", PackedByteArray())
+	if _facing == 0:
+		return source
+	if source != _last_terrain:
+		_last_terrain = source
+		_raster_terrain = ViewFacing.raster_bytes(source, _world_size, _facing)
+	return _raster_terrain
 
 
 func _any_biome(b: PackedByteArray) -> bool:
@@ -493,18 +529,20 @@ func _overlays(img: Image, terrain: PackedByteArray, x: int, y: int, code: int, 
 # ---------------------------------------------------------------- G6 terrain height (ELEV-VIEW)
 ## Height-map dict of the drawn map ({} = flat). Pickers and VIEW6 pass it to ViewUtil (thread-safe: arrays only).
 func height_map() -> Dictionary:
-	return hmap
+	return _world_height
 
 
 ## Refresh lift_px: every cell when `cells` is empty or the size changed, else the given cells and their
 ## 4-neighbours (a ramp's slope depends on its neighbours' levels). Plain cells: (level - 1) * level_px.
 func _update_lift(cells: Array = []) -> void:
-	if hmap.is_empty():
+	if _world_height.is_empty():
 		lift_px = PackedFloat32Array()
 		return
-	var hg: PackedByteArray = hmap.height
-	var rp: PackedByteArray = hmap.ramps
-	var n := _w * _h
+	var hg: PackedByteArray = _world_height.height
+	var rp: PackedByteArray = _world_height.ramps
+	var w := _world_size.x
+	var h := _world_size.y
+	var n := w * h
 	var todo: Array = []
 	if cells.is_empty() or lift_px.size() != n:
 		lift_px.resize(n)
@@ -513,7 +551,7 @@ func _update_lift(cells: Array = []) -> void:
 		if rp.size() == n:  # ramps and their 4-neighbours (plain corners bending with a ramp pair)
 			for i in n:
 				if rp[i] != 0:
-					var c := Vector2i(i % _w, i / _w)
+					var c := Vector2i(i % w, i / w)
 					todo.append_array([c, c + Vector2i(1, 0), c + Vector2i(-1, 0), c + Vector2i(0, 1), c + Vector2i(0, -1)])
 	else:
 		for c in cells:
@@ -522,8 +560,8 @@ func _update_lift(cells: Array = []) -> void:
 					todo.append(Vector2i(int(c.x) + dx, int(c.y) + dy))
 	for c in todo:
 		var q: Vector2i = c
-		if q.x >= 0 and q.y >= 0 and q.x < _w and q.y < _h:
-			lift_px[q.y * _w + q.x] = ViewUtil.ground_lift(hmap, Vector2(q) + Vector2(0.5, 0.5))
+		if q.x >= 0 and q.y >= 0 and q.x < w and q.y < h:
+			lift_px[q.y * w + q.x] = ViewUtil.ground_lift(_world_height, Vector2(q) + Vector2(0.5, 0.5))
 
 
 func _hg() -> PackedByteArray:
@@ -538,7 +576,11 @@ func _rp() -> PackedByteArray:
 func _read_height() -> void:
 	var m := _map()
 	if _busy_snap().is_empty() and not m.is_empty():
-		hmap = ViewUtil.height_map_of(m)
+		_world_height = ViewUtil.height_map_of(m)
+		hmap = _world_height
+		if _facing != 0 and not _world_height.is_empty():
+			hmap = {"w": _w, "h": _h, "height": ViewFacing.raster_bytes(_world_height.height, _world_size, _facing),
+				"ramps": ViewFacing.raster_bytes(_world_height.ramps, _world_size, _facing)}
 	height_ver += 1
 	if not hmap.is_empty() and _hmat == null:
 		var sh := Shader.new()
@@ -951,7 +993,7 @@ func _install(key: Vector2i, res) -> void:
 		else:
 			spr = MeshInstance2D.new()
 		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		spr.position = mv.world_to_screen(Vector2(key)) + Vector2(-CHUNK * 32, -pad)
+		spr.position = ViewUtil.iso_raw(Vector2(key)) - _raster_offset + Vector2(-CHUNK * 32, -pad)
 		spr.set_meta("k", key)
 		add_child(spr)
 		_order(spr, key)
@@ -1004,8 +1046,9 @@ func rebake_cells(cells: Array) -> void:
 	var rad := 1 if hmap.is_empty() else 2
 	var done := {}
 	for c in cells:
-		var cx := int(c.x)
-		var cy := int(c.y)
+		var cell := ViewFacing.raster_cell(Vector2i(c), _world_size, _facing)
+		var cx := cell.x
+		var cy := cell.y
 		if cx < 0 or cy < 0 or cx >= _w or cy >= _h:
 			continue
 		if lazy and _base_img != null:
@@ -1110,7 +1153,7 @@ func tick() -> void:
 	var lo := Vector2i(1 << 20, 1 << 20)
 	var hi := Vector2i(-(1 << 20), -(1 << 20))
 	for sp in corners:
-		var wp: Vector2 = mv.screen_to_world(sp)
+		var wp := ViewUtil.iso_inv_raw(sp + _raster_offset)
 		lo = Vector2i(mini(lo.x, floori(wp.x)), mini(lo.y, floori(wp.y)))
 		hi = Vector2i(maxi(hi.x, ceili(wp.x)), maxi(hi.y, ceili(wp.y)))
 	var want: Array = []
@@ -1123,11 +1166,13 @@ func tick() -> void:
 			_seen[key] = _frame
 			if not _chunks.has(key) and not _pending.has(key):
 				want.append(key)
-	var biome := _biome_arr()
-	for key in want:
-		if _pending.size() >= MAX_PENDING:
-			break
-		_pending[key] = WorkerThreadPool.add_task(_worker.bind(key, _terrain(), biome, _hg(), _rp()), false, "terrain chunk")
+	if not want.is_empty() and _pending.size() < MAX_PENDING:
+		var biome := _biome_arr()
+		var terrain := _terrain()
+		for key in want:
+			if _pending.size() >= MAX_PENDING:
+				break
+			_pending[key] = WorkerThreadPool.add_task(_worker.bind(key, terrain, biome, _hg(), _rp()), false, "terrain chunk")
 	if _chunks.size() > CHUNK_CAP:
 		_evict()
 

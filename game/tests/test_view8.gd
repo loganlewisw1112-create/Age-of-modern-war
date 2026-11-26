@@ -33,3 +33,31 @@ func test_view_facing_round_trip() -> void:
 		var hit: Vector2 = VU.iso_inv(scr)
 		check(hit.distance_to(target) < 0.05, "order click world cell facing %d" % f)
 	VU.view_facing = 0
+
+
+func test_live_view_rotation_keeps_terrain_and_picking_aligned() -> void:
+	var MV = preload("res://presentation/match_view.gd")
+	var Terrain = preload("res://presentation/view/terrain_layer.gd")
+	var RS = preload("res://sim/render_snap.gd")
+	var VU = preload("res://presentation/view/view_util.gd")
+	var mv = MV.new()
+	var world := SimWorld.new_match(SimWorld.default_config())
+	mv._world = world
+	RS.build(world)
+	mv.snap = RS.latest(world)
+	mv.terrain_layer = Terrain.new()
+	mv.add_child(mv.terrain_layer)
+	mv.terrain_layer.setup(mv)
+	var map_size := Vector2i(int(world.map.w), int(world.map.h))
+	var p := Vector2(8.5, 6.5)
+	for face in 4:
+		mv.set_view_facing(face)
+		var canvas: Vector2 = mv.world_to_screen(p)
+		check((mv.pick_world(canvas) as Vector2).is_equal_approx(p), "camera %d click picks the projected world cell" % face)
+		var raster: Vector2 = VU.iso_inv_raw(canvas + mv.terrain_layer._raster_offset)
+		var terrain: PackedByteArray = mv.terrain_layer._terrain()
+		var code := int(terrain[floori(raster.y) * mv.terrain_layer._w + floori(raster.x)])
+		check_eq(code, int(world.map.terrain[floori(p.y) * map_size.x + floori(p.x)]), "camera %d keeps tile under the cursor" % face)
+		check_eq(mv.terrain_layer._w, map_size.y if int(face) & 1 else map_size.x, "camera %d raster dimensions" % face)
+	mv.set_view_facing(0)
+	mv.free()

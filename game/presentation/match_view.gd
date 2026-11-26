@@ -335,6 +335,8 @@ func _init_view() -> void:
 	camera = CameraRig.new()
 	add_child(camera)
 
+	ViewUtil.view_facing = 0
+	view_facing = 0
 	for layer in [terrain_layer, ring_layer, entity_layer, fx_layer, fog_layer, overlay_layer, g2_ground, g2_over]:
 		layer.setup(self)
 	world7_layer.setup(self)  # G7 LPMAP7
@@ -342,8 +344,6 @@ func _init_view() -> void:
 	fac_atmo7.setup(self)   # G7 ATMO7 CR 3757
 	fac_seq7.setup(self)   # G7 SEQ7 CR 3721
 	camera.setup(self)
-	ViewUtil.view_facing = 0
-	view_facing = 0
 	if camera.has_method("recompute_bounds"):
 		camera.recompute_bounds()
 	_ensure_facing_hint()
@@ -878,8 +878,15 @@ func set_view_facing(f: int) -> void:
 		var vs := get_viewport().get_visible_rect().size
 		focus = pick_world(_viewport_to_canvas(vs * 0.5))
 		had_focus = true
+	join_sim()
 	view_facing = f
 	ViewUtil.view_facing = f
+	if terrain_layer != null:
+		terrain_layer.set_view_facing(f)
+	if entity_layer != null:
+		entity_layer.on_view_facing_changed()
+	if fog_layer != null:
+		fog_layer.on_view_facing_changed()
 	if camera != null and camera.has_method("recompute_bounds"):
 		camera.recompute_bounds()
 	if had_focus:

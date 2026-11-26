@@ -58,6 +58,7 @@ void fragment() {
 ## and takes the fog of the first cell whose level reaches the ray, then filters it bilinearly as before.
 ## fog_cell_at() is the same walk in GDScript. Flat maps keep the original texel-per-cell draw.
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const ViewFacing = preload("res://presentation/view/view_facing.gd")
 const HSHADER := """
 shader_type canvas_item;
 uniform sampler2D vis_tex : filter_nearest;
@@ -67,6 +68,8 @@ uniform float explored_a = 0.470588;
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
 uniform float grey_on = 1.0;
 uniform float grey_dim = 0.62;
+uniform vec2 map_dx = vec2(1.0, 0.0);
+uniform vec2 map_dy = vec2(0.0, 1.0);
 uniform float level_px;   // set from ViewUtil.level_px in _sync_height (no literal lift here)
 varying vec2 cpos;
 float unexp_at(ivec2 c, ivec2 sz) {
@@ -103,7 +106,8 @@ void fragment() {
 	for (int k = 12; k >= 0; k--) {
 		float lv = float(k) * 0.25;
 		vec2 s = cpos + vec2(0.0, (lv - 1.0) * level_px);
-		vec2 wp = vec2((s.x / 32.0 + s.y / 16.0) * 0.5, (s.y / 16.0 - s.x / 32.0) * 0.5);
+		vec2 local = vec2((s.x / 32.0 + s.y / 16.0) * 0.5, (s.y / 16.0 - s.x / 32.0) * 0.5);
+		vec2 wp = local.x * map_dx + local.y * map_dy;
 		ivec2 c = ivec2(floor(wp));
 		if (c.x < 0 || c.y < 0 || c.x >= sz.x || c.y >= sz.y) {
 			continue;
@@ -268,7 +272,17 @@ func _sync_height(force: bool = false) -> void:
 		_apply_grey()
 	elif on:
 		(material as ShaderMaterial).set_shader_parameter("h_tex", _h_tex)
+	on_view_facing_changed()
+
+
+func on_view_facing_changed() -> void:
+	if height_on and material is ShaderMaterial:
+		var sh := material as ShaderMaterial
+		sh.set_shader_parameter("map_dx", ViewFacing.face0_to_world(Vector2.RIGHT, ViewUtil.view_facing))
+		sh.set_shader_parameter("map_dy", ViewFacing.face0_to_world(Vector2.DOWN, ViewUtil.view_facing))
 	queue_redraw()
+	if markers != null:
+		markers.queue_redraw()
 
 
 ## G6: the cell whose fog shades canvas px s (the HSHADER walk in GDScript; (-1, -1) = off the map).
@@ -295,10 +309,13 @@ func _draw_body() -> void:
 		return
 	if height_on:  # G6: the canvas box of the map incl. the top level's lift; HSHADER finds the cell per pixel
 		var up := ViewUtil.lift_px(ViewUtil.MAX_LEVEL) + 32.0
-		draw_rect(Rect2(Vector2(-_h * 32.0, -up), Vector2((_w + _h) * 32.0, (_w + _h) * 16.0 + up + ViewUtil.level_px + 32.0)), Color.WHITE)
+		var bounds := Rect2(Vector2.ZERO, Vector2.ZERO)
+		for p in [Vector2(_w, 0), Vector2(0, _h), Vector2(_w, _h)]:
+			bounds = bounds.expand(ViewUtil.iso(p))
+		draw_rect(bounds.grow_individual(0.0, up, 0.0, ViewUtil.level_px + 32.0), Color.WHITE)
 		return
 	# texel (x, y) -> cell diamond: screen = x*(32,16) + y*(-32,16)
-	draw_set_transform_matrix(Transform2D(Vector2(32, 16), Vector2(-32, 16), Vector2.ZERO))
+	draw_set_transform_matrix(Transform2D(ViewUtil.iso(Vector2.RIGHT), ViewUtil.iso(Vector2.DOWN), Vector2.ZERO))
 	draw_texture_rect(_vis_tex, Rect2(Vector2.ZERO, Vector2(_w, _h)), false)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
@@ -324,7 +341,7 @@ func _draw_markers(ci: CanvasItem) -> void:
 		var a := marker_alpha(float(c[1]), float(c[2]))
 		if a < MARK_MIN_A:
 			continue
-		var s := Vector2((p.x - p.y) * 32.0, (p.x + p.y) * 16.0)
+		var s := ViewUtil.iso(p)
 		if height_on:
 			s.y -= ViewUtil.lift_px(float(ViewUtil.cell_level(_hm, cell)))
 		var col := Color(0.95, 0.32, 0.25, a)

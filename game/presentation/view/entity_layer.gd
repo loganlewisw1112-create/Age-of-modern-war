@@ -296,7 +296,23 @@ func setup(view) -> void:
 	_build_decor()
 
 
+func on_view_facing_changed() -> void:
+	_far_key.clear()
+	_rc_sn = {}
+	_rs_sn = {}
+	_wall_dirty = true
+	art._ec.clear()
+	_build_decor()
+
+
 func _build_decor() -> void:
+	_decor.clear()
+	_decor_rect.clear()
+	_flat.clear()
+	_flat_rect.clear()
+	decor_count = 0
+	poi_count = 0
+	coast_count = 0
 	var ww = mv.get("_world")
 	if ww == null:
 		return
@@ -403,7 +419,7 @@ func on_blast_corpse(ev: Dictionary) -> void:
 		var cp: Array = motion.corpses[k]
 		if int(cp[0]) == id and cp.size() == 5:
 			var d: Vector2 = Vector2(ev.to) - Vector2(ev.from)
-			cp.append([Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0), float(ev.peak_m) * B8_PX_PER_M,
+			cp.append([ViewUtil.iso(d), float(ev.peak_m) * B8_PX_PER_M,
 				maxf(float(ev.ticks) / 20.0, 0.1), float(ev.turns), String(ev.get("def", ""))])
 			return
 
@@ -586,7 +602,7 @@ func _k8_live(id: int, gv, a61: Dictionary, tt: float, stick: int, t: float, row
 			var b8: Array = gv.bt
 			if rec == null or float(rec[1]) != float(b8[5]):
 				var gd := Vector2(float(b8[0]) - float(b8[2]), float(b8[1]) - float(b8[3]))   # landing -> blast side
-				var sdir := Vector2(-(gd.x - gd.y) * 32.0, -(gd.x + gd.y) * 16.0).normalized()
+				var sdir := -ViewUtil.iso(gd).normalized()
 				var dur := maxf(float(b8[6]), 1.0)
 				rec = [0, float(b8[5]), dur, float(b8[7]), k8_row_of(gd) if gd.length() > 0.01 else row,
 					k8_variant(id, float(b8[7])), float(b8[5]) + dur, -1.0, sdir]
@@ -1159,7 +1175,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 				_rc_dsz.resize(n_u); _rc_sz.resize(n_u)
 	# G7.1 SWARMNAT71: the native kernel draws runs of plain units; it stops at the first unit it cannot draw exactly and
 	# this loop draws that one (sw_stop), so push order, keys and counters are the GDScript path's.
-	var use_sw := (sw_on if _sw_force < 0 else _sw_force == 1) and motion_on and not far and not use_rc and _sw_init()
+	var use_sw := ViewUtil.view_facing == 0 and (sw_on if _sw_force < 0 else _sw_force == 1) and motion_on and not far and not use_rc and _sw_init()
 	sw_used = false
 	sw_units = 0
 	sw_calls = 0
@@ -1192,7 +1208,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 			var r_pp: Vector2 = prev_a[i]
 			if r_pp.distance_squared_to(r_raw) < 4.0:
 				r_pos = r_pp.lerp(r_raw, alpha)
-			var r_sp := Vector2((r_pos.x - r_pos.y) * 32.0, (r_pos.x + r_pos.y) * 16.0)
+			var r_sp := ViewUtil.iso(r_pos)
 			if not vr.has_point(r_sp):
 				continue
 			var r_fl: int = flg_a[i]
@@ -1301,7 +1317,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 			var pp: Vector2 = prev_a[i]
 			if pp.distance_squared_to(raw) < 4.0:
 				pos = pp.lerp(raw, alpha)
-		var sp := Vector2((pos.x - pos.y) * 32.0, (pos.x + pos.y) * 16.0)
+		var sp := ViewUtil.iso(pos)
 		if not vr.has_point(sp):
 			continue
 		if not terr.is_empty() and (flg_a[i] & RenderSnap.FLAG_AIR) == 0:
@@ -1461,7 +1477,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 				# G6.1: officers / leaders walk slightly ahead of their men
 				var of: float = motion.out_face
 				mpx += Vector2(cos(of) - sin(of), (cos(of) + sin(of)) * 0.5).normalized() * 2.0
-			sp += Vector2((mo.x - mo.y) * 32.0, (mo.x + mo.y) * 16.0) + mpx
+			sp += ViewUtil.iso(mo) + mpx
 			var ms: PackedFloat32Array = motion.out_s   # G7 PERFFPS7: = motion.mark_screen(id, sp) on the state step() just ran
 			ms[Motion.S_SX] = sp.x
 			ms[Motion.S_SY] = sp.y
@@ -1787,7 +1803,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 		var kind: String = e.kind
 		var ow := int(e.owner)
 		var gp: Vector2 = e.pos
-		var gs := Vector2((gp.x - gp.y) * 32.0, (gp.x + gp.y) * 16.0)
+		var gs := ViewUtil.iso(gp)
 		var gc := Vector2i(floori(gp.x), floori(gp.y))
 		if not vr.has_point(gs):
 			if kind == "wreck" and not _seen_wrecks.has(id) and mv.cell_visible(gc):
@@ -1877,7 +1893,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 			if use_rs and _rs_k[sj] == 0:
 				_rs_k[sj] = _rs_put(sj, id, e, kind, ow, pf, gs, sn, 8 | 16)
 			if not _ww_occ.is_empty() and _ww_occ.has(e.pos) and _wall_front_px(e):   # WALL7-2: parapet over its soldiers
-				_push(0, float(int((e.pos.x + e.pos.y) * 16.0) + Motion.WALL_DEPTH_PAD + 1), art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+				_push(0, float(int(ViewUtil.iso(e.pos).y) + Motion.WALL_DEPTH_PAD + 1), art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
 				ww_front += 1
 			continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
@@ -1946,7 +1962,7 @@ func _push_corpses(vr: Rect2, t: float, gc61: Dictionary) -> void:
 			var has8 := a8.has("k8_tum")
 			var d8: Vector2 = th[0]
 			if has8 and d8.length() > 0.5:   # G8 ANIM8: face the blast, tumble along the throw line
-				crow = k8_row_of(Vector2(d8.x / 32.0 + d8.y / 16.0, d8.y / 16.0 - d8.x / 32.0) * -0.5)
+				crow = k8_row_of(-ViewUtil.iso_inv(d8))
 			if k8 < 1.0:
 				fly = true
 				if art.resolve_shadow(String(th[4]), 0):
@@ -2016,7 +2032,7 @@ func _push_fire(sn: Dictionary, vr: Rect2, mw: int, vis: PackedByteArray, ally_v
 		var ci: int = k
 		var x := ci % mw
 		var y := ci / mw
-		var sp := Vector2((x - y) * 32.0, (x + y + 1) * 16.0)  # cell centre
+		var sp := ViewUtil.iso(Vector2(x + 0.5, y + 0.5))  # cell centre
 		if not vr.has_point(sp) or not mv.cell_explored(Vector2i(x, y)):
 			continue
 		if art.resolve_fx("burnt_ground", neutral, "-", ArtCatalog._ihash(x, y, 53) % 3):
@@ -2026,7 +2042,7 @@ func _push_fire(sn: Dictionary, vr: Rect2, mw: int, vis: PackedByteArray, ally_v
 	for ci in fires:
 		var x := ci % mw
 		var y := ci / mw
-		var sp := Vector2((x - y) * 32.0, (x + y + 1) * 16.0)
+		var sp := ViewUtil.iso(Vector2(x + 0.5, y + 0.5))
 		if not vr.has_point(sp):
 			continue
 		if not vis.is_empty() and ci < vis.size() and vis[ci] == 0:
@@ -2176,7 +2192,7 @@ func _g5_lift(dname: String, id: int, ad: Dictionary, fl: int, facing: float, t:
 	_g5_air_fx(dname, ad, fl, facing, t, gc5, sp)
 	if fl & RenderSnap.FLAG_DRONE and fl & RenderSnap.FLAG_MOVING:
 		var d := Vector2(cos(facing), sin(facing))
-		var sd := Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0).normalized()
+		var sd := ViewUtil.iso(d).normalized()
 		if art.resolve_fx("g5_drone_trail", Color.WHITE, "-", int(t * 8.0) + id):
 			var tp := sp - sd * 12.0 - Vector2(0, _lift)
 			_push(1, sp.y - _lift - 1.0, art.out_page, art.out_src, tp + art.out_off, art.out_src.size, Color.WHITE)
@@ -2262,7 +2278,7 @@ func _g5_air_fx(dname: String, ad: Dictionary, fl: int, facing: float, t: float,
 				gc5["wash"] = int(gc5.get("wash", 0)) + 1
 	elif ac == "jet" and String(ad.get("ph", "")) in ["roll", "sortie"]:
 		var d := Vector2(cos(facing), sin(facing))
-		var sd := Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0).normalized()
+		var sd := ViewUtil.iso(d).normalized()
 		if art.resolve_fx("g5_afterburner", Color.WHITE, "-", int(t * 12.0)):
 			var tp := sp - sd * 20.0 - Vector2(0, _lift)
 			_push(1, sp.y - _lift - 1.0, art.out_page, art.out_src, tp + art.out_off, art.out_src.size, Color.WHITE)
@@ -2297,7 +2313,7 @@ func _bay_crafts(n_u: int, far: bool, defs: PackedStringArray, def_a: PackedInt3
 	for j in n_u:
 		if (flg_a[j] & RenderSnap.FLAG_LANDED) != 0 and ldi.has(def_a[j]):
 			var cp: Vector2 = pos_a[j]
-			_crafts.append([cp, snappedf(fac_a[j], PI / 4.0), int((cp.x + cp.y) * 16.0), ids[j]])
+			_crafts.append([cp, snappedf(fac_a[j], PI / 4.0), int(ViewUtil.iso(cp).y), ids[j]])
 
 
 func _craft_y(id: int, ky: int) -> int:
@@ -2726,7 +2742,7 @@ func _push_zone(man: Dictionary, key: String, st: String, r: Array, vr: Rect2, f
 	if s.is_empty():
 		return
 	var g := Vector2(float(r[0]) + float(r[2]) * 0.5, float(r[1]) + float(r[3]) * 0.5)
-	var gs := Vector2((g.x - g.y) * 32.0, (g.x + g.y) * 16.0)
+	var gs := ViewUtil.iso(g)
 	if not vr.grow(256.0).has_point(gs):
 		return
 	var spec := {"file": String(s.file), "fw": int(b.get("fw", 0)), "fh": int(b.get("fh", 0)), "pivot": b.get("pivot", [0, 0])}
@@ -2751,7 +2767,7 @@ func _push_pad(r: Rect2, vr: Rect2, lock: bool) -> void:
 	var g := vr.grow(64.0)
 	for y in range(y0, y1 + 1):
 		for x in range(x0, x1 + 1):
-			var gs := Vector2(float(x - y) * 32.0, float(x + y + 1) * 16.0)
+			var gs := ViewUtil.iso(Vector2(x + 0.5, y + 0.5))
 			if g.has_point(gs) and art.resolve_sheet(spec, _pad_col(x, y, x0, y0, x1, y1), 1 if lock else 0):
 				_push(0, -float(Y_OFF), art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color.WHITE)
 				fac_drawn += 1

@@ -39,3 +39,4 @@ G10.1 IN PROGRESS
   Coalition NVGs lower at dusk and night. Green aiming lasers appear when firing.
   Ghost Infiltrators shimmer while concealed. Trackers and sensors can reveal them nearby.
   Technicals and concealed facilities use candidate art. Owner look approval is pending.
+  Q / E rotates the battlefield while preserving the point under the camera.

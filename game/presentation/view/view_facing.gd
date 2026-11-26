@@ -38,6 +38,44 @@ static func face0_to_world(p: Vector2, facing: int) -> Vector2:
 			return p
 
 
+## Offset from rotated world coordinates to a zero-based terrain raster.
+static func raster_offset(size: Vector2i, facing: int) -> Vector2i:
+	match face_wrap(facing):
+		1:
+			return Vector2i(0, size.x)
+		2:
+			return size
+		3:
+			return Vector2i(size.y, 0)
+		_:
+			return Vector2i.ZERO
+
+
+static func raster_cell(cell: Vector2i, size: Vector2i, facing: int) -> Vector2i:
+	match face_wrap(facing):
+		1:
+			return Vector2i(cell.y, size.x - 1 - cell.x)
+		2:
+			return size - Vector2i.ONE - cell
+		3:
+			return Vector2i(size.y - 1 - cell.y, cell.x)
+		_:
+			return cell
+
+
+static func raster_bytes(source: PackedByteArray, size: Vector2i, facing: int) -> PackedByteArray:
+	if facing == 0 or source.size() != size.x * size.y:
+		return source
+	var rotated := PackedByteArray()
+	rotated.resize(source.size())
+	var rw := size.y if facing & 1 else size.x
+	for y in size.y:
+		for x in size.x:
+			var cell := raster_cell(Vector2i(x, y), size, facing)
+			rotated[cell.y * rw + cell.x] = source[y * size.x + x]
+	return rotated
+
+
 ## Iso projection under an explicit facing (uses raw iso — ignores live ViewUtil.view_facing).
 static func iso(p: Vector2, facing: int = 0) -> Vector2:
 	var ViewUtil = preload("res://presentation/view/view_util.gd")
