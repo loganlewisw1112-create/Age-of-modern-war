@@ -17,6 +17,10 @@ G6.1 / G7 / G7.1 did.
 | `docs/understrike/References/Base_Project_v1.3/` | The original Master GDD + Development Roadmap v1.3 (G0–G6 + backlog F-001..F-025) | Base mechanics authority; long-term items folded below |
 | `docs/vision/` | 6 owner mockups (continental map, stronghold sieges, company cards) | Visual direction |
 
+## Owner-approved next-generation simulation extension (2026-11-27)
+
+[Canonical GDD extension and 25 decisions](NEXTGEN_SIMULATION_GDD.md). Four coordinated directors, autonomous population/industry/military institutions, organic settlements, physical logistics, persistent environments, adaptive command and historical continuity are approved design direction for G15/G17. Introduce shared persistent IDs, event ledger, deterministic director framework and LOD foundation before dependent features; then civilian/settlement, industry/transport, military/facilities, environment/immersion and director behavior progressively. Integrate campaign at G15, Living World at G17, and reuse foundations in UNDERSTRIKE and G18 where relevant. No new numbered gate, reordering or widening of frozen contracts is authorized by this design update. G10.1 regression remains open. Each future slice requires its own owner-reviewed acceptance contract, performance budgets and proof of classic RTS playability without mandatory micromanagement. Scale figures are research targets only.
+
 ## Shipped (for orientation)
 G0 engine spike → G1 core RTS → G2 smart warfare → G3a/G3b slice content (3 factions, stages 7–9, maps) → G4 harden +
 scale (save/load, walls, editor) → G5 (naval, air, hospitals, tutorial) → G6 (companies, armies, elevation, subs,
