@@ -23,9 +23,9 @@ const Status = preload("res://sim/systems/status.gd")
 const HotState = preload("res://sim/hot_state.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 
-const ACC := 0.8            # tiles/s^2 (3.2 m/s^2: 0 -> 46 km/h in ~4 s)
-const BRK := 1.6            # tiles/s^2
-const A_LAT := 1.2          # tiles/s^2 lateral: corner speed sqrt(A_LAT * R)
+const ACC := 1.5           # tiles/s^2
+const BRK := 2.65          # tiles/s^2
+const A_LAT := 1.65         # tiles/s^2 lateral: corner speed sqrt(A_LAT * R)
 const A_TURN := 2.0         # tiles/s^2 lateral acceleration the hull may turn with (turn rate <= A_TURN / v)
 const R_MIN := 1.5          # tiles (6 m) smallest turning radius at speed
 const W_CRAWL := 0.9        # rad/s turn rate allowed at a crawl (no pivot: the APC always rolls while it turns)
@@ -229,7 +229,7 @@ static func _drive(w: SimWorld, S: Dictionary, k: String, e: Dictionary, V: Dict
 	if fmv != null:
 		top *= float(fmv)
 	p = _unpush(w, S, k, e, p, h, v, mc, team)
-	var look := clampf(0.5 + 0.5 * v, LOOK_MIN, LOOK_MAX)
+	var look := clampf(0.5 + 0.54 * v, LOOK_MIN, LOOK_MAX)
 	# a waypoint is behind us once we are inside its capture radius, or already past it along the next segment (and close):
 	# chasing a waypoint the turning radius cannot reach made a slow APC circle round it (PATH7-2: 360 degree spin)
 	while i < n - 1:
@@ -260,22 +260,24 @@ static func _drive(w: SimWorld, S: Dictionary, k: String, e: Dictionary, V: Dict
 		left += sl
 		a = b
 		j += 1
-	# sharpest heading change still ahead within braking distance -> corner speed
+	# Limit speed by each upcoming bend, allowing for the distance left to brake.
 	var horizon := v * v / (2.0 * BRK) + look
-	var ang := 0.0
-	var acc_d := p.distance_to(_pt(r, i))
-	var dprev := h
+	var corner_limit := top
+	var acc_d := q.distance_to(_pt(r, i))
+	var dprev := sg0.angle()
 	for m in range(i, n - 1):
 		if acc_d > horizon:
 			break
 		var dseg := _pt(r, m + 1) - _pt(r, m)
 		if dseg.length() > 0.01:
-			ang = maxf(ang, absf(wrapf(dseg.angle() - dprev, -PI, PI)))
+			var next_heading := dseg.angle()
+			var ang := absf(wrapf(next_heading - dprev, -PI, PI))
+			var corner_speed := lerpf(top, sqrt(A_LAT * R_MIN), clampf((ang - 0.35) / 1.2, 0.0, 1.0))
+			corner_limit = minf(corner_limit, sqrt(corner_speed * corner_speed + 2.0 * BRK * maxf(acc_d - look, 0.0)))
+			dprev = next_heading
 		acc_d += dseg.length()
 	var dh := wrapf((carrot - p).angle() - h, -PI, PI) if carrot.distance_to(p) > 0.01 else 0.0
-	var vt := top
-	if ang > 0.35:
-		vt = minf(vt, lerpf(top, sqrt(A_LAT * R_MIN), clampf((ang - 0.35) / 1.2, 0.0, 1.0)))
+	var vt := corner_limit
 	vt = minf(vt, top * clampf(cos(dh), V_TURN_MIN, 1.0))
 	vt = minf(vt, sqrt(2.0 * BRK * left) + 0.1)   # brakes to a 0.1 tiles/s creep onto the exact end point
 	# keep the gap behind another APC in the lane (convoys, two sent to one point): brake to stop GAP short of it
