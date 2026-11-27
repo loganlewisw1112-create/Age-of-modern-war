@@ -95,6 +95,10 @@ static func _merge_g5() -> void:
 					if sec != "icons":
 						var previous: Dictionary = _man.get("infantry" if sec == "vehicles" else "vehicles", {})
 						previous.erase(k)
+						var wrecks: Dictionary = _man.get("vehicle_wrecks", {})
+						var base: String = v[k].get("g9", {}).get("base", "")
+						if not wrecks.has(k) and wrecks.has(base):
+							wrecks[k] = wrecks[base]
 				elif not dst.has(k):
 					dst[k] = v[k]
 				elif sec == "lod_icons" and dst[k] is Dictionary and v[k] is Dictionary:

@@ -48,6 +48,6 @@
   "a_g71_heavy_mech": "a_exo_trooper",
   "a_g71_light_mech": "a_exo_rifle",
   "a_g71_plasma_gunner": "g7_sent_arc",
-  "a_g71_searchlight": "cn_tower",
+  "a_g71_searchlight": "guard_tower",
   "a_g71_shield_dome": "a_fob"
 }

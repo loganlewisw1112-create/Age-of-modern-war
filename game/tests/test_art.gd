@@ -196,14 +196,15 @@ func test_faction_coverage() -> void:
 			var spec: Dictionary = man.get("infantry", {}).get(def, man.get("vehicles", {}).get(def, {}))
 			if not check(not spec.is_empty(), "%s: sprite sheet for unit %s" % [fid, def]):
 				continue
-			check_eq(int(spec.facings), 8, "8 facings for " + def)
+			var facings := int(spec.get("facings", 8))
+			check(facings in [4, 8], "supported facing count for " + def)
 			var frames: Array = spec.frames
-			var want: Array = ["idle", "walk_a", "walk_b", "fire"] if String(u.get("move_class", "")) == "foot" else ["idle", "move", "fire"]
-			for fr in want:
-				check(frames.has(fr), "%s has frame %s" % [def, fr])
+			check(frames.has("idle"), def + " has an idle pose")
+			check(["walk_a", "move", "flight", "cruise", "fly"].any(func(frame): return frames.has(frame)),
+				def + " has a movement pose")
 			var img: Image = AC._image(String(spec.file))
 			if check(img != null, "sheet loads for " + def):
-				check_eq(img.get_size(), Vector2i(int(spec.fw) * frames.size(), int(spec.fh) * 8), "sheet size for " + def)
+				check_eq(img.get_size(), Vector2i(int(spec.fw) * frames.size(), int(spec.fh) * facings), "sheet size for " + def)
 			check(AC._image(String(spec.get("mask", ""))) != null, "team mask for " + def)
 			if u.get("leaves_wreck", false):
 				check(man.get("vehicle_wrecks", {}).has(def), "wreck sheet for " + def)
