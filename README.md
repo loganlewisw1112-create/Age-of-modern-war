@@ -101,6 +101,42 @@ Existing gameplay captures are approximately 1600×900, compressed for GitHub. F
 
 Unreleased and discovery-gated campaign identities remain undisclosed.
 
+### Human A — Modern Human
+
+**Professional combined arms, advanced engineering and coordinated military command.**
+
+Modern Human is the faction for players who want to build a modern military force rather than simply assemble an army of individual units. Its doctrine emphasizes reconnaissance, coordinated formations, specialized support and the ability to bring land, air and naval forces together under a common command structure.
+
+Its economy relies on gathering salvage and ore, maintaining power and supply, and investing in production and research. Infantry, armored vehicles, artillery, aircraft, naval assets and autonomous robotics provide complementary battlefield roles. Companies, armies and officers help organize larger forces, while engineers, supply vehicles, medical support and field fortifications sustain operations beyond the starting base.
+
+Human A also has specialized counter-nanite and Counter-Ghost capabilities for confronting the Machine and concealed Coalition operators. In Last Protocol, its military infrastructure and counter-nanite force support the defense of the inherited fortress. In Skirmish, its defining challenge is coordinating a sophisticated military while protecting the infrastructure and logistics that keep it operational.
+
+**Playstyle:** Establish a reliable industrial and defensive foundation, build balanced formations, and use reconnaissance, electronic warfare and specialized support to maintain battlefield initiative. Advanced units are most effective as part of a coordinated force, not as isolated weapons.
+
+### Human B — Scavenger Human
+
+**Industrial resilience, recovered machinery and the weight of mechanized warfare.**
+
+Scavenger Human approaches civilization through recovery and industrial strength. Where Modern Human emphasizes sophisticated combined-arms coordination, Human B builds its identity around salvaged resources, rugged equipment and the ability to turn recovered material into fighting power.
+
+The Salvage Yard provides its distinctive economic foundation. Tough infantry, rebuilt tanks and artillery trucks form the core of its documented military identity, supported by the game's wider research, production, logistics and field-command systems. Its massed armor and artillery doctrine favors sustained pressure and the concentration of industrial firepower rather than relying exclusively on highly specialized forces.
+
+A Human B army still needs supplies, protected infrastructure and appropriate support. Recovered equipment and industrial production do not eliminate the need to maintain vehicles, defend resource access or adapt to enemy air power, electronic warfare and changing battlefield conditions.
+
+**Playstyle:** Develop a strong salvage and production economy, protect the flow of resources, and assemble durable mechanized forces capable of maintaining pressure across contested territory. Human B rewards players who enjoy industrial expansion, armored formations and sustained conventional warfare.
+
+### Machine — Autonomous Network
+
+**An energy-bound synthetic civilization that grows, adapts and consumes the battlefield.**
+
+The Machine is not a conventional human army with a different appearance. Its units operate through an autonomous network, depend on energy and recharge near hubs, and do not use human morale. Creep, hive infrastructure and networked growth give it a fundamentally different military and economic identity.
+
+Its forces include combat drones, walkers, artillery nodes and specialized siege units. The G9 overhaul expands its hive network, adaptive evolution, blended visual identity and battlefield consumption systems. Wrecks and contested terrain matter to the hive, while the optional adaptive Machine director brings additional siege pressure into Skirmish. AI adaptation uses observed combat history rather than assuming perfect knowledge of the enemy.
+
+The Machine is designed to be powerful without being invulnerable. Its network, energy supply and expansion can be contested through the game's documented thirteen-countermeasure framework, including electronic warfare, relay disruption, material denial and counter-nanite systems. Last Protocol presents a dedicated escalating hive siege; playing Machine in Skirmish is a distinct competitive sandbox experience.
+
+**Playstyle:** Establish and maintain the network, sustain energy access, expand hive influence and combine specialized synthetic units to pressure opponents. Exploit opportunities to grow while protecting the infrastructure on which the force depends.
+
 ### Shadow Coalition
 
 The fourth faction ships a full Stage 1–13 progression, with **61 documented gameplay definitions**, six distinct aircraft and 31 formerly deferred vehicle and facility art assets approved on November 26, 2026. [Approved art and repository-generated review sheets](game/docs/G10_1_DEFERRED_ART.md).
