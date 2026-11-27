@@ -24,19 +24,20 @@ func test_plasma_research_needs_blackglass_proto() -> void:
 		return
 	for i in 10:
 		w.step()
-	# Unlock ammo_he prerequisite chain first.
+	# Advance the research timers independently of the Last Protocol defeat clock.
 	for tech in ["ammo_ap", "ammo_he"]:
-		w.submit({"type": "research71_start", "issuer": 0, "tech": tech})
-		w.step()
-		var need := int(ceil(float(Research71.TREE[tech].cost_s) * float(SimWorld.TICK_RATE))) + 3
-		for i in need:
-			w.step()
+		check_eq(rejected_reason(do_cmd(w, 0, {"type": "research71_start", "tech": tech})), "", "%s accepted" % tech)
+		check_eq(Research71.board(w).cur, tech, "%s queued" % tech)
+		w.tick += ceili(float(Research71.TREE[tech].cost_s) * SimWorld.TICK_RATE)
+		Research71.tick(w)
+		check(Research71.unlocked(w, tech), "%s completed" % tech)
 	var why := Research71.validate_command(w, {"type": "research71_start", "tech": "plasma_cannon"})
 	check(why.find("Blackglass") >= 0 or why.find("prototype") >= 0, "plasma blocked without proto (%s)" % why)
 	Re.capture(w, "g71_m_brute", "c0")
-	var stages := int(ceil(Re.stage_s() * float(SimWorld.TICK_RATE))) * (Re.STAGES.size() + 1) + 5
-	for i in stages:
-		w.step()
+	for stage in Re.STAGES:
+		check_eq(Re.stage_name(w, "c0"), stage, "Blackglass study phase")
+		w.tick += ceili(Re.stage_s() * SimWorld.TICK_RATE)
+		Re.tick(w)
 	check((Re._st(w).prototypes as Dictionary).has("g71_m_brute"), "brute proto ready")
 	check_eq(Research71.validate_command(w, {"type": "research71_start", "tech": "plasma_cannon"}), "", "plasma opens after proto")
 

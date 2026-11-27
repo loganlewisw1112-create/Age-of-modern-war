@@ -36,7 +36,7 @@ static func damage_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictiona
 ## Shooter-side accuracy factor for src firing at t.
 static func accuracy_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictionary) -> float:
 	return Companies.cohesion_acc(w, src) * Loadouts.acc_mult(w, src) \
-		* Callins.designated_mult(w, src, t) * Auras.acc_mult(w, src) * Airdef.acc_mult(w, src, s, t) 		* SimWorld.Morale.acc_mult(w, src) * float(src.get("p71acc", 1.0))  # G6.1 REAL61 CR 59: suppression / fatigue / rank; G7.1 DAMAGE71 B2 (CR 955): sensors / half-dead
+		* Callins.designated_mult(w, src, t) * Auras.acc_mult(w, src) * Airdef.acc_mult(w, src, s, t)
 
 
 ## Weapon range factor for src (acquisition and fire, GDScript and native paths).

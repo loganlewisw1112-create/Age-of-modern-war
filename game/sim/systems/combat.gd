@@ -2022,8 +2022,10 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	e.cd_ticks = cd
 	e.cooldown = float(cd) / SimWorld.TICK_RATE
 	var acc := float(s.accuracy) * Status.accuracy_mult(w, e)
+	var shot_mult := 1.0
 	if SimIndex.g6m(w) & SimIndex.G6_ACC:
-		acc *= SimIndex.g6h().accuracy_mult(w, e, s, t)  # G6: same single rng draw
+		shot_mult = SimIndex.g6h().accuracy_mult(w, e, s, t)
+	acc *= shot_mult * SimWorld.Morale.acc_mult(w, e) * float(e.get("p71acc", 1.0))
 	if e.has("wz"):
 		acc *= SimWorld.Wounds.acc_mult(e)   # G7 (WOUND7): arm wounds aim worse (same single rng draw)
 	var tam := Time.get_ticks_usec() if SimIndex.profiling else 0
