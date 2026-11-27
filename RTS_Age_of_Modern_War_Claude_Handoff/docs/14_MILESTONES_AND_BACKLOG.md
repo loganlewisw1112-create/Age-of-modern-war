@@ -187,3 +187,7 @@ Record number of individual simulated entities separately from drawn sprites and
 G0–G4 are iterative engineering/content/quality gates. Stage content completeness at G3 does not bypass G4 persistence, reproducibility and measured scale requirements. Save/load begins early and hardens later. G5/G6 preserve the larger hybrid-world vision without delaying the initial RTS loop.
 
 Every feature status starts NOT IMPLEMENTED / NOT VERIFIED in this handoff because no game code was supplied. A future backlog entry should record owner, dependencies, design source, UI path, data changes, AI use, save effects, tests, performance evidence and unresolved decisions. No staffing assumption, delivery date or dollar budget is fabricated.
+
+
+## Approved DLC addendum — 2026-11-27
+[Current roadmap](../../../game/docs/ROADMAP.md) and [DLC delivery pipeline](../../../game/docs/DLC_DELIVERY_PLAN.md) govern sequencing. Preserve G10.1 regression, G11–G19 and current frozen contracts; DLC 3 future unnumbered track. No premature implementation.
