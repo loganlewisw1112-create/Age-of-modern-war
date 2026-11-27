@@ -204,7 +204,9 @@ func test_drive_all() -> void:
 	var core_id := Cores.place(w, _mfid(w), w.cell_of(C + Vector2(34, 58)))
 	var core_hp0 := float(w.entities[core_id].hp)
 	var rp := _patch(w, C + Vector2(-26, 56), 4)
-	var mu := _machine_unit(w, rp + Vector2(3, 2))
+	# A fixed Machine target stays inside the scan radius while the other squads are driving.
+	var mu := w.spawn_building("m_barrier", _mfid(w), w.cell_of(rp + Vector2(3, 2)), true)
+	w.entities[mu].hp = 100000.0
 	# the downed group waits on clean ground (stage, see _clear; at C+(14,70) on the map's creep all three died of
 	# nanite_exposure at ~t=2000, before the rescue squad got there)
 	var resc := C + Vector2(14, 70)
@@ -268,10 +270,10 @@ func test_drive_all() -> void:
 	check(core == null or float(core.hp) < core_hp0, "the core took the charges' damage (hp %s -> %s)" % [core_hp0, core.hp if core != null else "destroyed"])
 	var kinds: Dictionary = rc.get("kinds", {})
 	check(kinds.has("creep") and kinds.has("target"), "recon marked creep areas and Machine targets (%d marks)" % int(rc.get("n", 0)))
-	if bool(rc.get("mu", false)):
-		check(bool(rc.get("mu_marked", false)), "the Machine unit carries the G5 mark (visible through fog)")
-		check(bool(rc.get("mu_vis", false)), "the marked Machine unit is visible to the player")
-		check(not String(rc.get("fr", "")).contains("can't see"), "fire support accepts a marked target (%s)" % String(rc.get("fr", "")))
+	check(bool(rc.get("mu", false)), "the recon target survived the scan")
+	check(bool(rc.get("mu_marked", false)), "the Machine target carries the G5 mark")
+	check(bool(rc.get("mu_vis", false)), "the marked Machine target is visible to the player")
+	check(not String(rc.get("fr", "can't see")).contains("can't see"), "fire support can see the marked target (%s)" % String(rc.get("fr", "")))
 	var Mr := SO.mission_of(w, int(tac[3]))
 	check(int(Mr.get("saved", 0)) >= 3, "rescue recovered the downed group (%d)" % int(Mr.get("saved", 0)))
 	check(_n_events(w, "SoCasualtyCarried") >= 1 and _n_events(w, "SoCasualtyAboard") >= 1, "the wounded soldier was carried aboard")
