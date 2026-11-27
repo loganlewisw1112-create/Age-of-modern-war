@@ -1,0 +1,44 @@
+# Myrieme Forge — full DLC integration specification
+Owner-approved 2026-11-27; independent proprietary tool and game runtime are planned, not implemented. Source: owner-supplied MYRIEME_FORGE_README.md (procedural language foundry). All fifteen engines and eight game integration modules approved. [Master DLC GDD](BEYOND_CIVILIZATION_GDD.md) · [XENOGENESIS](XENOGENESIS.md).
+
+## Production pipeline
+Seed + version + civilization profile → phonology → phonotactics → prosody → morphology → syntax → lexicon → names → scripts → controlled translation → audio → evolution → quality → exports → human canon approval. Maintain stable semantic IDs and mappings. Same seed/config/engine version reproduces output. Canon lock prevents silent replacement of established words, names, glyphs, grammar and pronunciation; additive changes versioned, breaking changes require explicit approval/migration. Preserve existing Vhessar/Unbound canon and human nicknames; no replacement by generated output.
+
+| Engine | Production output | Offline runtime role |
+|---|---|---|
+| 01 Seed | Reproducible versioned project seeds | Stable derived RNG streams for new names/events |
+| 02 World Profile | Biology, culture, environment, values, taboos, history | Consume approved profile revisions and contextual registers |
+| 03 Phonology | Inventories and sound restrictions | Validate generated words |
+| 04 Phonotactics | Syllable and combination rules | Generate legal new forms |
+| 05 Prosody | Stress, cadence, tone and register | Select contextual cadence/audio references |
+| 06 Morphology | Inflection, derivation, tense, case, plural, honorifics | Bounded word formation |
+| 07 Syntax | Grammar and sentence ordering | Controlled semantic templates and parsing |
+| 08 Lexicon | Semantic fields, dictionaries, technology, war, trade and culture | Stable concept IDs; bounded new terms |
+| 09 NameForge | Personal, clan, planet, city, fleet, artifact and operation names | Deterministic naming with collision checks |
+| 10 Script & Glyph | Writing systems, glyph IDs, SVG/PNG/atlas and eroded variants | Render cached mapped glyphs, signage and historical variants |
+| 11 Translation | Controlled bidirectional translation, literal gloss, native script, readable subtitles | Interpret known semantic messages; confidence/unknown fragments, not universal free-text translation |
+| 12 Audio | Pronunciation guides, phonemes, voice directions, speech/chant/radio clips | Cached clips and optional bounded offline synthesis, fallback text |
+| 13 Evolution | Proto/daughter languages, dialects, borrowing and sound shifts | Event-driven divergence constrained by elapsed time, contact and canon |
+| 14 Quality | Collision, consistency, pronounceability, uniqueness, faction fit, glyph/UI readability | Validate additions, reject malformed output, fallback |
+| 15 Exporter | JSON, CSV, Markdown language bible, HTML, SVG/PNG atlases, WAV/MP3, localization/engine packs | Read validated compact packages; no heavyweight exporter in active RTS ticks |
+
+## Eight integration modules
+| ID | Module | Contract |
+|---|---|---|
+| MF-A01 | Civilization Language Bridge | Stable civilization/language IDs; consume committed migration, split, merger, cultural and technology events once; emit language updates only |
+| MF-A02 | Multimodal Communication | Acoustic, visual, vibrational, chemical and synthetic modalities; authored channels/encodings; accessible text/visual alternatives; extension beyond original speech/glyph plans |
+| MF-A03 | First Contact Intelligence | Observation evidence, decipherment state and confidence; unknown fragments remain unknown; no instant omniscience or required puzzles |
+| MF-A04 | Xenolinguistic Archaeology | Historical corpora, artifacts, damaged glyphs, extinct dialect reconstruction; provenance and uncertainty |
+| MF-A05 | Interstellar Naming Registry | Stable IDs, native/exonym aliases, collision scopes, historical names; never rename physical geography by changing display name |
+| MF-A06 | Cultural Exchange | Trade, migration, isolation and contact drive borrowing/daughter languages at plausible timescales |
+| MF-A07 | Environmental Language | Semantic labels → cached decals/signage/inscriptions/banners/ship markings; preserve atlas mappings and readability |
+| MF-A08 | Runtime Communication | Typed military/diplomatic/scientific intents → native text, readable subtitles and optional audio; cache/rate-limit; no simulation authority |
+
+## Per-package scope
+Base game and UNDERSTRIKE: existing terminology protected; human military registers, scavenger slang, machine protocols, Coalition codes and isolated bunker dialects where useful. No requirement to retrofit shipped content before current milestones. DLC 2: colony dialects, station/fleet/ship/operation naming, military signals, trade and science vocabulary, independent colony linguistic divergence, machine protocols and cross-cultural exchange, historical records and native environmental markings. Preserve existing arrival war language/nickname concepts. DLC 3: every extraterrestrial civilization receives complete native language families, modality profiles, military and civilian registers, scripts/glyphs, audio, naming, ancient/extinct forms, first contact and evolving cultural exchange. XENOGENESIS supplies events and knowledge, Forge supplies language; translation never directly decides diplomacy or combat. Player sees intelligible UI and uncertainty, not mandatory linguistic management.
+
+## Data and integration
+Illustrative package manifest: {schemaVersion, engineVersion, canonVersion, languageId, familyId, seed, profileRef, modalityIds, phonologyRef, grammarRef, lexiconRef, glyphAtlasRef, audioManifestRef, translationTemplatesRef, evolutionRulesRef, checksum}. Stable concept IDs distinct from strings; native spelling/romanization/glyph/pronunciation and locale subtitle stored separately. Runtime language state: {languageId, parentId, version, speakersRef, contactRefs, derivedSeed, lexiconDelta, historicalAliases, deciphermentByObserver, appliedEventIds}. Events carry tick, elapsed simulated time and provenance. Bounded grammar and lexicon growth, versioned snapshots, atomic package validation, offline fallback to approved text, no network or external AI requirement. Precompute expensive assets, lazy load, cache, schedule noncritical work outside active combat; deterministic ordering and save/load; no audio-dependent gameplay. Independent tool remains reusable/proprietary; export only owned/licensed assets. Godot presentation + Rust simulation interfaces; original Forge Unity/Unreal exports remain tool targets, not game dependencies.
+
+## Acceptance
+For each engine and adapter: golden seed/config fixtures, reproducibility, malformed inputs, bounded output, canon lock, migration, collisions, language inheritance, controlled translation round trips with ambiguity, glyph ID and atlas validation, audio fallback, modality accessibility, first-contact belief isolation, event deduplication, offline package loading, save/load replay, cache and CPU budgets. Test DLC 2 and DLC 3 independently and base game without entitlement. No required language lessons or manual translation; RTS readability/playtests. All tests NOT RUN; exact budgets and final names pending.
