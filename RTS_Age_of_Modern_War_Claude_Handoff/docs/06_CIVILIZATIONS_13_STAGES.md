@@ -343,3 +343,7 @@ Exactly IDs 1–13 are fixed; displayed names are working labels. Each card pres
 Do not infer a Stage 14 from the Stage 13 evidence field. See CON-04 for the card/matrix offset. Dedicated §4 is the strongest source for prototype 7→8→9 planning, with actual numeric gates still unresolved. Store recognized stage, knowledge, available tooling, running production and equipment inventory separately. A looted MBT is not proof that a Stage 3 settlement can manufacture MBTs.
 
 For future expansion of each card, record: faction-specific institutions and prerequisites; functioning production graph; civilian needs; energy and materials; available military roles and counters; research vs tooling; transport dependencies; regression behavior; AI planning changes; UI explanations; assets; save migration; positive/negative stage tests. This is an authoring checklist, not invented canon.
+
+
+## Approved DLC addendum — 2026-11-27
+Preserve exactly thirteen stage IDs; aerospace milestones do not introduce new numbered stages. The [interstellar civilization bible](../../../game/docs/INTERSTELLAR_UNIVERSE.md) adds extraterrestrial profiles, capability and roster requirements without replacing existing canon. Names and content inventories pending production.
