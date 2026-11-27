@@ -116,6 +116,9 @@ carriers, marketplace) → G6.1 "Field Command" (chain of command, suppression, 
     Lodestone, Storm-maker, Parasite riders, Silent clock, Sapper Architect, living siege tower.
 
 ## G11 "UNDERSTRIKE I–II" — underground bunkers, foundation + military (NEW, owner zip 2026-10-30)
+
+**Integrated XENOGENESIS / Myrieme Forge scope:** Shared stable IDs, versioned persistence, event ledger, bounded scheduler interfaces, Forge package/schema and independent tool foundation; reuse existing contracts.
+
 Human A only (decision 28: no other faction can ever build bunkers or the borer fleet, even by capture). Unlockable
 branch, not required in every mode. Needs G9's destructible terrain and persistent geometry.
 - **Phase 1, bunker foundation:** bunker unlock at Stage 8; architecture for 15 floors; first floor + incremental
@@ -134,6 +137,9 @@ branch, not required in every mode. Needs G9's destructible terrain and persiste
 - Acceptance: UX-01..03, ELEV-01..02, GEO-01..03, MIL-01..03, FCT-01..02, INT-01, PER-01, PERF-01, AI-01, A11Y-01.
 
 ## G12 "Soldiers and Theatres" — human depth + maps and modes [PROPOSED split of the G8 list]
+
+**Integrated XENOGENESIS / Myrieme Forge scope:** Forge language generation and communication foundations; XENOGENESIS species, ecology, population and environment contracts; representative offline fixtures.
+
 - **Human depth:** training facilities and courses, learning by doing, readiness; bunk and rotation with refresher
   courses; full base security (perimeter layers, threat states, hardening); combined arms, breaching and CQB, recon
   and sniper teams; mutual support calls; gear and vehicle upgrades; named soldiers and careers; specialists and kits;
@@ -145,6 +151,9 @@ branch, not required in every mode. Needs G9's destructible terrain and persiste
   skirmish; perf budgets, LOD, and AI pathing must hold; setup toggle; default capped mode remains.
 
 ## G13 "UNDERSTRIKE III" — the networked underground civilization (NEW)
+
+**Integrated XENOGENESIS / Myrieme Forge scope:** Integrate resource, settlement, ecology and archaeology interfaces with underground discoveries; Forge ancient scripts, naming and historical language data; preserve UNDERSTRIKE faction restrictions.
+
 Multiple bunkers (no fixed cap), each up to 15 floors; tunnels, military roads, rail / armoured trains, transport hubs,
 automated cross-bunker shipments; late maglev; resident cohorts and visible people (inspectable, never
 micromanaged); civilian districts and governance; closed-loop food / water / air / energy / medicine; energy grids
@@ -154,12 +163,18 @@ unresolved); the remaining borer classes and custom vehicle design (save / produ
 attacks on logistics and research. Tests LIFE-01, LOG-01..02.
 
 ## G14 "All Thirteen" — Stages 1–6 and 11–13 for every faction (original backlog F-025; campaign needs it)
+
+**Integrated XENOGENESIS / Myrieme Forge scope:** Complete remaining Forge production engines and adapters against faction/stage content; develop XENOGENESIS civilization, economic, political, military, research and engineering capabilities using representative species and factions.
+
 Distinct playable mechanics for every stage and every faction, with full skirmish parity: Stages 1–6 (Scattered
 Survivors → Industrial Revival), Stages 11–13 (Synthetic → Distributed → Apex). **Shadow Coalition** early/late stage
 bands **moved to G10** (owner 2026-11-23); G14 covers **other factions'** 1–6 and 11–13 only. UNDERSTRIKE's 13-stage
 unlock bands (early shelters, mechanized bunkers, advanced boring later).
 
 ## G15 "Inheritance" — the 13-chapter campaign (`CAMPAIGN_VISION.md` Part 1)
+
+**Integrated XENOGENESIS / Myrieme Forge scope:** Integrate campaign history, generational state, linguistic evolution, communication, first-contact and archaeological interpretation; protect campaign secrets and personally played battle rules.
+
 One Human A dynasty from the ash to Apex; founder (Ch 1–5) then heirs (Ch 6–13); the Healer / Dead Hand secret;
 hand-crafted regional map per chapter (real-time, pausable hub) with authored operations; war director between the
 beats; delayed orders by distance; carry-over of scars, people, grudges, builds; Story and Dynasty (Ironman) modes;
@@ -173,6 +188,9 @@ Listeners, full intel memory, turn path — per
 `docs/superpowers/plans/2026-11-23-ghost-exo-programme.md` Phase 2.
 
 ## G16 "UNDERSTRIKE IV" — high-fidelity underground (NEW)
+
+**Integrated XENOGENESIS / Myrieme Forge scope:** Complete outstanding XENOGENESIS subsystems and Forge integration; harden deterministic cross-director arbitration, persistence, performance, offline packages and representative stress tests.
+
 Mature chunk-based geology and groundwater; cascading multi-floor collapses with persistent ruins, surface subsidence
 and advanced VFX (same outcome at any VFX level); programmable hybrid-material tunnelling (MB-12 Atlas route
 blueprints); advanced vehicle variants; region-scale underground command; large-scale profiling and hardening;
@@ -180,6 +198,9 @@ blueprints); advanced vehicle variants; region-scale underground command; large-
 Tests DES-01..02, PER-01, PERF-01 at scale.
 
 ## G17 "Living World" — after the campaign (`CAMPAIGN_VISION.md` Part 1 + vision mockup 01)
+
+**Integrated XENOGENESIS / Myrieme Forge scope:** Mandatory full completion and acceptance: all XG-01–20 subsystems, all 15 Forge production engines, all eight integration adapters, lightweight offline runtime, full interoperability with the four existing directors, save/load, entitlement, determinism, performance and regression evidence. No deferral of system capabilities to G18/G19/G20.
+
 Endless world on the same save: continue the dynasty or start a new life; zoom levels settlement / army / nation /
 continent; AI rivals rise and fall, world crises, any civilization can slide down the stages; the continental war
 map (territory %, fleets, convoy lanes, expeditionary forces, airlift, naval support). Original backlog F-021 (deep
@@ -198,9 +219,9 @@ endless crisis.
   buttons; warbands can ignore player; doctrine unlock at tech stage (AI adapts live); pressure = steal/turn + messy
   ally risk + unpredictability. Same plan file.
 
-## Mandatory pre-G19 integration checkpoint
+## G11–G17 integration acceptance rule (completed by G17)
 
-Owner-approved sequence: G18 Space Expansion → full XENOGENESIS and Myrieme Forge integration acceptance (mandatory pre-G19 dependency; may be developed earlier) → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted before G19 begins, not merely prototyped. G20's actual interstellar gameplay and content development follows G19. Pre-G19 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.
+Owner-approved sequence: G11–G17 full XENOGENESIS and Myrieme Forge integration and acceptance → G18 Space Expansion → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted by G17 exit (before G18 and G19), not merely prototyped. G20's actual interstellar gameplay and content development follows G19. G11–G17 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.
 
 ## G19 "Last Protocol: Combined Arms" — co-op Last Protocol (owner 2026-11-23; was parked)
 Offline-first co-op siege on the **same** LP ruleset (Human A vs Machine, 512²+ map, 3 rings, CN facility, cores,
@@ -242,14 +263,14 @@ creep/countdown, Tide). Solo LP stays untouched as the 1v1 reference.
    names are working designations, decision register note; the role and Human A exclusivity are unchanged.)
 4. **Speed and settings:** G7.1 stays as decided (no speed control, no visible quality trades). G11 adds game-speed
    controls and an accessibility menu (reduced shake / flash, UI scale, remappable keys, non-colour threat cues).
-5. **Order approved:** G7.1 → G8 → G9 → G10 → G11 → G12 → G13 → G14 → G15 → G16 → G17 → G18 → full XENOGENESIS + Myrieme Forge acceptance → **G19 → G20** as listed.
+5. **Order approved:** G7.1 → G8 → G9 → G10 → G11 → G12 → G13 → G14 → G15 → G16 → G17 → G18 → **G19 → G20** (full XENOGENESIS + Myrieme Forge acceptance required by G17) as listed.
    The [PROPOSED] slice placements above are the owner-approved plan; each slice still gets its own Q&A and Done-when.
    (G19 co-op LP, G12 no-pop-cap, G10 leftover dark/G7.1 ideas added owner 2026-11-23.)
 6. **Dark pass (2026-10-31): everything goes into G7.1** (part J), not a separate slice.
 
 
 ## Owner-approved DLC extension — 2026-11-27
-UNDERSTRIKE is a base-game addition, not DLC. G18 is DLC 1 (one home star system); its existing six ship rosters and arrival war are preserved. G19 remains Last Protocol Combined Arms. DLC 2 Beyond Civilization is G20 after G19; full XENOGENESIS and Myrieme Forge integration is mandatory before G19. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
+UNDERSTRIKE is a base-game addition, not DLC. G18 is DLC 1 (one home star system); its existing six ship rosters and arrival war are preserved. G19 remains Last Protocol Combined Arms. DLC 2 Beyond Civilization is G20 after G19; full XENOGENESIS and Myrieme Forge integration is mandatory by G17 exit. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
 
 
 ## 2026-11-27 — Authoritative expansion integration
@@ -268,4 +289,19 @@ After G19: complete the finite 50-system interstellar universe, seven regions, f
 
 ## Corrected owner-approved execution sequence
 
-Owner-approved sequence: G18 Space Expansion → full XENOGENESIS and Myrieme Forge integration acceptance (mandatory pre-G19 dependency; may be developed earlier) → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted before G19 begins, not merely prototyped. G20's actual interstellar gameplay and content development follows G19. Pre-G19 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.
+Owner-approved sequence: G11–G17 full XENOGENESIS and Myrieme Forge integration and acceptance → G18 Space Expansion → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted by G17 exit (before G18 and G19), not merely prototyped. G20's actual interstellar gameplay and content development follows G19. G11–G17 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.
+
+
+## G11–G17 integrated system development — current owner authority
+
+Owner-approved execution: distribute XENOGENESIS and full Myrieme Forge implementation/integration across G11–G17, with full acceptance required to close G17. G18 Space Expansion → G19 Last Protocol: Combined Arms → G20 Beyond Civilization follow in order. Pre-G19 prerequisite remains mandatory but is satisfied at G17; no standalone checkpoint after G18. G20 actual interstellar gameplay and production universe content remain after G19; representative fixtures validate all systems beforehand. Entitlement boundaries and existing gate scopes remain protected; no implementation or completion claimed.
+
+| Gate | Assigned system work |
+|---|---|
+| G11 | Shared stable IDs, versioned persistence, event ledger, bounded scheduler interfaces, Forge package/schema and independent tool foundation; reuse existing contracts. |
+| G12 | Forge language generation and communication foundations; XENOGENESIS species, ecology, population and environment contracts; representative offline fixtures. |
+| G13 | Integrate resource, settlement, ecology and archaeology interfaces with underground discoveries; Forge ancient scripts, naming and historical language data; preserve UNDERSTRIKE faction restrictions. |
+| G14 | Complete remaining Forge production engines and adapters against faction/stage content; develop XENOGENESIS civilization, economic, political, military, research and engineering capabilities using representative species and factions. |
+| G15 | Integrate campaign history, generational state, linguistic evolution, communication, first-contact and archaeological interpretation; protect campaign secrets and personally played battle rules. |
+| G16 | Complete outstanding XENOGENESIS subsystems and Forge integration; harden deterministic cross-director arbitration, persistence, performance, offline packages and representative stress tests. |
+| G17 | Mandatory full completion and acceptance: all XG-01–20 subsystems, all 15 Forge production engines, all eight integration adapters, lightweight offline runtime, full interoperability with the four existing directors, save/load, entitlement, determinism, performance and regression evidence. No deferral of system capabilities to G18/G19/G20. |

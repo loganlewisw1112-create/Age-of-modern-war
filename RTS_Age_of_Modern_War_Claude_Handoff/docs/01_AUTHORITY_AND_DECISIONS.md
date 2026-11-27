@@ -45,4 +45,9 @@ Approved 15 space decisions, stellar design and four final decisions: Hidden His
 
 ## Corrected owner-approved execution sequence
 
-G18 Space Expansion → mandatory full XENOGENESIS and Myrieme Forge acceptance → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). Both systems must be fully implemented, integrated, tested and accepted before G19 begins: all 20 XENOGENESIS subsystems; all 15 Myrieme Forge engines and eight integration adapters, including offline runtime. Earlier development is permitted. G20 interstellar gameplay/content production happens after G19; pre-G19 testing uses representative fixtures without requiring full G20 content or exposing unowned DLC. No implementation or gate completion is claimed.
+G11–G17 full XENOGENESIS and Myrieme Forge acceptance → G18 Space Expansion → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). Both systems must be fully implemented, integrated, tested and accepted by G17 exit (before G18 and G19): all 20 XENOGENESIS subsystems; all 15 Myrieme Forge engines and eight integration adapters, including offline runtime. Earlier development is permitted. G20 interstellar gameplay/content production happens after G19; G11–G17 testing uses representative fixtures without requiring full G20 content or exposing unowned DLC. No implementation or gate completion is claimed.
+
+
+## G11–G17 integrated system development — current owner authority
+
+G11–G17 integrated development of XENOGENESIS and full Myrieme Forge; both fully implemented, integrated, tested and accepted as mandatory G17 exit criteria. G18 Space Expansion → G19 Last Protocol Combined Arms → G20 Beyond Civilization. No separate post-G18 checkpoint; G20 gameplay and full universe content production remain after G19. All 20 XENOGENESIS subsystems, 15 Forge engines and eight integration modules, offline runtime and shared director interoperability required by G17. Representative validation fixtures, not premature DLC gameplay; ownership boundaries remain. See the current ROADMAP and DLC delivery plan for per-gate assignments. No implementation or gate completion claimed.
