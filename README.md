@@ -642,7 +642,7 @@ The road to orbit depends on the world inherited from Inheritance and Living Wor
 
 > **Beyond the home system. Beyond the civilizations we know.**
 
-*Owner-approved expansion design · Not implemented · Development gate and release date unassigned.*
+*Owner-approved expansion design · Not implemented · G20 · Release date unassigned.*
 
 Beyond Civilization extends the same persistent world into a finite, authored interstellar expanse. The primary True Dynasty path begins in the Core Region with the civilization inherited from the base campaign, Living World and DLC 1; separate independent starts are also supported. Where Space Expansion (DLC 1) opens the home star system, DLC 2 opens the rest of the Core and six surrounding regions. The intended experience combines the freedom of space exploration, the mystery of isolated worlds and the danger of a lawless expanse with the familiar build, command and fight loop of Age of Modern War.
 
@@ -776,7 +776,7 @@ Planned presets include Classic RTS, Alien Invasion, First Contact, Planetary Co
 | 9 — Skirmish | Full entitlement-aware faction rosters, presets, legal scenarios and balance |
 | 10 — Integration and release | Offline packaging, save compatibility, performance, AI, regression and gameplay playtests |
 
-Internal phases are dependency-driven and may overlap where safe. Release requires the complete polished expansion, not unfinished public content drops. Existing G18/G19 order and base-game gates are unchanged. All phases are planned; no implementation or release date is claimed.
+Internal phases are dependency-driven and may overlap where safe. Release requires the complete polished expansion, not unfinished public content drops. Execution order is G18 → G20 → G19; earlier base-game gates are unchanged. All phases are planned; no implementation or release date is claimed.
 
 **Design specifications (may contain spoilers):** [Master DLC GDD](game/docs/BEYOND_CIVILIZATION_GDD.md) · [Universe and civilization bible](game/docs/INTERSTELLAR_UNIVERSE.md) · [XENOGENESIS](game/docs/XENOGENESIS.md) · [Myrieme Forge](game/docs/MYRIEME_FORGE_INTEGRATION.md) · [Development pipeline and acceptance tests](game/docs/DLC_DELIVERY_PLAN.md)
 
@@ -808,8 +808,8 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 | G15 | Inheritance campaign |
 | G16–G17 | High-fidelity underground and Living World |
 | G18 | Space Expansion (DLC 1): home star system |
+| G20 | Beyond Civilization (DLC 2): finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration |
 | G19 | Offline-first 2–4-player Last Protocol co-op; solo remains the reference |
-| Future (unassigned) | Beyond Civilization (DLC 2): finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration |
 
 Future gates require their own frozen acceptance contracts. This is a development pipeline, not a release-date or storefront promise.
 
@@ -924,3 +924,8 @@ Detailed narrative design material is not linked from this public overview. Some
 ---
 
 **Win the war. Survive the siege. Build the legacy. Shape the world. Reach beyond it.**
+
+
+## Owner-approved execution sequence — G20 before G19
+
+G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.

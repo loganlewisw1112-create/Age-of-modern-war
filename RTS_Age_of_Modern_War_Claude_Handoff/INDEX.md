@@ -21,8 +21,13 @@
 
 ## 2026-11-27 — Current expansion design authority
 
-DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (G20). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
 
 Index the eight new authoritative specifications; historical source_text remains archival.
 
 [SPACE EXPANSION GDD](../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)
+
+
+## Owner-approved G20 sequencing
+
+G20 — Beyond Civilization (DLC 2), including complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Stable gate IDs are not numerical execution order. No completion or release date claimed.

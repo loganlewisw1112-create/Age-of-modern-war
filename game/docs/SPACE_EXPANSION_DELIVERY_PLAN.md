@@ -2,7 +2,7 @@
 
 Owner-approved direction, 2026-11-27. PLANNED / NOT IMPLEMENTED. All examples are non-executable documentation guidance. No runtime changes or gate changes authorized.
 
-G18 expanded scope only; G10.1 wider regression open; existing G11–G19 order/status preserved; no new numbered gate for DLC 2. No actual implementation or tests run.
+G18 expanded scope only; G10.1 wider regression open; existing gate statuses preserved; G20 (DLC 2) follows G18 and precedes G19. No actual implementation or tests run.
 
 | Workstream | Deliverable |
 |---|---|
@@ -58,3 +58,8 @@ SP-01 first; SP-02/03/04 build foundation; extraction, planetary, command, logis
 | SP-QA-31 | Hidden History varied discovery/outcomes | NOT RUN |
 | SP-QA-32 | Existing rosters, endings and gates protected | NOT RUN |
 Risks: orbital stability, precision, content scope, migration, director contention, performance, narrative conflict. Mitigate with validated catalogs, coordinate frames, deterministic fixtures, single authoritative ledger, bounded simulation tiers, profiling and canon review. Exact hardware budgets, numerical parameters, individual vehicle specs and final narrative revelations pending. No fake completion. [SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)
+
+
+## Owner-approved execution sequence — G20 before G19
+
+G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.

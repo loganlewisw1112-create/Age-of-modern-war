@@ -23,3 +23,8 @@ Initial requested output: a concise source-grounded handoff assessment, prioriti
 ## Future expansion authority (2026-11-27)
 
 [Space Expansion master design](../game/docs/SPACE_EXPANSION_GDD.md) records the approved DLC 1 / DLC 2 numbering, True Dynasty and independent starts, stellar catalog, Hidden Chronicle and engineering guidance. These are future planning specifications only; do not implement ahead of existing gates. No change to current source, build, save format or completion status.
+
+
+## Owner-approved G20 sequencing
+
+G20 — Beyond Civilization (DLC 2), including complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Stable gate IDs are not numerical execution order. No completion or release date claimed.

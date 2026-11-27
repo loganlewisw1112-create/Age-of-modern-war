@@ -3,7 +3,7 @@
 Owner-approved direction, 2026-11-27. PLANNED / NOT IMPLEMENTED. All examples are non-executable documentation guidance. No runtime changes or gate changes authorized.
 
 ## Design authority
-DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (future unnumbered); UNDERSTRIKE is base game. True Dynasty is the primary earned path: Inheritance → Living World → DLC 1 → DLC 2, preserving consequential history and requiring prior progression. Separate new saves may independently start either owned DLC with preset or customized coherent historical state, never modifying Dynasty saves; standalone DLC 1 may continue to DLC 2. New DLC factions playable only in Skirmish; campaign/Living World retain inherited civilization and AI opponents. Campaign personally played battle requirements unchanged. Offline, classic RTS controls, no mandatory micromanagement. Existing gate statuses, six aerospace hull rosters, arrival war and campaign endings protected.
+DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (G20); UNDERSTRIKE is base game. True Dynasty is the primary earned path: Inheritance → Living World → DLC 1 → DLC 2, preserving consequential history and requiring prior progression. Separate new saves may independently start either owned DLC with preset or customized coherent historical state, never modifying Dynasty saves; standalone DLC 1 may continue to DLC 2. New DLC factions playable only in Skirmish; campaign/Living World retain inherited civilization and AI opponents. Campaign personally played battle requirements unchanged. Offline, classic RTS controls, no mandatory micromanagement. Existing gate statuses, six aerospace hull rosters, arrival war and campaign endings protected.
 
 ## Decision register
 1. B+ Original fictional star system; protect homeworld canon
@@ -37,3 +37,8 @@ Not new numbered civilization stages, mandatory quests or separate releases. DLC
 Proposed save header: {schema_version, save_id, lineage_id, start_kind: Dynasty|Preset|Custom, parent_snapshot_id, progression_flags, content_entitlements, world_seed, tick, catalog_version}. Persist population, factions, commanders, territory, tech, resources, infrastructure, fleets, diplomacy, discoveries, history and pending conflicts. Ownership grants access, not free advancement. Independent saves have fresh IDs and validated historical initialization. Missing DLC retains compatible bounded history without full unowned simulation. Transactional migration and rollback fixtures required. Signals propagate with delays. Preserve thirteen stages and campaign endings.
 
 [SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)
+
+
+## Owner-approved G20 sequencing
+
+G20 — Beyond Civilization (DLC 2), including complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Stable gate IDs are not numerical execution order. No completion or release date claimed.

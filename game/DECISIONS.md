@@ -56,3 +56,8 @@ Evidence lives on the board `.plan/board_g71.jsonl` (seq numbers below) and in `
 ## AOMW naming separation
 
 Use The Last Dawn (chapter I), Valley of Reclamation (chapter III), Pioneer Settlements (stage 03), Survival Outpost (preset), Lunar and Asteroid Expansion (phase III), The Interstellar Expanse (phase II), and Fractured Reach (region). Reserve the separate game's title vocabulary; avoid overlapping naming in new AOMW content. Stable IDs, story, mechanics and progression remain unchanged. Runtime label alignment requires a separately authorized implementation pass if necessary.
+
+
+## Owner-approved G20 sequencing
+
+G20 — Beyond Civilization (DLC 2), including complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Stable gate IDs are not numerical execution order. No completion or release date claimed.

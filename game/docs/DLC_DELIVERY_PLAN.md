@@ -1,5 +1,5 @@
 # DLC delivery pipeline and release gates
-Owner-approved direction 2026-11-27. No implementation started or tests run. Existing [roadmap](ROADMAP.md) and frozen gate contracts take precedence for current development; G10.1 wider regression remains open. G11–G17 base game, G18 Space Expansion and G19 Last Protocol Combined Arms retain order and scope. DLC 2 gate numbers and dates not assigned. [Master design](BEYOND_CIVILIZATION_GDD.md).
+Owner-approved direction 2026-11-27. No implementation started or tests run. Existing [roadmap](ROADMAP.md) and frozen gate contracts take precedence for current development; G10.1 wider regression remains open. G11–G17 base game precedes G18 Space Expansion, then G20 Beyond Civilization, then G19 Last Protocol Combined Arms. Dates not assigned. [Master design](BEYOND_CIVILIZATION_GDD.md).
 
 | Workstream | Dependencies | Deliverable / exit criteria |
 |---|---|---|
@@ -41,13 +41,18 @@ Work in small dependency-driven vertical slices. Each implementation slice requi
 | DLC-19 | Complete release qualification, regression of existing modes, packaged build and reproducible evidence; no tests marked pass without evidence |
 
 ## Risks and open production work
-Scope and performance: prototype one star-system transition and two independent alien powers before scaling. Content cost: modular validated roster/terrain/asset pipelines, not generic reskins. Save migration: stable IDs, transactional snapshots and regression fixtures. Director conflicts: one authoritative ledger and deterministic intent validation. Linguistic authenticity: independent tool implementation, non-acoustic adapter R&D, canon approval and fallback. Final species names, unit/building rosters, stellar catalog/coordinates/planet inventories and exact budgets remain production work; no fake completion. No new gate assigned and no additional DLC invented. Protect base-game delivery above all.
+Scope and performance: prototype one star-system transition and two independent alien powers before scaling. Content cost: modular validated roster/terrain/asset pipelines, not generic reskins. Save migration: stable IDs, transactional snapshots and regression fixtures. Director conflicts: one authoritative ledger and deterministic intent validation. Linguistic authenticity: independent tool implementation, non-acoustic adapter R&D, canon approval and fallback. Final species names, unit/building rosters, stellar catalog/coordinates/planet inventories and exact budgets remain production work; no fake completion. G20 assigned before G19 and no additional DLC invented. Protect base-game delivery above all.
 
 
 ## 2026-11-27 — Authoritative expansion integration
 
-DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (future unnumbered). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
+DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (G20). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
 
 SP-01–15 and SP-QA-01–32 extend G18. Validate separate-save isolation and entitlement combinations, transactional import, canon compatibility and no unowned full simulation. Preserve existing pipeline and tests as planned.
 
 [SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)
+
+
+## Owner-approved execution sequence — G20 before G19
+
+G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.
