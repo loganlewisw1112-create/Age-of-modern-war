@@ -236,6 +236,12 @@ func test_sensors() -> void:
 func test_combat_tower_disabled_holds_fire() -> void:
 	# I2 for towers with a def.weapon (Combat._tower_tick guard, ARMY71 CR 1720 / seq 2157): disabled = holds fire
 	var w := _setup(true)
+	var objective := w.spawn_building("hq", H, Vector2i(65, 65), true)
+	w.spawn_building("m_core", M, Vector2i(80, 80), true)
+	w.step()
+	LP.st(w).facility = objective
+	var extent := Vector2(float(w.map.w), float(w.map.h))
+	SimWorld.Creep.purge(w, extent * 0.5, extent.length())
 	check(T.is_defence("a_wall_tower"), "Combat towers (def.weapon) count as defences")
 	var bid := w.spawn_building("a_wall_tower", H, Vector2i(20, 20), true)
 	var b: Dictionary = w.entities[bid]
@@ -252,6 +258,7 @@ func test_combat_tower_disabled_holds_fire() -> void:
 	check_eq(int(b.target), -1, "and holds no target")
 	check(T.revive(w, b, -1), "revive accepted")
 	_run(w, 520)
+	check(not w.match_state.ended, "the isolated arena is still running")
 	check(not T.disabled(w, b), "revived")
 	# fresh targets (the LP garrison kills the first within ~15 ticks). They stand on the tower's current bearing: a
 	# target off that bearing needs ~14 ticks of slew (Traverse7, 0.096 rad/tick) and the garrison killed it first

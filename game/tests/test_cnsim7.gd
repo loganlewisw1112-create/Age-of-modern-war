@@ -721,7 +721,7 @@ func test_group_pincer_on_colossus_takes_minutes_and_two_topples() -> void:
 
 
 func test_one_topple_window_cannot_kill_an_unhurt_walker() -> void:
-	var g := _group_world(6, Vector2(11, -2))   # measured window on an unhurt walker here: 134 hp
+	var g := _group_world(6, Vector2(11, 0))
 	var w: SimWorld = g[0]
 	var k: Dictionary = g[2]
 	var kid := int(k.id)
