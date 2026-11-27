@@ -24,3 +24,7 @@ Strategic loop: evaluate known resource security/threat/objectives → allocate 
 Difficulty modifies decision cadence, candidate quality, risk and coordination within budgets. Any configurable starting handicap is visible in setup. Hidden resource grants or omniscient target access violate the baseline. Known contact age/confidence and observation source must be inspectable. Remembered intelligence must follow explicit target-location and expiry rules.
 
 AI autonomy test starts with finite opening assets and no player-triggered events: log gathering, legal construction, production, research, scouting, defense, enemy-AI engagement and recovery. Record rejected commands, planner time, stalled goals, next action and observer-filtered contacts. A stationary enemy firing on a timer does not prove autonomous civilization behavior.
+
+
+## Approved DLC addendum — 2026-11-27
+Four existing directors remain; DLC 3 adds [XENOGENESIS](../../../game/docs/XENOGENESIS.md), with 20 logical subsystems and shared authority, imperfect information, bounded plans, and no default AI cheats. [Forge integration](../../../game/docs/MYRIEME_FORGE_INTEGRATION.md) supports communication and evolution.
