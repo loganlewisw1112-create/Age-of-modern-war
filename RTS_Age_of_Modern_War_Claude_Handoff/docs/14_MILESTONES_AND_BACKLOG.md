@@ -190,4 +190,4 @@ Every feature status starts NOT IMPLEMENTED / NOT VERIFIED in this handoff becau
 
 
 ## Approved DLC addendum — 2026-11-27
-[Current roadmap](../../../game/docs/ROADMAP.md) and [DLC delivery pipeline](../../../game/docs/DLC_DELIVERY_PLAN.md) govern sequencing. Preserve G10.1 regression, G11–G19 and current frozen contracts; DLC 3 future unnumbered track. No premature implementation.
+[Current roadmap](../../game/docs/ROADMAP.md) and [DLC delivery pipeline](../../game/docs/DLC_DELIVERY_PLAN.md) govern sequencing. Preserve G10.1 regression, G11–G19 and current frozen contracts; DLC 3 future unnumbered track. No premature implementation.
