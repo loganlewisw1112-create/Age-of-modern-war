@@ -129,4 +129,4 @@ Future fidelity transitions require before/after conservation of people, equipme
 
 
 ## Approved DLC addendum — 2026-11-27
-Approved future extension: [XENOGENESIS](../../../game/docs/XENOGENESIS.md) is one fifth director with 20 logical subsystems, sharing authoritative state with existing directors. [Myrieme Forge](../../../game/docs/MYRIEME_FORGE_INTEGRATION.md) provides 15 engines and eight adapters, offline. See those contracts for data, event and persistence boundaries.
+Approved future extension: [XENOGENESIS](../../game/docs/XENOGENESIS.md) is one fifth director with 20 logical subsystems, sharing authoritative state with existing directors. [Myrieme Forge](../../game/docs/MYRIEME_FORGE_INTEGRATION.md) provides 15 engines and eight adapters, offline. See those contracts for data, event and persistence boundaries.
