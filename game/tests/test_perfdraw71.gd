@@ -236,11 +236,13 @@ func test_minimap_incoming_layers() -> void:
 ## The in-game proof (every refresh, every item, full path vs records) is PD71_RC_VERIFY=1, see entity_layer.refresh.
 func _rc_c(a61: Dictionary, walk: bool) -> Array:
 	var c: Array = []
-	c.resize(41)
+	c.resize(43)
 	c[0] = "x"; c[1] = 0; c[2] = 0; c[3] = Vector2.ZERO; c[4] = 32; c[5] = 32; c[6] = Vector2.ZERO; c[7] = 3
 	c[8] = walk; c[9] = 1; c[10] = 2; c[11] = 1; c[12] = false; c[13] = -1; c[14] = -1; c[15] = -1; c[16] = 0
 	c[17] = -1; c[18] = -1; c[19] = -1; c[20] = -1; c[27] = -1; c[28] = -1; c[29] = -1; c[30] = -1
 	c[31] = a61; c[32] = {}; c[33] = -1; c[35] = 1 << 30
+	c[41] = 8
+	c[42] = {}
 	return c
 
 

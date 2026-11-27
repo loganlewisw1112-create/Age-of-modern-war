@@ -2668,10 +2668,17 @@ static func _suits_busy(w: SimWorld, fid: int) -> bool:
 ## Number of suits of fid in the wash or on their way into / out of it (the WASH_CAP count).
 static func suits_in_wash(w: SimWorld, fid: int) -> int:
 	var SS: Dictionary = w.sys_state.get(SUIT_KEY, {})
+	var facility := CnFacility.fac(w, fid)
+	if facility.is_empty():
+		return 0
+	var wash := CnFacility.zone(facility, "apc_wash")
 	var n := 0
 	for k in SS.get("s", {}):
 		var R: Dictionary = SS.s[k]
-		if int(R.fac) == fid and ["win", "decon", "wout", "hout"].has(String(R.st)):
+		if int(R.fac) != fid:
+			continue
+		var e = w.entities.get(int(k))
+		if e != null and (["win", "decon", "wout", "hout"].has(String(R.st)) or wash.has_point(Vector2(e.pos))):
 			n += 1
 	return n
 
