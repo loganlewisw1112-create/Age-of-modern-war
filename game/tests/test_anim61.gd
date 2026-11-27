@@ -32,6 +32,8 @@ func test_every_foot_unit_has_full_set() -> void:
 	var bad := 0
 	for def in inf:
 		var spec: Dictionary = inf[def]
+		if spec.has("g10"):
+			continue  # Coalition four-facing sheets have their own pose tests in test_g10_content.gd.
 		var fr: Array = spec.get("frames", [])
 		var miss: Array = []
 		for n in SET:
@@ -64,6 +66,8 @@ func test_split_atlas_blocks() -> void:
 	for grp in [["inf", inf], ["veh", veh]]:
 		var g: String = grp[0]
 		for def in (grp[1] as Dictionary):
+			if (grp[1][def] as Dictionary).has("g10"):
+				continue
 			var s: Dictionary = ba._unit_spec(def)
 			var blk: Dictionary = s.get("blk", {})
 			if blk.is_empty():

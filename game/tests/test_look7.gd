@@ -27,7 +27,7 @@ func test_every_human_soldier_has_g7_poses() -> void:
 	var humans := 0
 	for def in inf:
 		var spec: Dictionary = inf[def]
-		if not G61Anim.human(String(def), spec):
+		if spec.has("g10") or not G61Anim.human(String(def), spec):
 			continue
 		humans += 1
 		var fr: Array = spec.get("frames", [])
@@ -73,7 +73,7 @@ func test_armband_masks_smaller_on_soldiers_only() -> void:
 	var n := 0
 	for def in inf:
 		var spec: Dictionary = inf[def]
-		if not G61Anim.human(String(def), spec) or String(spec.get("mask", "")) == "":
+		if spec.has("g10") or not G61Anim.human(String(def), spec) or String(spec.get("mask", "")) == "":
 			continue
 		var base := int((spec.get("anim61", {}) as Dictionary).get("base", 4))
 		var sh := _mask_share(String(spec.file), String(spec.mask), int(spec.fw), int(spec.fh), base)

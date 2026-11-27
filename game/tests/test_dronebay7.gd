@@ -513,7 +513,11 @@ func test_hive_threat_board_priority_and_rebalance() -> void:
 	var aa := _foe_unit(w, aad, foe, Vector2(c.x - 6, cr.end.y + 2.5), 3000.0) if aad != "" else -1
 	var hvy := _foe_unit(w, "b_scrap_mech", foe, Vector2(c.x + 6, cr.end.y + 2), 50000.0)
 	var air := _foe_unit(w, "cn_gun_drone", foe, Vector2(c.x, cr.end.y + 9), 600.0)
-	var gnd := _foe_unit(w, "b_militia", foe, Vector2(c.x + 3, cr.end.y + 9), 800.0)
+	var gnd := _foe_unit(w, "b_moto_scouts", foe, Vector2(c.x + 3, cr.end.y + 9), 800.0)
+	# A scout supplies vision of the outside ground target. Altitude already exposes the air target.
+	var scout := w.spawn_unit("rifleman", 0, _clampv(w, Vector2(c.x + 7, cr.end.y + 9)))
+	w.entities[scout].order = {"type": "hold"}
+	w.entities[scout].cd_ticks = 10000
 	_run(w, 40)
 	var brd := DroneBay7.board(w, fac)
 	print("DRONEBAY7 board ", brd, " aa_def=", aad)
@@ -522,7 +526,7 @@ func test_hive_threat_board_priority_and_rebalance() -> void:
 		check_eq(_bcls(brd, aa), "aa", "%s is anti-air" % aad)
 	check_eq(_bcls(brd, hvy), "heavy_wall", "the mech at the wall is heavy armour at the walls")
 	check_eq(_bcls(brd, air), "air", "the enemy drone is an air threat")
-	check_eq(_bcls(brd, gnd), "ground", "the rifleman outside is a ground threat")
+	check_eq(_bcls(brd, gnd), "ground", "the light vehicle outside is a ground threat")
 	var order := [brk, aa, hvy, air, gnd] if aa >= 0 else [brk, hvy, air, gnd]
 	var ok := true
 	for i in range(1, order.size()):
