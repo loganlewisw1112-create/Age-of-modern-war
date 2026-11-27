@@ -17,7 +17,7 @@ IN THIS BUILD (G10 LOCKED + G9/G8/G7.1)
   ART approved-core locked: CELL / DEATH / WALKER / CLOSE AIR; Ghost Wing + camo + CLOSE AIR states (bulk wave3)
   E4 lock smoke 122/0; stage hashes MATCH; AI soak + 100-squad stress green
 
-LOOK / DEFERRED ART (owner 2026-11-24)
+HISTORICAL G10 LOOK CHECKPOINT (owner 2026-11-24)
   LOCKED: CELL, DEATH, WALKER, CLOSE AIR
   DEFERRED (placeholders OK; locked with exception): TECHNICAL Humvee family, SAFEHOUSE, HATCH/hidden structure
   Redesign later via design-blueprint. See game/docs/G10_SCOPE.md and .superpowers/sdd/g10.lock
@@ -41,3 +41,6 @@ G10.1 STABILIZATION BUILD
   Q / E rotates the battlefield while preserving the point under the camera.
   Open Coalition in the match HUD for doctrine and Ghost missions. Scout a structure, build a Ghost Complex and field four healthy operators.
   Coalition Advanced lists dark operations, technology acquisition and patron contracts.
+
+  Facility APCs brake for individual upcoming bends, and convoy escorts update their spacing sooner.
+  G10.1 remains a stabilization preview while the wider regression gate is open.
