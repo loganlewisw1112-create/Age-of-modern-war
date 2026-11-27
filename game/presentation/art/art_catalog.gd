@@ -90,10 +90,13 @@ static func _merge_g5() -> void:
 				_man[sec] = {}
 			var dst: Dictionary = _man[sec]
 			for k in v:
-				if not dst.has(k):
+				if grp == "g71_hive9" and sec in ["vehicles", "infantry", "icons"]:
 					dst[k] = v[k]
-				elif grp == "g71_hive9" and (sec == "vehicles" or sec == "infantry" or sec == "icons"):
-					dst[k] = v[k]  # G9 HIVE9: blended roster overrides prior machine art
+					if sec != "icons":
+						var previous: Dictionary = _man.get("infantry" if sec == "vehicles" else "vehicles", {})
+						previous.erase(k)
+				elif not dst.has(k):
+					dst[k] = v[k]
 				elif sec == "lod_icons" and dst[k] is Dictionary and v[k] is Dictionary:
 					(dst[k] as Dictionary).merge(v[k], false)
 				elif sec == "command_icons" and dst[k] is Array and v[k] is Array:
@@ -515,7 +518,13 @@ static func icon(id: String) -> Texture2D:
 	if rel is Dictionary:
 		rel = rel.get("file")
 	if rel is String:
-		return _texture(rel)
+		var authored := _texture(rel)
+		if authored == _ph() or authored.get_size() == Vector2(32, 32):
+			return authored
+		var fitted := "fitted_icon:" + String(rel)
+		if not _texs.has(fitted):
+			_texs[fitted] = _fit_icon(authored.get_image())
+		return _texs[fitted]
 	var item := Content.production(id)
 	var units: Array = item.get("spawns", [])
 	var def := String(units[0]) if not units.is_empty() else id
@@ -529,6 +538,12 @@ static func icon(id: String) -> Texture2D:
 	if src == null:
 		return _ph()
 	var frame := src if spec.is_empty() else src.get_region(Rect2i(0, 0, int(spec.fw), int(spec.fh)))
+	var tex := _fit_icon(frame)
+	_texs[key] = tex
+	return tex
+
+
+static func _fit_icon(frame: Image) -> Texture2D:
 	var box := frame.get_used_rect()
 	if not box.has_area():
 		return _ph()
@@ -538,9 +553,7 @@ static func icon(id: String) -> Texture2D:
 	var tile := Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	crop.convert(Image.FORMAT_RGBA8)
 	tile.blit_rect(crop, Rect2i(Vector2i.ZERO, crop.get_size()), (tile.get_size() - crop.get_size()) / 2)
-	var tex := ImageTexture.create_from_image(tile)
-	_texs[key] = tex
-	return tex
+	return ImageTexture.create_from_image(tile)
 
 
 ## Iso ellipse ring sized to `size_tiles` (footprint width in tiles); drawn centred on the entity.

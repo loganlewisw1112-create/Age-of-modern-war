@@ -1661,7 +1661,7 @@
       "sink": {
         "facings": 8.0,
         "fh": 59.0,
-        "file": "sink/m_hydro_skiff_sink.png",
+        "file": "res://assets/art/g5_naval/sink/m_hydro_skiff_sink.png",
         "frames": [
           "sink_0",
           "sink_1",
@@ -1677,7 +1677,7 @@
       "wake": {
         "facings": 8.0,
         "fh": 88.0,
-        "file": "wake/m_hydro_skiff_wake.png",
+        "file": "res://assets/art/g5_naval/wake/m_hydro_skiff_wake.png",
         "fps": 6.0,
         "frames": 3.0,
         "fw": 168.0,
@@ -2073,7 +2073,7 @@
       ],
       "shadow": {
         "fh": 18.0,
-        "file": "units/m_drone_carrier_shadow.png",
+        "file": "res://assets/art/g5_air/units/m_drone_carrier_shadow.png",
         "fw": 33.0,
         "pivot": [
           16.0,
@@ -2083,7 +2083,7 @@
       "shadow_sheet": {
         "facings": 8.0,
         "fh": 64.0,
-        "file": "units/m_drone_carrier_shadow8.png",
+        "file": "res://assets/art/g5_air/units/m_drone_carrier_shadow8.png",
         "fw": 90.0,
         "pivot": [
           45.0,
@@ -2199,7 +2199,7 @@
       ],
       "shadow": {
         "fh": 8.0,
-        "file": "units/g71_m_turret_eater_shadow.png",
+        "file": "res://assets/art/g71_siege/units/g71_m_turret_eater_shadow.png",
         "fw": 14.0,
         "pivot": [
           7.0,
@@ -3234,7 +3234,7 @@
       "sink": {
         "facings": 8.0,
         "fh": 73.0,
-        "file": "sink/m_amphib_crawler_sink.png",
+        "file": "res://assets/art/g5_naval/sink/m_amphib_crawler_sink.png",
         "frames": [
           "sink_0",
           "sink_1",
@@ -3250,7 +3250,7 @@
       "wake": {
         "facings": 8.0,
         "fh": 108.0,
-        "file": "wake/m_amphib_crawler_wake.png",
+        "file": "res://assets/art/g5_naval/wake/m_amphib_crawler_wake.png",
         "fps": 6.0,
         "frames": 3.0,
         "fw": 208.0,
@@ -4221,7 +4221,7 @@
       ],
       "shadow": {
         "fh": 8.0,
-        "file": "units/g6_mimic_shadow.png",
+        "file": "res://assets/art/g6_units/units/g6_mimic_shadow.png",
         "fw": 14.0,
         "pivot": [
           7.0,
@@ -4352,7 +4352,7 @@
       ],
       "shadow": {
         "fh": 18.0,
-        "file": "units/m_drone_carrier_shadow.png",
+        "file": "res://assets/art/g5_air/units/m_drone_carrier_shadow.png",
         "fw": 33.0,
         "pivot": [
           16.0,
@@ -4362,7 +4362,7 @@
       "shadow_sheet": {
         "facings": 8.0,
         "fh": 64.0,
-        "file": "units/m_drone_carrier_shadow8.png",
+        "file": "res://assets/art/g5_air/units/m_drone_carrier_shadow8.png",
         "fw": 90.0,
         "pivot": [
           45.0,
@@ -4799,7 +4799,7 @@
       "sink": {
         "facings": 8.0,
         "fh": 59.0,
-        "file": "sink/m_hydro_skiff_sink.png",
+        "file": "res://assets/art/g5_naval/sink/m_hydro_skiff_sink.png",
         "frames": [
           "sink_0",
           "sink_1",
@@ -4815,7 +4815,7 @@
       "wake": {
         "facings": 8.0,
         "fh": 88.0,
-        "file": "wake/m_hydro_skiff_wake.png",
+        "file": "res://assets/art/g5_naval/wake/m_hydro_skiff_wake.png",
         "fps": 6.0,
         "frames": 3.0,
         "fw": 168.0,
@@ -4957,7 +4957,7 @@
       ],
       "shadow": {
         "fh": 19.0,
-        "file": "units/m_interceptor_swarm_shadow.png",
+        "file": "res://assets/art/g5_air/units/m_interceptor_swarm_shadow.png",
         "fw": 36.0,
         "pivot": [
           18.0,
@@ -4967,7 +4967,7 @@
       "shadow_sheet": {
         "facings": 8.0,
         "fh": 54.0,
-        "file": "units/m_interceptor_swarm_shadow8.png",
+        "file": "res://assets/art/g5_air/units/m_interceptor_swarm_shadow8.png",
         "fw": 77.0,
         "pivot": [
           39.0,
@@ -5478,7 +5478,7 @@
       ],
       "shadow": {
         "fh": 18.0,
-        "file": "units/m_lifter_drone_shadow.png",
+        "file": "res://assets/art/g5_air/units/m_lifter_drone_shadow.png",
         "fw": 33.0,
         "pivot": [
           16.0,
@@ -5488,7 +5488,7 @@
       "shadow_sheet": {
         "facings": 8.0,
         "fh": 69.0,
-        "file": "units/m_lifter_drone_shadow8.png",
+        "file": "res://assets/art/g5_air/units/m_lifter_drone_shadow8.png",
         "fw": 79.0,
         "pivot": [
           36.0,
@@ -5632,7 +5632,7 @@
       ],
       "shadow": {
         "fh": 19.0,
-        "file": "units/m_interceptor_swarm_shadow.png",
+        "file": "res://assets/art/g5_air/units/m_interceptor_swarm_shadow.png",
         "fw": 36.0,
         "pivot": [
           18.0,
@@ -5642,7 +5642,7 @@
       "shadow_sheet": {
         "facings": 8.0,
         "fh": 54.0,
-        "file": "units/m_interceptor_swarm_shadow8.png",
+        "file": "res://assets/art/g5_air/units/m_interceptor_swarm_shadow8.png",
         "fw": 77.0,
         "pivot": [
           39.0,
@@ -5771,7 +5771,7 @@
       ],
       "shadow": {
         "fh": 7.0,
-        "file": "units/m_micro_drone_shadow.png",
+        "file": "res://assets/art/g5_air/units/m_micro_drone_shadow.png",
         "fw": 12.0,
         "pivot": [
           6.0,
@@ -5781,7 +5781,7 @@
       "shadow_sheet": {
         "facings": 8.0,
         "fh": 36.0,
-        "file": "units/m_micro_drone_shadow8.png",
+        "file": "res://assets/art/g5_air/units/m_micro_drone_shadow8.png",
         "fw": 40.0,
         "pivot": [
           20.0,
@@ -5892,7 +5892,7 @@
       ],
       "shadow": {
         "fh": 8.0,
-        "file": "units/g6_mimic_shadow.png",
+        "file": "res://assets/art/g6_units/units/g6_mimic_shadow.png",
         "fw": 14.0,
         "pivot": [
           7.0,
@@ -6003,7 +6003,7 @@
       ],
       "shadow": {
         "fh": 8.0,
-        "file": "units/g6_mimic_shadow.png",
+        "file": "res://assets/art/g6_units/units/g6_mimic_shadow.png",
         "fw": 14.0,
         "pivot": [
           7.0,
@@ -6488,7 +6488,7 @@
       ],
       "shadow": {
         "fh": 8.0,
-        "file": "units/m_shield_drone_shadow.png",
+        "file": "res://assets/art/g6_units/units/m_shield_drone_shadow.png",
         "fw": 16.0,
         "pivot": [
           8.0,
@@ -6941,7 +6941,7 @@
       ],
       "shadow": {
         "fh": 18.0,
-        "file": "units/m_stealth_drone_shadow.png",
+        "file": "res://assets/art/g6_units/units/m_stealth_drone_shadow.png",
         "fw": 33.0,
         "pivot": [
           16.0,
@@ -7079,7 +7079,7 @@
       ],
       "shadow": {
         "fh": 19.0,
-        "file": "units/m_interceptor_swarm_shadow.png",
+        "file": "res://assets/art/g5_air/units/m_interceptor_swarm_shadow.png",
         "fw": 36.0,
         "pivot": [
           18.0,
@@ -7089,7 +7089,7 @@
       "shadow_sheet": {
         "facings": 8.0,
         "fh": 54.0,
-        "file": "units/m_interceptor_swarm_shadow8.png",
+        "file": "res://assets/art/g5_air/units/m_interceptor_swarm_shadow8.png",
         "fw": 77.0,
         "pivot": [
           39.0,
@@ -7199,7 +7199,7 @@
       ],
       "shadow": {
         "fh": 18.0,
-        "file": "units/g6_queen_shadow.png",
+        "file": "res://assets/art/g6_units/units/g6_queen_shadow.png",
         "fw": 38.0,
         "pivot": [
           19.0,

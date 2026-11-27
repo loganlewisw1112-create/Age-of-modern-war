@@ -136,9 +136,10 @@ func test_tips_lie_on_the_barrel_in_the_fire_frame() -> void:
 				cf = (s.frames as Array).find("idle")   # armed sheet without a fire column: drawn idle while firing
 			var src: String = u.s[pose]
 			for r in 8:
+				var sheet_row := ArtCatalog.unit_sheet_row(r, int(s.get("facings", 8)))
 				for b in u.p[pose][r]:
 					var p := Vector2i(int(b[0]) + int(pv[0]), int(b[1]) + int(pv[1]))
-					var ok := _on_barrel(d, img.get_width(), cf * fw, r * fh, fw, fh, p)
+					var ok := _on_barrel(d, img.get_width(), cf * fw, sheet_row * fh, fw, fh, p)
 					n += 1
 					if src[r] == "n":
 						n_mid += 1   # gun pointing at / away from the camera: on the body at the chest / shoulder

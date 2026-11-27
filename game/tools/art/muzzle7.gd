@@ -254,9 +254,9 @@ static func _pt(v: Vector2, piv: Vector2) -> Array:
 
 
 ## One pose of a sheet: [rows (8 x barrels), src string] or [] when the sheet lacks the fire column.
-static func measure_sheet_pose(img: Image, fw: int, fh: int, frames: Array, fire: String, ref: String, piv: Vector2) -> Array:
+static func measure_sheet_pose(img: Image, fw: int, fh: int, frames: Array, fire: String, ref: String, piv: Vector2, facings: int = 8) -> Array:
 	var cf := frames.find(fire)
-	if cf < 0 or img == null or img.get_width() < fw * (cf + 1) or img.get_height() < fh * 8:
+	if cf < 0 or img == null or img.get_width() < fw * (cf + 1) or img.get_height() < fh * facings:
 		return []
 	var cr := frames.find(ref)
 	if cr < 0:
@@ -266,11 +266,13 @@ static func measure_sheet_pose(img: Image, fw: int, fh: int, frames: Array, fire
 	var rows: Array = []
 	var src := ""
 	for r in 8:
-		var dir := screen_dir(r)
-		var t: Array = tips(d, w, cf * fw, r * fh, d if cr >= 0 else PackedByteArray(), w, maxi(cr, 0) * fw, r * fh, fw, fh, dir)
+		var sheet_row := ArtCatalog.unit_sheet_row(r, facings)
+		var dir := screen_dir(sheet_row * 2 if facings == 4 else r)
+		var y := sheet_row * fh
+		var t: Array = tips(d, w, cf * fw, y, d if cr >= 0 else PackedByteArray(), w, maxi(cr, 0) * fw, y, fw, fh, dir)
 		var row: Array = []
 		if t.is_empty():
-			row.append(_pt(edge(d, w, cf * fw, r * fh, fw, fh, dir, 0.7), piv))
+			row.append(_pt(edge(d, w, cf * fw, y, fw, fh, dir, 0.7), piv))
 			src += "e"
 		else:
 			for v in t:
@@ -280,7 +282,8 @@ static func measure_sheet_pose(img: Image, fw: int, fh: int, frames: Array, fire
 	# facing straight toward / away from the camera (rows 1 / 5) without a drawn flash: the extreme pixel along the
 	# facing is a boot / the helmet, not the gun; the barrel sits between the two neighbouring rows' tips (gun at the
 	# chest / over the shoulder), snapped onto the nearest opaque pixel of the cell
-	for r in [1, 5]:
+	var axis_rows := [1, 5] if facings == 8 else []
+	for r in axis_rows:
 		if src[r] == "e":
 			var a: Array = rows[r - 1][0]
 			var b: Array = rows[(r + 1) % 8][0]
@@ -320,7 +323,7 @@ static func measure_unit(spec: Dictionary) -> Dictionary:
 		var fire: String = ps[1]
 		if ps[0] == "stand" and not frames.has("fire"):
 			fire = "idle"   # armed sheet drawn without a fire column (m_assimilator, m_spider_layer): edge rule on idle
-		var m := measure_sheet_pose(img, fw, fh, frames, fire, ps[2], piv)
+		var m := measure_sheet_pose(img, fw, fh, frames, fire, ps[2], piv, int(spec.get("facings", 8)))
 		if not m.is_empty():
 			out.p[ps[0]] = m[0]
 			out.s[ps[0]] = m[1]
@@ -489,6 +492,8 @@ static func build_table() -> Dictionary:
 		var ks: Array = d.keys()
 		ks.sort()
 		for k in ks:
+			if u.has(k):
+				continue  # The runtime selects infantry before a same-ID vehicle entry.
 			var s = d[k]
 			if not (s is Dictionary):
 				continue

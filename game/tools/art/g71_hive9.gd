@@ -101,6 +101,9 @@ static func build_all() -> Dictionary:
 		var fh := int(spec.get("fh", 32))
 		var stem := "units/%s" % def_id
 		_blend_sheet(out, spec, stem, fw, fh, src_dir)
+		for key in spec:
+			if key != "file" and key != "mask":
+				spec[key] = _source_paths(spec[key], src_dir)
 		spec["g9"] = {"blend": "hive9", "base": src_id, "silhouette": String(Content.unit(def_id).get("role", "vehicle"))}
 		man.vehicles[def_id] = spec
 		if (manifests.get("g6_units", {}) as Dictionary).get("icons", {}) is Dictionary:
@@ -111,6 +114,18 @@ static func build_all() -> Dictionary:
 				out.images["icons/%s.png" % def_id] = ic
 				man.icons[def_id] = "icons/%s.png" % def_id
 	return out
+
+
+static func _source_paths(value, source_dir: String):
+	if value is Dictionary:
+		for key in value:
+			value[key] = _source_paths(value[key], source_dir)
+	elif value is Array:
+		for i in value.size():
+			value[i] = _source_paths(value[i], source_dir)
+	elif value is String and value.ends_with(".png") and not value.begins_with("res://"):
+		return source_dir + value
+	return value
 
 
 static func _save_look_samples(out: Dictionary) -> void:
