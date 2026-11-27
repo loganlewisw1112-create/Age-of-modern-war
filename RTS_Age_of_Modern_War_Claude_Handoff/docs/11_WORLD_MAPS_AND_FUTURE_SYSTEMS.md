@@ -25,3 +25,7 @@ Destroyed bridges affect road routing, supply and AI decisions. Repairs restore 
 Living World adds vulnerable survivor movement/interaction, needs, scavenging, crafting, relationships, legacy and succession. Settlement simulation adds housing, water, sanitation, education, health, demographics and delegated jobs. Institutions introduce laws, legitimacy, treaties, elections/coups and emergent state change. Wider systems include rail, power/water/comms, banking/debt/trade, environment/seasons, excavation, underground networks, naval/air operations, editors and multi-scale strategic control.
 
 These retain their v1.0 detail in the consolidated master and full source text. They are G5/G6 expansion work, not prerequisites for G0. New continents, complete history, map kilometers, canon factions and mystery plot are not invented here.
+
+
+## Approved DLC addendum — 2026-11-27
+[Universe bible](../../../game/docs/INTERSTELLAR_UNIVERSE.md): finite authored 50-system baseline, seven regions; one home system in DLC 2 and remaining 49 in DLC 3, deterministic planetary detail and dynamic political history. UNDERSTRIKE remains base-game addition.
