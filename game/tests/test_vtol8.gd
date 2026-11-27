@@ -307,7 +307,19 @@ func test_vtol8_aircraft_return_to_own_pad_centred() -> void:
 		var hb: Dictionary = w.entities[home[id]]
 		if not check(back.has(id), "%s %d returned and landed (phase %s at %s)" % [e.def, id, Air.phase(w, id), str(e.pos)]):
 			continue
-		check(Vector2(e.pos).distance_to(Vector2(hb.pos)) <= 0.05, "%s %d landed centred on ITS OWN pad %d (%s vs %s)" % [e.def, id, home[id], str(e.pos), str(hb.pos)])
+		var parked: Array[Vector2] = []
+		for other in w.units_of(fid):
+			if int(other.get("air_at", -1)) == int(hb.id) and bool(other.get("air_landed", false)):
+				parked.append(Vector2(other.pos))
+		if parked.size() == 2:
+			check_eq(Vector2(e.pos).y, Vector2(hb.pos).y, "%s parks across its own pad" % e.def)
+			check(parked[0].lerp(parked[1], 0.5).distance_to(Vector2(hb.pos)) <= 0.05,
+				"both aircraft are centred as a group on pad %d" % int(hb.id))
+			check(absf(parked[0].distance_to(parked[1]) - 0.9) <= 0.05,
+				"two aircraft park side by side")
+		else:
+			check(Vector2(e.pos).distance_to(Vector2(hb.pos)) <= 0.05,
+				"%s %d landed centred on its own pad %d" % [e.def, id, home[id]])
 		if String(e.def) != "a_vtol_dropship":
 			check_eq(int(e.get("air_at", -1)), int(home[id]), "%s %d parked at its own helipad" % [e.def, id])
 	# own pad taken: the VTOL never takes a helipad (holds or takes another big pad / open ground)

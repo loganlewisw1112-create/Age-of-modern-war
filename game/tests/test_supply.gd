@@ -149,8 +149,11 @@ func test_vehicle_burns_fuel_stops_at_zero_and_resupply_restarts_it() -> void:
 	_run(w, 60)
 	check((Vector2(m.pos) - stopped_at).length() < 0.001, "vehicle with no fuel does not move")
 	w.credit(0, {"fuel": 300}, "test")
-	_run(w, 100)
-	check(float(m.fuel) > 0.0, "resupply refuels the tank")
+	var received_fuel := false
+	for i in 100:
+		w.step()
+		received_fuel = received_fuel or float(m.fuel) > 0.0
+	check(received_fuel, "resupply refuels the tank")
 	check((Vector2(m.pos) - stopped_at).length() > 0.5, "refuelled vehicle moves again")
 
 

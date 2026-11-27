@@ -50,6 +50,11 @@ func test_fort_defs_match_content() -> void:
 		var b: Dictionary = Content.building(def)
 		if b.get("g6", false):
 			continue  # G6 (CONTENT6 CR): nanite wall / phase gate art is G6 (tests/test_art_g6.gd)
+		if def == "a_g71_berm":
+			var berm: Dictionary = AC.manifest().get("buildings", {}).get(def, {})
+			var built: Dictionary = berm.get("states", {}).get("built", {})
+			check(AC._image(String(built.get("file", ""))) != null, "G7.1 berm has its own fort art")
+			continue
 		if b.get("wall", false) or b.get("gate", false) or b.get("tower", false):
 			content_ids.append(def)
 	content_ids.sort()

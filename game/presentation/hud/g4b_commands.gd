@@ -139,8 +139,6 @@ func add_buttons(_mode: String, ids: Array) -> void:  # _mode: "units" | "engine
 		t.btn.pressed.connect(func(): _mv().g2.arm("mission", {"mission": "transport_to_point", "officer_id": oid, "risk": G2.RISKS[hud.g2_cmd.risk_idx]}))
 	g5u.add_buttons(ids)
 	g6c.add_buttons(ids)
-	if _mode == "engineer":
-		pages.apply(hud)
 	_no_focus()
 
 

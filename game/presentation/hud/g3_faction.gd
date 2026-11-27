@@ -4,7 +4,7 @@ extends RefCounted
 
 ## Command-card keys the G2 order buttons own; a build hotkey from data that collides gets a
 ## stable substitute (first free letter of ALT_KEYS) so every button keeps a working key.
-const RESERVED_BUILD_KEYS := ["F", "Q", "S", "H", "A", "P", "R"]
+const RESERVED_BUILD_KEYS := ["F", "Q", "S", "H", "A", "P", "R", "J", "U", "X", "Z"]
 const ALT_KEYS := ["N", "K", "J", "U", "Y", "X", "Z"]
 
 
@@ -123,10 +123,10 @@ const BUILD_CATS := ["base", "military", "defence", "air", "naval", "support"]  
 const BUILD_CAT_NAMES := {"base": "Base", "military": "Military", "defence": "Defences", "air": "Air", "naval": "Naval", "support": "Support"}
 ## Letters a generated build key avoids (pan W/D, Deploy E, Lay mine M, Plant charge O sit on the
 ## engineer card too); a data hotkey keeps its letter.
-## G6 (UI6b): J / U / X / Z are the engineer-card G6 keys (minefield, sweep, rail, garrison / tow), so a
-## generated key avoids them too; they (and E / M / O) are only a last resort on a crowded page.
+## G6 engineer actions keep J / U / X / Z even on crowded build pages.
 const AVOID_KEYS := ["W", "D", "E", "M", "O", "J", "U", "X", "Z"]
-const LAST_RESORT_KEYS := ["E", "M", "O", "J", "U", "X", "Z"]
+const OVERFLOW_BUILD_KEYS := ["SHIFT+C", "SHIFT+G", "SHIFT+I", "SHIFT+J", "SHIFT+K", "SHIFT+N",
+	"SHIFT+W", "SHIFT+Z", "SHIFT+D", "SHIFT+H", "SHIFT+L", "SHIFT+M", "SHIFT+S", "SHIFT+V"]
 
 
 static func _flag(d: Dictionary, k: String) -> bool:
@@ -189,7 +189,7 @@ static func build_hotkey(def_id: String, used: Dictionary) -> String:
 		var ch := String.chr(65 + i)
 		if not AVOID_KEYS.has(ch):
 			cand.append(ch)
-	cand.append_array(LAST_RESORT_KEYS)
+	cand.append_array(OVERFLOW_BUILD_KEYS)
 	for k in cand:
 		if RESERVED_BUILD_KEYS.has(k) or used.has(cat + ":" + String(k)):
 			continue

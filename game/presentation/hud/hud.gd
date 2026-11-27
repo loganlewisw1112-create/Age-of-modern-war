@@ -991,6 +991,7 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 			btn.pressed.connect(_on_build_pressed.bind(String(bid)))
 			_card_buttons.append({"btn": btn, "kind": "build", "def": String(bid), "hk": hk})
 			_register_hotkey(hk, btn)
+		g4b_cmd.pages.apply(self)
 		_add_unit_buttons(ids, mode)
 	elif mode == "units":
 		_card_title.text = "ORDERS"
