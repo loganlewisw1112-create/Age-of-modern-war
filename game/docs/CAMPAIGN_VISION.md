@@ -1329,3 +1329,7 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
 - Men of War II: [CGMagazine](https://www.cgmagonline.com/review/game/men-of-war-ii-pc-review/)
 - StarCraft II, Kenshi, Mount & Blade, X4, Crusader Kings and RimWorld were referenced from general knowledge, not
   researched in this session.
+
+
+## Owner-approved DLC continuity addendum — 2026-11-27
+The [Beyond Civilization master GDD](BEYOND_CIVILIZATION_GDD.md) supersedes the old one-expansion-only boundary: G18/DLC 2 remains a single home-system package with its internal milestones and arrival war unchanged; DLC 3 opens the finite wider universe. Preserve the authored endings and secrets, six hull rosters and campaign personally played battles. Base campaign outcomes directly initialize Living World and DLC starting conditions; arrival outcomes carry forward. New DLC factions unlock as fully playable in Skirmish only, never as player civilization in Campaign/Living World. No mandatory restart. UNDERSTRIKE is a base-game addition. [Universe](INTERSTELLAR_UNIVERSE.md) · [Delivery plan](DLC_DELIVERY_PLAN.md).
