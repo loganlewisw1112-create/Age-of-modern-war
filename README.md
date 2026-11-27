@@ -558,7 +558,7 @@ The simulation is intended to use hierarchical detail and persistence rather tha
 
 ## Space Expansion
 
-*DLC 1 · Owner-approved planned design · G18 · Not implemented.*
+*DLC 1 · Owner-approved planned design · G19 · Not implemented.*
 
 **True Dynasty:** Inheritance → Living World → Space Expansion → Beyond Civilization. One earned civilization history, with progression prerequisites, accumulated wars, discoveries, commanders, technologies, infrastructure and political consequences. Separate new saves allow seamless preset or customized starts in either owned DLC with coherent initialized history; they never alter Dynasty. Existing campaign battle rules remain. New DLC factions playable only in Skirmish.
 
@@ -767,7 +767,7 @@ Planned presets include Classic RTS, Alien Invasion, First Contact, Planetary Co
 |---|---|
 | 1 — Shared foundation | Persistent IDs, save migration, hierarchical simulation, entitlement and shared director contracts |
 | 2 — Myrieme Forge | Fifteen engines, eight adapters, canon-reviewed packages and offline runtime |
-| 3 — Home-system dependency | Complete G18 Space Expansion and validate campaign/arrival continuity |
+| 3 — Home-system dependency | Complete G19 Space Expansion and validate campaign/arrival continuity |
 | 4 — XENOGENESIS | Implement and validate all 20 logical subsystems and cross-director arbitration |
 | 5 — Universe and factions | Author seven regions, system catalog, planetary environments, species, languages and complete playable rosters |
 | 6 — Exploration | Validate travel, landing, first contact, ancient discoveries and delegation through playable slices |
@@ -799,7 +799,7 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 
 ### Roadmap
 
-Remaining development, in execution order. Each gate must pass its acceptance criteria before the next begins.
+Remaining development, in execution order. Complete the entire base game through G18 before either DLC begins.
 
 | Gate | Development scope |
 |---|---|
@@ -811,8 +811,8 @@ Remaining development, in execution order. Each gate must pass its acceptance cr
 | G15 | **Inheritance** — complete 13-chapter campaign, succession, persistent history, linguistic evolution and first contact. |
 | G16 | **UNDERSTRIKE IV** — advanced geology, destruction, underground command and survivor view; finish director integration and stress testing. |
 | G17 | **Living World** — autonomous civilizations, politics, economies, generations and continental warfare; full XENOGENESIS and Myrieme Forge acceptance. |
-| G18 | **Space Expansion (DLC 1)** — 12 planets, 48 moons, five belts, orbital industry, autonomous colonies, space warfare and Hidden Chronicle. |
-| G19 | **Last Protocol: Combined Arms** — offline-first 2–4-player co-op; preserve solo gameplay. |
+| G18 | **Last Protocol: Combined Arms** — offline-first 2–4-player co-op; preserve solo gameplay. |
+| G19 | **Space Expansion (DLC 1)** — 12 planets, 48 moons, five belts, orbital industry, autonomous colonies, space warfare and Hidden Chronicle. |
 | G20 | **Beyond Civilization (DLC 2)** — 50 star systems across seven regions, alien civilizations, interstellar exploration, industry and warfare. |
 
 **G17 completion requirement:** XENOGENESIS (20 subsystems) and Myrieme Forge (15 engines, eight integration modules and offline runtime) must be fully implemented, integrated and tested across G11–G17. Both must pass acceptance before G18 begins. G20 uses these completed systems; its interstellar content is developed after G19.
