@@ -17,7 +17,7 @@ class StubMv extends RefCounted:
 	signal world_events(evs)
 	var selection: Array[int] = []
 	var sel_part := ""
-	var world = null
+	var _world = null
 	var player_fid := 0
 	var issued: Array = []
 
@@ -57,7 +57,7 @@ func test_cards_follow_selection() -> void:
 	var fac := int(bays[0])
 	var bar := int(LR.rec(w, int(res[0])).bar)
 	var mv := StubMv.new()
-	mv.world = w
+	mv._world = w
 	mv.player_fid = fid
 	var dc = DroneCard.new()
 	var rc = ResCard.new()

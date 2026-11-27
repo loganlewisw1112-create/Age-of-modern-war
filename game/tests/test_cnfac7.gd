@@ -880,7 +880,7 @@ func test_base7_facility_flow_packed() -> void:
 
 
 class _StubView extends Node:
-	var world: SimWorld = null
+	var _world: SimWorld = null
 	var world7_layer = null
 
 
@@ -892,7 +892,7 @@ func test_base7_baseprops_layer_reads_facility() -> void:
 	var fid := _facility(w, s[1])
 	var h0 := w.state_hash()
 	var v := _StubView.new()
-	v.world = w
+	v._world = w
 	var L = load("res://presentation/view/baseprops_layer.gd").new()
 	v.add_child(L)
 	L.setup(v)

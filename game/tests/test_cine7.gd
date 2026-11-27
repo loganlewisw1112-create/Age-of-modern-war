@@ -16,7 +16,7 @@ static var _base: Dictionary = {}
 
 
 class FakeMv extends Node:
-	var world: SimWorld = null
+	var _world: SimWorld = null
 	var paused := false
 	var _edge_pan_enabled := true
 	var camera = null
@@ -38,7 +38,7 @@ func _lp() -> SimWorld:
 
 func _mv(w: SimWorld) -> FakeMv:
 	var m := FakeMv.new()
-	m.world = w
+	m._world = w
 	return m
 
 
@@ -52,7 +52,7 @@ func _play(d, m: FakeMv, max_ticks: int, skip_after: int = -1) -> int:
 		if skip_after >= 0 and frames == skip_after:
 			d.skip()
 		if not d.done and not m.paused and n < max_ticks:
-			m.world.step()
+			m._world.step()
 			n += 1
 	return n
 

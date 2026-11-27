@@ -18,7 +18,7 @@ const VALLEY := Vector2i(7, 17)
 
 class ProbeView:
 	extends Node2D
-	var world: RefCounted
+	var _world: RefCounted
 	var terrain_layer: Node2D
 	var player_fid := 0
 	var fog: Dictionary = {}
@@ -128,7 +128,7 @@ func _build() -> void:
 	var pw := ProbeWorld.new()
 	pw.map = demo_map(_biome)
 	_view = ProbeView.new()
-	_view.world = pw
+	_view._world = pw
 	_view.fog = demo_fog()
 	root.add_child(_view)
 	var layer = TL.new()

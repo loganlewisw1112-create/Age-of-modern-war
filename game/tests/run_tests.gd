@@ -1,20 +1,23 @@
 extends SceneTree
 ## Headless test runner.
 ##   godot --headless --path game --import            (once, or after adding class_name scripts / assets)
-##   godot --headless --path game -s tests/run_tests.gd [-- --only=test_core]
+##   godot --headless --path game -s tests/run_tests.gd [-- --only=test_core,test_cards7::test_cards_follow_selection]
 ## Discovers res://tests/test_*.gd. Each file extends RefCounted (tests/test_base.gd) and
 ## defines func test_*() methods. Exits 0 only if every test passed.
 
 func _init() -> void:
-	var only := ""
+	var only := PackedStringArray()
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--only="):
-			only = a.substr(7)
+			only.append_array(a.substr(7).split(",", false))
+	var selected_suites := {}
+	for selector in only:
+		selected_suites[selector.get_slice("::", 0)] = true
 	var files := []
 	var dir := DirAccess.open("res://tests")
 	for f in dir.get_files():
 		if f.begins_with("test_") and f.ends_with(".gd") and f != "test_base.gd":
-			if only == "" or f.get_basename() == only:
+			if only.is_empty() or selected_suites.has(f.get_basename()):
 				files.append(f)
 	files.sort()
 	var passed := 0
@@ -33,6 +36,9 @@ func _init() -> void:
 				methods.append(String(m.name))
 		methods.sort()
 		for m in methods:
+			var test_id: String = "%s::%s" % [f.get_basename(), m]
+			if not only.is_empty() and not only.has(f.get_basename()) and not only.has(test_id):
+				continue
 			var inst = script.new()
 			inst.failures = []
 			var ts := Time.get_ticks_msec()

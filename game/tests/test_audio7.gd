@@ -18,11 +18,11 @@ const LP_BASE := {"cd_left": 3000.0, "cd_total": 3600.0, "cd_rate": 1.0, "final_
 
 
 class FakeView extends RefCounted:
-	var world = null
+	var _world = null
 	var player_fid := 0
 
 	func world_readable() -> bool:
-		return world != null
+		return _world != null
 
 	func cell_visible(_c: Vector2i) -> bool:
 		return true
@@ -187,7 +187,7 @@ func test_under_fire_bark_from_shots_at_operators() -> void:
 	check(op_id >= 0, "a player unit to stand in for an operator")
 	w.sys_state["cnprog7"] = {"ops": {str(op_id): {"id": op_id, "team": 4, "pers": "nervous_rookie", "voice": 1, "cs": "Moth"}}}
 	var mv := FakeView.new()
-	mv.world = w
+	mv._world = w
 	var d = _director(0, mv)
 	d.mv = mv
 	var shot := {"type": "ShotFired", "weapon": "rifle", "target": op_id, "from": Vector2(30, 30), "to": Vector2(31, 30), "hit": false}
@@ -321,7 +321,10 @@ func test_positional_and_culled() -> void:
 	var near: Array = d.g7.event({"type": "T7Rail", "from": Vector2(0, 0), "to": Vector2(3, 0), "owner": 0})
 	check_eq(near, ["shot_rail"], "rail cannon near")
 	var far: Array = d.g7.event({"type": "T7Rail", "from": Vector2(12, 0), "to": Vector2(20, 0), "owner": 0})
-	check_eq(far, ["explosion_far"], "rail cannon far = distant boom")
+	check_eq(far, ["shot_rail"], "far rail cannon queues a delayed boom")
+	check_eq(int(d.counts.get("explosion_far", 0)), 0, "the distant boom has not played yet")
+	d.tick(Director.FLASH_DELAY_MAX)
+	check_eq(int(d.counts.get("explosion_far", 0)), 1, "far rail cannon plays the distant boom")
 	check_eq(d.g7.event({"type": "PackhunterSwipe", "id": 9, "target": 3, "hit": true}), [], "no entity position -> nothing")
 	check_eq(d.g7.event({"type": "WebSpit", "from": Vector2(12, 0), "to": Vector2(13, 0), "kind": "x", "id": 1, "target": 2}), [],
 		"far Weaver spit is silent")
@@ -368,7 +371,7 @@ func test_sim_hash_unchanged_audio_on_off() -> void:
 	var a := make_world()
 	var b := make_world()
 	var mv := FakeView.new()
-	mv.world = b
+	mv._world = b
 	var d = _director(0, mv)
 	d.mv = mv
 	var g7evs: Array = [{"type": "CnBark", "id": 1, "team": 1, "owner": 0, "pers": "joker", "voice": 0, "kind": "kill"},
@@ -406,7 +409,7 @@ func test_ciws_burst_loop_starts_and_stops() -> void:
 	fw.sys_state = {"ciws7": {"m": {"77": {"sp": 0, "t": -1}}}}
 	fw.entities = {77: {"pos": Vector2(1.6, 1.6), "c7m": Vector2(1, 1)}}
 	var d = _director(0, mv)
-	mv.world = fw                              # after setup: the director's side setup reads a real world's factions
+	mv._world = fw                              # after setup: the director's side setup reads a real world's factions
 	d.listener_override = [Vector2.ZERO, Vector2(100, 100)]
 	var gun := Cat.shot_sound("g7_ciws7_ap")
 	d.tick(0.05)

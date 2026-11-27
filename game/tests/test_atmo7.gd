@@ -12,7 +12,7 @@ const Atmo = preload("res://presentation/view/fac_atmo7.gd")
 
 
 class FakeMV extends RefCounted:
-	var world = null
+	var _world = null
 	var snap: Dictionary = {}
 	func team_color(_f: int) -> Color:
 		return Color(0.2, 0.5, 1.0)
@@ -56,7 +56,7 @@ func _facility(w: SimWorld, o: Vector2i) -> int:
 
 func _layer(w: SimWorld) -> Array:
 	var mv := FakeMV.new()
-	mv.world = w
+	mv._world = w
 	var L = Atmo.new()
 	L.setup(mv)
 	return [L, mv]

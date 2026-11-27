@@ -14,7 +14,7 @@ const BIOME_NEUTRAL := [4, 5, 6]   # river water, bridge deck, ford: one look in
 
 class FakeView:
 	extends Node2D
-	var world: RefCounted
+	var _world: RefCounted
 	func world_to_screen(p: Vector2) -> Vector2:
 		return Vector2((p.x - p.y) * 32.0, (p.x + p.y) * 16.0)
 
@@ -134,7 +134,7 @@ func _layer(map: Dictionary) -> Array:
 	var fw := FakeWorld.new()
 	fw.map = map
 	var view := FakeView.new()
-	view.world = fw
+	view._world = fw
 	var layer = LAYER.new()
 	view.add_child(layer)
 	layer.setup(view)

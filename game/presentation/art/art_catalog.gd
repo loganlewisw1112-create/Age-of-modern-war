@@ -495,9 +495,9 @@ static func effect_frames(name: String) -> Array:
 static func icon(id: String) -> Texture2D:
 	load_all()
 	var rel = _man.get("icons", {}).get(id)
-	if rel == null:
-		return _ph()
-	return _texture(String(rel))
+	if rel is Dictionary:
+		rel = rel.get("file")
+	return _texture(rel) if rel is String else _ph()
 
 
 ## Iso ellipse ring sized to `size_tiles` (footprint width in tiles); drawn centred on the entity.

@@ -21,7 +21,7 @@ class StubMv extends RefCounted:
 	signal world_events(evs)
 	var selection: Array[int] = []
 	var sel_part := ""
-	var world = null
+	var _world = null
 	var player_fid := 0
 	var issued: Array = []
 	var pick_cb: Callable = Callable()
@@ -315,7 +315,7 @@ func test_cards_follow_selection_and_issue() -> void:
 	var fac := int(F.id)
 	var ap = C8.armory_part(w, F)
 	var mv := StubMv.new()
-	mv.world = w
+	mv._world = w
 	mv.player_fid = _fid(w)
 	var ac = ArmCard.new()
 	var gc = GarCard.new()

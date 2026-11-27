@@ -18,7 +18,7 @@ class StubMv extends RefCounted:
 	signal world_events(evs)
 	var selection: Array[int] = []
 	var sel_part := ""
-	var world = null
+	var _world = null
 	var player_fid := 0
 	var issued: Array = []
 	var pick_cb = null
@@ -436,7 +436,7 @@ func test_cards_show_on_selection_and_issue() -> void:
 	var w: SimWorld = s[0]
 	var fac: int = s[1]
 	var mv := StubMv.new()
-	mv.world = w
+	mv._world = w
 	var oc = OpsCard.new()
 	var dc = DefCard.new()
 	for c in [oc, dc]:

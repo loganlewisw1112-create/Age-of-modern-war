@@ -19,7 +19,7 @@ func _view(map: Dictionary):
 	var pw = PROBE.ProbeWorld.new()
 	pw.map = map
 	var v = PROBE.ProbeView.new()
-	v.world = pw
+	v._world = pw
 	v.fog = PROBE.demo_fog()
 	var layer = LAYER.new()
 	v.terrain_layer = layer
@@ -36,7 +36,7 @@ func _flat_map() -> Dictionary:
 
 
 func _arrays(layer, key: Vector2i) -> Array:
-	var m: Dictionary = layer.mv.world.map
+	var m: Dictionary = layer.mv._world.map
 	return layer._mesh_arrays(key.x, key.y, m.terrain, m.biome, layer._hg(), layer._rp(),
 		Vector2(1024, layer._flat_h() + layer.FACE_H))
 
@@ -77,7 +77,7 @@ func _top_tri(arr: Array, p: Vector2) -> int:
 ## the mesh: "lip left|lip right|foot left|foot right" (chunk-local px) -> Vector3i(cell x, cell y, 1).
 ## SW face: our left -> bottom vertices over S's top / right; SE face: our bottom -> right over E's left / top.
 func _expected_faces(layer, key: Vector2i) -> Dictionary:
-	var m: Dictionary = layer.mv.world.map
+	var m: Dictionary = layer.mv._world.map
 	var hg: PackedByteArray = layer._hg()
 	var rp: PackedByteArray = layer._rp()
 	var w := int(m.w)

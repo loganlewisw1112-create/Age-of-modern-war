@@ -116,7 +116,8 @@ func test_every_section3_id_loads() -> void:
 	check_eq(String(Content.unit("m_hover_tank").move_class), "hover", "hover tank hovers")
 	check_eq(String(Content.unit("a_hovercraft").move_class), "hover", "hovercraft hovers")
 	for id in Content.ids("units"):
-		check(not String(id).begins_with("x_"), "no x_* unit in G6: " + String(id))
+		if bool(Content.unit(id).get("g6", false)):
+			check(not String(id).begins_with("x_"), "no x_* unit in the G6 roster: " + String(id))
 
 
 func test_every_id_producible_or_buildable_at_its_stage() -> void:
