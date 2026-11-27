@@ -784,7 +784,7 @@ Internal phases are dependency-driven and may overlap where safe. Release requir
 
 ## Development status
 
-**Latest documented stabilization build:** G10.1 · November 27, 2026 · `09313a2d` · `g71`. The G10 gate is closed; wider regression acceptance remains open.
+**Latest documented stabilization build:** G10.1 · November 27, 2026 · `19ac62f2` · `g71`. The G10 gate is closed; wider regression acceptance remains open.
 
 ### Shipped milestones
 
@@ -834,13 +834,13 @@ Reported results from the [November 27 stabilization report](.superpowers/sdd/g1
 
 ### Known issues / acceptance
 
-The historical broad run recorded 1,738 passes and 85 assertion failures with script errors; subsequent targeted fixes and reruns passed several affected suites. A clean full regression rerun is still required. Outstanding issues include drive rescue return, revived tower fire, APC travel time, convoy spacing, walker damage, gate-fight balance and clean legacy animation/generator comparison reruns. See the stabilization report for details.
+The historical broad run recorded 1,738 passes and 85 assertion failures with script errors; subsequent targeted fixes and reruns passed several affected suites. A clean full regression rerun is still required. Drive rescue delivery, tower revival, walker damage and all 24 APC and convoy movement checks now pass. Combined drive recon and rescue passed together. Gate-fight intensity and remaining legacy animation checks are open. See the stabilization report for details.
 
 ---
 
 ## Play the packaged build
 
-Latest documented verified Windows package: `RTS_Age_of_Modern_War_G71_2026-11-27_09313a2d.zip`.
+Latest documented verified Windows package: `RTS_Age_of_Modern_War_G71_2026-11-27_19ac62f2.zip`.
 
 The extracted executable launched a Stage 8 Coalition skirmish headlessly with `rts_core 0.6.5` active and zero script errors. The extracted data pack hash matched the export. [Package verification and hashes](.superpowers/sdd/g10.1-stabilization-report.md).
 
