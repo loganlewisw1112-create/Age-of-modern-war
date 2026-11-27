@@ -31,4 +31,4 @@ Preserve original evidence. Assign a decision ID, source, affected feature/test 
 
 
 ## Approved DLC addendum — 2026-11-27
-Owner-approved 2026-11-27 addendum: all 26 DLC decisions and five finalization components are approved design, not implemented or frozen gate scope. The current owner-approved addendum controls conflicts; archived source text remains unchanged. See [decision register](../../../game/docs/BEYOND_CIVILIZATION_GDD.md).
+Owner-approved 2026-11-27 addendum: all 26 DLC decisions and five finalization components are approved design, not implemented or frozen gate scope. The current owner-approved addendum controls conflicts; archived source text remains unchanged. See [decision register](../../game/docs/BEYOND_CIVILIZATION_GDD.md).
