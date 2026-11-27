@@ -78,3 +78,7 @@ Record scenario revision, content/config/seed, hardware, OS/engine/build, durati
 ## Evidence report template
 
 Test ID; expected result; build/hash; environment; config/seed; reproduction steps; actual result; logs/video/profile path; PASS/FAIL/BLOCKED; defect ID; retest result. All game tests remain NOT RUN here. Package integrity checks are documented separately in audit/ and qualify only this handoff artifact.
+
+
+## Approved DLC addendum — 2026-11-27
+[DLC acceptance matrix DLC-01..19](../../../game/docs/DLC_DELIVERY_PLAN.md) and detailed subsystem tests extend existing requirements. All new tests NOT RUN; budgets and evidence required before release.
