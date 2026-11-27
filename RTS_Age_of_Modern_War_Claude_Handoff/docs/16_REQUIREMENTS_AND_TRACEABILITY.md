@@ -32,4 +32,4 @@ A future gameplay delivery must include an actual launchable project/build, vers
 
 
 ## Approved DLC addendum — 2026-11-27
-[Master DLC decision register 01–26](../../../game/docs/BEYOND_CIVILIZATION_GDD.md) traces approved design; [XG-01..20](../../../game/docs/XENOGENESIS.md), [Forge engines and MF-A01..08](../../../game/docs/MYRIEME_FORGE_INTEGRATION.md), [DLC-01..19](../../../game/docs/DLC_DELIVERY_PLAN.md) trace proposed implementation and acceptance. Existing archived requirements remain intact.
+[Master DLC decision register 01–26](../../game/docs/BEYOND_CIVILIZATION_GDD.md) traces approved design; [XG-01..20](../../game/docs/XENOGENESIS.md), [Forge engines and MF-A01..08](../../game/docs/MYRIEME_FORGE_INTEGRATION.md), [DLC-01..19](../../game/docs/DLC_DELIVERY_PLAN.md) trace proposed implementation and acceptance. Existing archived requirements remain intact.
