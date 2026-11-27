@@ -50,9 +50,9 @@ Realism and economic complexity are separate from AI difficulty. The player may 
 4.4 Victory expression
 Military elimination/HQ capture; territorial percentage or hold objectives; economy/score thresholds; stage/research race; diplomacy/unification; defense survival; timed scenarios; linked AND/OR requirements; allied/individual victory; Endless Mode. Each condition is evaluated against authoritative state. Display clear progress and failure feedback. Prevent conflicting configurations (e.g., endless and mandatory timer termination) or explain priority. A scenario author may apply custom starting asymmetric objectives in the full editor.
 4.5 Presets
-Quick setup provides Balanced Build-Up, Immediate Battle, Survival Frontier and Last Stand (working preset names). Advanced setup preserves every supported knob. Local versioned config import/export and reproducible seeds are design targets; the first slice must save and reuse preset configurations.
+Quick setup provides Balanced Build-Up, Immediate Battle, Survival Outpost and Last Stand (working preset names). Advanced setup preserves every supported knob. Local versioned config import/export and reproducible seeds are design targets; the first slice must save and reuse preset configurations.
 5. The Universal 13-Stage Civilization System
-Exactly thirteen stable stage IDs are shared by human and machine factions, skirmish, survivor settlement, AI and continental play: Scattered Survivors; Organized Camps; Frontier Settlements; Reclamation Townships; Workshop Confederacies; Industrial Revival; Mechanized States; Modern Nations; Networked Powers; Automated Technocracies; Synthetic Civilizations; Distributed Civilizations; Apex Civilizations. All are working names, approved stage count/sequence is fixed.
+Exactly thirteen stable stage IDs are shared by human and machine factions, skirmish, survivor settlement, AI and continental play: Scattered Survivors; Organized Camps; Pioneer Settlements; Reclamation Townships; Workshop Confederacies; Industrial Revival; Mechanized States; Modern Nations; Networked Powers; Automated Technocracies; Synthetic Civilizations; Distributed Civilizations; Apex Civilizations. All are working names, approved stage count/sequence is fixed.
 Progress depends on scientific knowledge, operational infrastructure, sufficient institutions, workforce skill, resource production, equipment tooling and demonstrated industrial capabilities. Players can manually formalize a transition when requirements are met. Skirmish uses readable advancement prerequisites/costs and custom pace/maximum stage; Living World reflects organic growth and possible regression. Scavenged advanced gear may be used if operable but does not grant a manufacturing industry. Civilizations within the same stage specialize in different pathways (energy, medical, logistics, armor, aerospace, digital command, machine design, ecology). Stage progression never changes unit damage merely because a number increased. See Civilization Bible.
 6. Three Distinct Faction Archetypes
 Human A - Modern Military Power | Structural advantage: Professional flexible combined arms, communications and training | Constraint: Higher precision-equipment and fuel/maintenance costs | RTS playstyle: Balanced maneuver with high coordination
@@ -201,7 +201,7 @@ Final game title; canon factions and history; exact world dimensions; target OS/
 
 
 ## Approved DLC addendum — 2026-11-27
-Full approved expansion design is incorporated by reference: [master DLC GDD](../../game/docs/BEYOND_CIVILIZATION_GDD.md). UNDERSTRIKE is base-game content, DLC 1 is one home system and DLC 2 the finite interstellar frontier. Campaign outcomes directly affect starting conditions; classic RTS controls and automation remain mandatory.
+Full approved expansion design is incorporated by reference: [master DLC GDD](../../game/docs/BEYOND_CIVILIZATION_GDD.md). UNDERSTRIKE is base-game content, DLC 1 is one home system and DLC 2 the finite interstellar expanse. Campaign outcomes directly affect starting conditions; classic RTS controls and automation remain mandatory.
 
 
 ## 2026-11-27 — Current expansion design authority

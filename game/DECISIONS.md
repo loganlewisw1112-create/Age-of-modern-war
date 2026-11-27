@@ -51,3 +51,8 @@ Evidence lives on the board `.plan/board_g71.jsonl` (seq numbers below) and in `
 ## Future expansion authority (2026-11-27)
 
 [Space Expansion master design](docs/SPACE_EXPANSION_GDD.md) records the approved DLC 1 / DLC 2 numbering, True Dynasty and independent starts, stellar catalog, Hidden Chronicle and engineering guidance. These are future planning specifications only; do not implement ahead of existing gates. No change to current source, build, save format or completion status.
+
+
+## AOMW naming separation
+
+Use The Last Dawn (chapter I), Valley of Reclamation (chapter III), Pioneer Settlements (stage 03), Survival Outpost (preset), Lunar and Asteroid Expansion (phase III), The Interstellar Expanse (phase II), and Fractured Reach (region). Reserve the separate game's title vocabulary; avoid overlapping naming in new AOMW content. Stable IDs, story, mechanics and progression remain unchanged. Runtime label alignment requires a separately authorized implementation pass if necessary.

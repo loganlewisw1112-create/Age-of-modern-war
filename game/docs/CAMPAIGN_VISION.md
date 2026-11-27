@@ -154,9 +154,9 @@ Working title to react to: **Inheritance** (the dynasty, the secret and the key)
 
 | Ch | Stage | Working title | Core beats |
 |---|---|---|---|
-| 1 | Scattered Survivors | Ashfall | Prologue on the last day; first winter; a small band, scavenging; the companions are introduced |
+| 1 | Scattered Survivors | The Last Dawn | Prologue on the last day; first winter; a small band, scavenging; the companions are introduced |
 | 2 | Organized Camps | The Camp | Building the camp; the first raider warlord as the era's villain |
-| 3 | Frontier Settlements | The Frontier | Pushing into the valley; farms, convoys, evacuations; the first strange dead zones |
+| 3 | Pioneer Settlements | Valley of Reclamation | Pushing into the valley; farms, convoys, evacuations; the first strange dead zones |
 | 4 | Reclamation Townships | Reclamation | Retaking a dam and a power plant; first flare-up; first cover-up and the first witnesses |
 | 5 | Workshop Confederacies | The Confederacy | Townships unite; another cover-up; the heir as a young officer; the founder's death |
 | 6 | Industrial Revival | Smoke and Iron | First heir; Human B rises as the industrial rival; the last cover-up |
@@ -335,7 +335,7 @@ they finally arrive.
   strike their seed beachheads on the ground.
 
 ## The road to orbit
-- **Space comes after Apex.** The 13 stages stay fixed; space is the open frontier beyond them, marked by milestones
+- **Space comes after Apex.** The 13 stages stay fixed; space is the open expanse beyond them, marked by milestones
   rather than new stages.
 - **The race:** every surviving power races for orbit, and you also get a guided chain of milestones (rebuild, find a
   launch site, first orbit, first docking). The pace depends on you and the AI powers, not a fixed clock.

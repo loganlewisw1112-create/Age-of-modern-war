@@ -26,7 +26,7 @@ Final decisions: Hidden History D+; physical realism D; revolutionary technology
 ## Seven nonlinear gameplay phases
 1. Race to Orbit — aerospace recovery, launches and sustainable orbital footholds
 2. Orbital Supremacy — stations, defense, shipyards, orbital factories
-3. Lunar and Asteroid Frontier — personally establish extraction, research and military bases, delegate
+3. Lunar and Asteroid Expansion — personally establish extraction, research and military bases, delegate
 4. Age of Discovery — exotic resources, ancient technology and optional mysteries
 5. Interplanetary Civilization — autonomous colonies, cities and physical trade
 6. War for the Star System — multi-domain warfare and preserved arrival war

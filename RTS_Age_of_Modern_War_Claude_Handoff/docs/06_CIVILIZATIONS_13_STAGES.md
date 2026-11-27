@@ -73,7 +73,7 @@ Viable specializations: Trade-focused, defensive or mobile camp.
 Player experience: At this stage, the main challenge is managing the limits of available capacity, investing in 
 differentiating institutions, and using faction-specific capabilities rather than relying on universal unit-stat upgrades.
 Implementation: Stage definition only in first playable; deep playable content deferred.
-Stage 03 — Frontier Settlements
+Stage 03 — Pioneer Settlements
 Civilization identity: Settled communities with population specialization and basic services.
 Architecture and infrastructure: Housing districts, wells, clinics, trading posts, perimeter palisades.
 Economy and industry: Local workshops, farms, markets, inventories and elementary taxation.
@@ -260,7 +260,7 @@ Economy and industry: Exceptionally precise automated industry, massive energy c
 RTS  /  AGE OF MODERN WAR                                      DEVELOPMENT PACKAGE   v1.3
 DESIGN SPECIFICATION  •  22 OCT 2026                  PAGE 7
 Military and warfare: Advanced synthetic/machine arsenals integrated with planetary logistics and defenses.
-Science, medicine and education: Frontier physics engineering within constraints, mature synthetic design, planetary 
+Science, medicine and education: Advanced physics engineering within constraints, mature synthetic design, planetary 
 modeling.
 Transportation and supply: Near-frictionless regional logistics only where infrastructure persists; critical bottlenecks 
 remain.

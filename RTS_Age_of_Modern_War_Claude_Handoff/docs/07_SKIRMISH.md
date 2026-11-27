@@ -19,7 +19,7 @@ Realism and economic complexity are separate from AI difficulty. The player may 
 4.4 Victory expression
 Military elimination/HQ capture; territorial percentage or hold objectives; economy/score thresholds; stage/research race; diplomacy/unification; defense survival; timed scenarios; linked AND/OR requirements; allied/individual victory; Endless Mode. Each condition is evaluated against authoritative state. Display clear progress and failure feedback. Prevent conflicting configurations (e.g., endless and mandatory timer termination) or explain priority. A scenario author may apply custom starting asymmetric objectives in the full editor.
 4.5 Presets
-Quick setup provides Balanced Build-Up, Immediate Battle, Survival Frontier and Last Stand (working preset names). Advanced setup preserves every supported knob. Local versioned config import/export and reproducible seeds are design targets; the first slice must save and reuse preset configurations.
+Quick setup provides Balanced Build-Up, Immediate Battle, Survival Outpost and Last Stand (working preset names). Advanced setup preserves every supported knob. Local versioned config import/export and reproducible seeds are design targets; the first slice must save and reuse preset configurations.
 
 2. Player Journey Acceptance Scenarios
 Scenario S1 - First 15 Minutes (illustrative flow; times not guaranteed)

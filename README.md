@@ -37,7 +37,7 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 | **Living World** | Shape an enduring world of autonomous civilizations after the campaign. | Planned |
 | **UNDERSTRIKE** | Build and defend an underground military-industrial civilization. | Planned base-game addition |
 | **Space Expansion (DLC 1)** | Extend civilization into one home star system. | Planned DLC |
-| **Beyond Civilization (DLC 2)** | Explore a finite authored interstellar frontier with autonomous alien civilizations. | Approved design; not implemented |
+| **Beyond Civilization (DLC 2)** | Explore a finite authored interstellar expanse with autonomous alien civilizations. | Approved design; not implemented |
 
 ```mermaid
 flowchart LR
@@ -243,9 +243,9 @@ Your descendants inherit everything. Including your mistakes.
 
 | Chapter | Era | Proposed year after collapse | Since previous chapter |
 |---|---|---:|---:|
-| I — Ashfall | Scattered Survivors | 0 | — |
+| I — The Last Dawn | Scattered Survivors | 0 | — |
 | II — The Camp | Organized Camps | 1 | 1 year |
-| III — The Frontier | Frontier Settlements | 4 | 3 years |
+| III — Valley of Reclamation | Pioneer Settlements | 4 | 3 years |
 | IV — Reclamation | Reclamation Townships | 9 | 5 years |
 | V — The Confederacy | Workshop Confederacies | 17 | 8 years |
 | VI — Smoke and Iron | Industrial Revival | 30 | 13 years |
@@ -268,7 +268,7 @@ flowchart LR
 
 The early chapters are personal: scarcity, survival and the creation of a home. Later chapters span decades, as responsibility passes from the founder to successive generations. The dates describe proposed chapter start points, not fixed real-time mission lengths.
 
-### Chapter I — Ashfall
+### Chapter I — The Last Dawn
 *Stage 1 · Scattered Survivors · Year 0 — The Collapse*
 
 The final days of the old world give way to the first winter of the new one. Lead a small band through abandoned settlements, recover essential supplies and defend the people who have placed their lives in your hands. There is no nation coming to rescue you, no army waiting beyond the horizon.
@@ -282,12 +282,12 @@ Shelters become permanent structures. Scavengers become specialists. Volunteers 
 
 **Pivotal conflict:** Defend your independence in the first organized struggle between survivor communities. Establish production, defenses and a force capable of protecting more than its own camp.
 
-### Chapter III — The Frontier
-*Stage 3 · Frontier Settlements · Year 4 — Three years later*
+### Chapter III — Valley of Reclamation
+*Stage 3 · Pioneer Settlements · Year 4 — Three years later*
 
 Your people can no longer live behind one perimeter. Push into the valley, establish farmland and settlements, cross contested rivers and protect the convoys connecting them. When a community comes under attack, its evacuation becomes your responsibility. Beyond familiar roads, abandoned places wait in silence.
 
-**Pivotal conflict:** Secure the valley's resources and transportation corridors while keeping vulnerable frontier communities alive. The regional map becomes increasingly important.
+**Pivotal conflict:** Secure the valley's resources and transportation corridors while keeping vulnerable outlying communities alive. The regional map becomes increasingly important.
 
 ### Chapter IV — Reclamation
 *Stage 4 · Reclamation Townships · Year 9 — Five years later*
@@ -587,7 +587,7 @@ Ember Belt, Iron Expanse, Shattered Ring, Crystal Drift and Outer Veil offer fin
 
 1. **Race to Orbit:** aerospace knowledge, launch infrastructure and sustainable orbital operations.
 2. **Orbital Supremacy:** stations, shipyards, factories, defenses and physical cargo fleets.
-3. **Lunar and Asteroid Frontier:** personally establish mining, science and military bases, then appoint commanders.
+3. **Lunar and Asteroid Expansion:** personally establish mining, science and military bases, then appoint commanders.
 4. **Age of Discovery:** exotic materials, reverse engineering, new technology and optional mysteries.
 5. **Interplanetary Civilization:** autonomous colonies, cities, trade and industrial networks.
 6. **War for the Star System:** fleet, orbital, atmospheric, ground, aquatic, underground and boarding operations; existing arrival war preserved.
@@ -644,7 +644,7 @@ The road to orbit depends on the world inherited from Inheritance and Living Wor
 
 *Owner-approved expansion design · Not implemented · Development gate and release date unassigned.*
 
-Beyond Civilization extends the same persistent world into a finite, authored interstellar frontier. The primary True Dynasty path begins in the Core Region with the civilization inherited from the base campaign, Living World and DLC 1; separate independent starts are also supported. Where Space Expansion (DLC 1) opens the home star system, DLC 2 opens the rest of the Core and six surrounding regions. The intended experience combines the freedom of space exploration, the mystery of isolated worlds and the danger of a lawless frontier with the familiar build, command and fight loop of Age of Modern War.
+Beyond Civilization extends the same persistent world into a finite, authored interstellar expanse. The primary True Dynasty path begins in the Core Region with the civilization inherited from the base campaign, Living World and DLC 1; separate independent starts are also supported. Where Space Expansion (DLC 1) opens the home star system, DLC 2 opens the rest of the Core and six surrounding regions. The intended experience combines the freedom of space exploration, the mystery of isolated worlds and the danger of a lawless expanse with the familiar build, command and fight loop of Age of Modern War.
 
 **The geography is authored. The history is dynamic. The gameplay remains RTS.** No endless procedural galaxy, mandatory ship piloting, diplomatic paperwork or colony micromanagement.
 
@@ -654,7 +654,7 @@ Develop interstellar propulsion and the infrastructure to sustain expeditions be
 
 Select a destination and dispatch a fleet, or take direct command. Autonomous crews handle navigation, refueling, repairs, resupply and escorts. Discover distress signals, abandoned ships, hidden stations, hostile fleets and unexpected opportunities along the route. Trade corridors and gateways can develop, become contested or collapse.
 
-### II — The Interstellar Frontier
+### II — The Interstellar Expanse
 
 Explore a target of **50 authored star systems across seven regions**, including the original home system. Each has a distinctive geographical foundation and history; political borders, military activity and economic conditions change autonomously. The planning range is 40–60 systems, subject to content and performance validation.
 
@@ -663,7 +663,7 @@ Explore a target of **50 authored star systems across seven regions**, including
 | Core Region | 5 | Home system and neighboring stars; familiar starting territory, never permanently safe |
 | Sovereign Reach | 10 | Established powers, major cities, military and industrial centers |
 | Veiled Territories | 9 | Isolated civilizations, exotic environments and limited contact |
-| Broken Frontier | 7 | Contested colonies, pirates, mercenaries and independent settlements |
+| Fractured Reach | 7 | Contested colonies, pirates, mercenaries and independent settlements |
 | Meridian Expanse | 8 | Resource-rich worlds, mining, trade and colonial competition |
 | Silent Verge | 5 | Ancient ruins, abandoned infrastructure and dormant technologies |
 | Uncharted Reach | 6 | Remote hazardous systems, unknown life and rare discoveries |
@@ -672,15 +672,15 @@ Explore a target of **50 authored star systems across seven regions**, including
 ```mermaid
 flowchart TD
     A[Base game: homeworld] --> B[DLC 1: home star system]
-    B --> C[DLC 2: Core Region and wider frontier]
+    B --> C[DLC 2: Core Region and wider expanse]
     C --> D[Sovereign Reach]
     C --> E[Veiled Territories]
-    C --> F[Broken Frontier]
+    C --> F[Fractured Reach]
     C --> G[Meridian Expanse]
     C --> H[Silent Verge]
     C --> I[Uncharted Reach]
-    classDef frontier fill:#344052,stroke:#8199b5,color:#fff
-    class A,B,C,D,E,F,G,H,I frontier
+    classDef expanse fill:#344052,stroke:#8199b5,color:#fff
+    class A,B,C,D,E,F,G,H,I expanse
 ```
 
 *Access progression, not a canonical route map. Region names other than Core and individual stellar inventories remain subject to content approval.*
@@ -759,7 +759,7 @@ Canon-locked packages provide consistent names, grammar, writing, audio and term
 
 Ownership of a DLC unlocks its new playable factions in **Skirmish only**, with full coherent unit, building and technology rosters. In Campaign and Living World, the player retains the inherited civilization and encounters alien powers as autonomous AI civilizations.
 
-Planned presets include Classic RTS, Alien Invasion, First Contact, Planetary Conquest, Fleet Warfare, Civilization Wars, Survival Frontier and Total Sandbox. Optional advanced settings cover compatible environments, factions, alliances, starting technologies, wildlife, dynamic events, difficulty and victory conditions. Quick-start remains the default.
+Planned presets include Classic RTS, Alien Invasion, First Contact, Planetary Conquest, Fleet Warfare, Civilization Wars, Survival Outpost and Total Sandbox. Optional advanced settings cover compatible environments, factions, alliances, starting technologies, wildlife, dynamic events, difficulty and victory conditions. Quick-start remains the default.
 
 ### Internal development phases
 
@@ -809,7 +809,7 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 | G16–G17 | High-fidelity underground and Living World |
 | G18 | Space Expansion (DLC 1): home star system |
 | G19 | Offline-first 2–4-player Last Protocol co-op; solo remains the reference |
-| Future (unassigned) | Beyond Civilization (DLC 2): finite interstellar frontier, XENOGENESIS and full Myrieme Forge integration |
+| Future (unassigned) | Beyond Civilization (DLC 2): finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration |
 
 Future gates require their own frozen acceptance contracts. This is a development pipeline, not a release-date or storefront promise.
 
