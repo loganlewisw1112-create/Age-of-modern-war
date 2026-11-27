@@ -3,23 +3,18 @@
 [![Godot](https://img.shields.io/badge/Godot-4.7.2-478cbf?logo=godotengine&logoColor=white)](https://godotengine.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-0078d4?logo=windows&logoColor=white)](https://godotengine.org/)
 [![Branch](https://img.shields.io/badge/branch-g71-111111)](https://github.com/loganlewisw1112-create/Age-of-modern-war)
-[![Package](https://img.shields.io/badge/package-282%20MB-2ea44f)](#play-the-packaged-build)
+[![Build](https://img.shields.io/badge/build-G10.1-2ea44f)](#play-the-packaged-build)
+[![Status](https://img.shields.io/badge/status-active%20development-orange)](#development-pipeline)
 
-Offline single-player real-time strategy in **Godot 4.7.2**, with a Rust native sim core. Classic skirmish plus a dedicated siege mode (**Last Protocol**). Tech climbs through **thirteen stages** (Age-of style eras): early recovery through modern combined arms into late synthetic forms.
+**Build a military civilization. Command its armies. Survive an enemy that adapts.**
 
-Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, **Pre-G10**, and **G10 Shadow Coalition** are closed (`g10.lock`).
+Age of Modern War is an offline, single-player real-time strategy game built in **Godot 4.7.2** with a native **Rust simulation core**. It combines civilization-style technological advancement, combined-arms warfare, asymmetric factions, autonomous military command and persistent battlefield systems.
 
-The G10.1 stabilization build is available for review. Coalition infantry and the six Coalition aircraft use their authored four-direction sprites in the battle view as the camera rotates. The eight-seat Stealth Transport can land, pick up infantry, deploy them at a new landing zone and return with them aboard. Coalition infantry switch to lowered NVGs at dusk and night, and the green laser appears in the firing pose. Ghost Infiltrators shimmer while concealed, and Counter-Ghost trackers and sensors can expose them nearby. The Silent Rotor visibly deploys its weapons when it first fires.
+Four playable factions fight across a thirteen-stage technology framework, from early recovery to advanced synthetic warfare. Classic Skirmish and the dedicated **Last Protocol** siege mode are playable now; campaign, underground civilization and continental-scale progression remain roadmap tracks.
 
-The owner approved all 31 previously deferred Coalition vehicle and facility designs in full on November 26, 2026. The approved art is in the playable catalog. The Safehouse and concealed facilities show cover art until revealed to that player. [G10.1 art and review sheets](game/docs/G10_1_DEFERRED_ART.md)
+**Current build:** G10.1 stabilization · November 27, 2026 · `09313a2d` · branch `g71`. G10 is closed; wider regression acceptance remains open.
 
-Use **Q / E** during a match to rotate the battlefield around the point under the camera. Terrain, fog and tactical markers follow the new view, and the minimap stays oriented to the map.
-
-The G10.1 Machine and combat checks cover the hive roster and network, all 13 countermeasures, persistent terrain damage, vehicle recovery, siege skirmish and friendly-fire alerts.
-
-Diplomacy now responds to Machine combat strength. AI adaptation gathers evidence from the side’s own combat history and losses.
-
-Open **Coalition** in the match HUD for doctrine intent and Ghost Command. Scout an enemy structure, build a Ghost Complex and field four healthy Ghost operators to launch a ground mission. The Conductor issues orders and reports the outcome after extraction. The Advanced panel provides the four dark operations, Coalition technology acquisition and patron contracts. Blackout temporarily interrupts power and production in the target area.
+[Play the build](#play-the-packaged-build) · [Factions](#factions-playable-now) · [Skirmish](#skirmish) · [Last Protocol](#last-protocol) · [Performance](#performance-and-verification) · [Roadmap](#development-pipeline) · [Developer setup](#from-source-dev)
 
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">
@@ -34,13 +29,27 @@ Open **Coalition** in the match HUD for doctrine intent and Ghost Command. Scout
 
 ---
 
-## What this is
+## Game overview
 
 - **Skirmish** — pick faction, stage band, map, teams, and victory rules; fight up to three AI sides.
 - **Last Protocol** — hold a fortified facility against an escalating Machine siege on its own map and ruleset (not a skirmish preset).
 - **Long-term** — a chaptered campaign, underground expansion content, Living World, and later orbit/arrival content are planned; see below.
 
 The game stays offline. Balance numbers in content JSON are provisional fixtures, not final.
+
+### Core gameplay systems
+
+| System | Gameplay |
+|---|---|
+| Civilization and economy | Resource gathering, power flow, supply, production, research and trade |
+| Combined arms | Infantry, armor, aircraft, naval forces, drones and electronic warfare |
+| Field command | Companies, armies, chain of command, suppression, fatigue and veterancy |
+| Persistent battlefield | Wrecks, terrain damage, elevation, fortifications and vehicle wear |
+| Autonomous opposition | Fog-limited AI, adaptive Machine warfare, diplomacy and strategic decision-making |
+| Intelligence and covert warfare | Reconnaissance, concealment, counter-detection and Coalition operations |
+| Custom battles | Map editor, teams, economy profiles, configurable victory conditions and save/load |
+
+These are documented current systems, not a claim of final balance or complete regression acceptance.
 
 ### Gallery
 
@@ -66,15 +75,24 @@ Open **Main menu → Skirmish**.
 
 | Faction | Role |
 |---|---|
-| **Human A** | Modern military combined arms |
-| **Human B** | Industrial / salvage power |
-| **Machine** | Autonomous energy-bound network |
+| **Human A — Modern Human** | Modern military combined arms, hierarchical command, robotics and counter-nanite / Counter-Ghost capabilities |
+| **Human B — Scavenger Human** | Industrial and salvage-oriented power |
+| **Machine** | Autonomous energy-bound hive network, creep, adaptation and siege warfare |
+| **Shadow Coalition** | Covert infrastructure, Ghost Exo operators, technology acquisition, patron contracts and asymmetric operations |
 
-Additional factions unlock through later development and play; this README does not list unreleased or discovery-gated identities.
+Unreleased and discovery-gated campaign identities remain undisclosed.
+
+### Shadow Coalition
+
+The fourth faction has a documented **61 gameplay definitions**, six distinct aircraft and full Stage 1–13 progression. All 31 previously deferred vehicle and facility designs were approved on November 26, 2026. [Approved art and repository-generated review sheets](game/docs/G10_1_DEFERRED_ART.md).
+
+Coalition infantry and all six aircraft use authored four-direction sprites. Infantry lower NVGs at dusk and night; firing uses the green laser pose. Ghost Infiltrators shimmer while concealed, Counter-Ghost trackers and sensors can reveal them nearby, and Silent Rotor deploys its weapons when it first fires. The eight-seat Stealth Transport supports landing, boarding, deployment and extraction. Concealed facilities retain per-viewer cover appearances until revealed.
+
+Open **Coalition** in the match HUD for doctrine intent and Ghost Command. Scout an enemy structure, build a Ghost Complex and field four healthy Ghost operators to launch a ground mission. The Conductor issues orders and reports the outcome after extraction. The Advanced panel offers four dark operations, technology acquisition and patron contracts. Blackout temporarily interrupts power and production in the target area.
 
 ### Stages / tech eras
 
-There are **thirteen stages**. In the current build, sides typically start in the **mid–late band** (roughly Stages **7–10**): research mid-match and advance when stage gates are met. Earlier and later stage bands for existing factions are planned for a later slice; a forthcoming faction ships its own full 1–13 band when that gate lands.
+The technology framework contains **thirteen stages**. Human A, Human B and Machine currently focus on the mid–late band (roughly Stages **7–10**), with research and stage-gated advancement during matches. Shadow Coalition ships its full **Stage 1–13** band. Remaining early (1–6) and late (11–13) faction parity is planned for G14.
 
 ### Setup (high level)
 
@@ -193,12 +211,14 @@ Treat these as a shipping pipeline, not a storefront promise. Each gate still ge
 
 G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–9, maps → G4 editor / walls / scale → G5 air/naval/hospitals/tutorial → G6 elevation, companies, marketplace → G6.1 field command → **G7 Last Protocol** → **G7.1** Tide Line siege depth → **G8** Four Sides view rotation + end-of-run presentation → **G9** Machine overhaul + combat depth → **Pre-G10** AI/economy depth bridge → **G10** Shadow Coalition (closed).
 
-### In this G10 build (summary)
+### G10 and G10.1 (current)
 
 - **Shadow Coalition** fourth faction: Stages 1–13, buy/steal/unseal tech, Ghost Exo + Exo Armory, Counter-Ghost Corps, dark picks, Coalition LP defender profile
 - Pre-G10 stack retained: Four Sides, HIVE9/COUNT9/COMBAT9/AI9/ECON9, Warmind, PACE71
-- ART approved-core locked (CELL / DEATH / WALKER / CLOSE AIR); TECHNICAL / SAFEHOUSE / HATCH owner-deferred
-- Lock evidence: smoke **122/0**, stage hashes MATCH; see `.superpowers/sdd/g10.lock`
+- Original G10 lock: **122 passed / 0 failed**; stage hashes matched. [Historical lock evidence](.superpowers/sdd/g10.lock).
+- G10.1: all 31 deferred art assets subsequently approved; four-facing runtime sprites, transport extraction, covert HUD and per-viewer facility states delivered.
+- Machine and combat verification passed 74 checks across hive, countermeasures, combat, crew, behavior, siege and accuracy suites. AI adaptation uses observed combat history; automatic truces account for combat strength.
+- Latest reported G10 smoke: **129 passed / 0 failed**, 14 suites, zero script errors. **Wider regression gate remains open.** [Stabilization report](.superpowers/sdd/g10.1-stabilization-report.md).
 
 ### Next gates (planned order)
 
@@ -216,6 +236,25 @@ Detail and acceptance live in `game/docs/ROADMAP.md`. Design contracts and older
 
 ---
 
+## Performance and verification
+
+Reported results from the [November 27 stabilization report](.superpowers/sdd/g10.1-stabilization-report.md). These are specific test-machine measurements, not universal hardware guarantees.
+
+| Test | Reported result |
+|---|---|
+| G10 smoke | 129 passes, zero failures and zero script errors across 14 suites |
+| 1,000-unit Last Protocol, windowed Radeon, 0.50 zoom | 95.2 FPS average; 44.4 FPS tenth percentile |
+| 120 four-operator squads, 900 ticks | 5.78 ms mean simulation step |
+| Four-AI skirmish, 7,200 ticks | Ledger checks passed; 145 damage events, 65 production completions, 360 Coalition operation decisions |
+| Determinism | Stage 3, 8 and 12 hashes matched on separate 600-tick runs; Ghost mission save/load matched through 240 additional ticks |
+| 2,012-unit snapshot | 5.06 ms median; relative gate passed, historical 2 ms target not met |
+
+### Known issues / acceptance
+
+G10 remains locked, but G10.1 wider regression acceptance is not closed. The historical broad run recorded 1,738 passes and 85 assertion failures with script errors; subsequent targeted fixes and reruns passed several affected suites. A clean full regression rerun is still required. Outstanding issues include drive rescue return, revived tower fire, APC travel time, convoy spacing, walker damage, gate-fight balance and clean legacy animation/generator comparison reruns. See the stabilization report for details.
+
+---
+
 ## Play the packaged build
 
 For G10.1, extract the fresh `RTS_Age_of_Modern_War_G71_<date>_<commit>.zip` and open `RTS_Age_of_Modern_War.exe`. The accompanying `PLAY_ME.txt` identifies the commit and describes the new controls.
@@ -224,7 +263,9 @@ Latest Windows stabilization package
 
 `Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_*`
 
-**Verified package:** `RTS_Age_of_Modern_War_G71_2026-11-26_a55edea8` (295462050 bytes folder / 188364190 bytes zip). See the [G10.1 stabilization report](.superpowers/sdd/g10.1-stabilization-report.md).
+**Latest documented verified package:** `RTS_Age_of_Modern_War_G71_2026-11-27_09313a2d.zip`. The extracted executable launched a Stage 8 Coalition skirmish headlessly with `rts_core 0.6.5` active and zero script errors. The extracted data pack hash matched the export. See the [G10.1 stabilization report](.superpowers/sdd/g10.1-stabilization-report.md) for package verification and hashes.
+
+The Downloads path above is a local packaging destination, not a public download URL. If you do not have the packaged build, use the source instructions below.
 
 Keep the extracted folder together, including the executable, data pack and native engine files.
 
@@ -261,6 +302,17 @@ Useful launcher flags (append): `--autostart`, `--autostart-seed=N`, `--autostar
 
 ---
 
+## Technical architecture
+
+| Layer | Responsibility |
+|---|---|
+| Godot 4.7.2 | Game presentation, input, battle view, HUD and launcher |
+| Native Rust core | Simulation acceleration; the stabilization report records `rts_core 0.6.5` in the packaged executable |
+| Content JSON | Data-driven content and provisional balance fixtures |
+| Verification | Headless smoke, deterministic save/load, native/fallback comparisons and stress harnesses |
+
+For exact build requirements and system details, consult the developer documentation and scripts below. Minimum and recommended hardware specifications have not yet been established here.
+
 ## Docs map
 
 | Doc | Use |
@@ -269,4 +321,7 @@ Useful launcher flags (append): `--autostart`, `--autostart-seed=N`, `--autostar
 | `game/README.md` | Historical playable-slice notes (G0–G7.1 era) |
 | `game/docs/ROADMAP.md` | Full gate order to finished game |
 | `game/docs/CAMPAIGN_VISION.md` | Campaign / Living World / space vision (spoiler-heavy — for contributors who need it) |
-| `game/docs/understrike/` | UNDERSTRIKE design handoff |
+| [UNDERSTRIKE design handoff](game/docs/understrike/) | Underground expansion design |
+| [G10.1 stabilization report](.superpowers/sdd/g10.1-stabilization-report.md) | Latest build, benchmark and regression evidence |
+| [G10 lock](.superpowers/sdd/g10.lock) | Historical gate closure and acceptance evidence |
+| [Coalition art and review sheets](game/docs/G10_1_DEFERRED_ART.md) | Approved vehicles and facilities |
