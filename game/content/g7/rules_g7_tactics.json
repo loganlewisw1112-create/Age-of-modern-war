@@ -11,7 +11,7 @@
       "grenade_range": 3.5, "grenade_cd": 200, "ambush_kill_frac": 0.6, "ambush_fire_ticks": 160,
       "clear_stack_ticks": 40, "clear_room_ticks": 60, "suppress_r": 2.5, "suppress_pts": 6.0,
       "convoy_sp": 4.0, "convoy_choke_sp": 2.5, "convoy_shield_r": 14.0, "convoy_shield_off": 2.5,
-      "convoy_hold_ticks": 300, "convoy_every": 10, "convoy_walk_speed": 1.0,
+      "convoy_hold_ticks": 300, "convoy_every": 5, "convoy_walk_speed": 1.0,
       "default_player_formation": "auto", "auto_col_len": 24.0, "auto_close_frac": 0.4
     }
   }
