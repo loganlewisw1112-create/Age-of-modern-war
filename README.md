@@ -35,8 +35,9 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 | **Last Protocol** | Hold an inherited fortress against an escalating Machine siege. | Playable |
 | **Inheritance** | Guide a civilization through thirteen chapters and successive generations. | Planned |
 | **Living World** | Shape an enduring world of autonomous civilizations after the campaign. | Planned |
-| **UNDERSTRIKE** | Build and defend an underground military-industrial civilization. | Planned expansion |
-| **Space Expansion** | Extend civilization from Earth into orbit, the Moon and the home system. | Planned DLC |
+| **UNDERSTRIKE** | Build and defend an underground military-industrial civilization. | Planned base-game addition |
+| **Space Expansion (DLC 2)** | Extend civilization into one home star system. | Planned DLC |
+| **Beyond Civilization (DLC 3)** | Explore a finite authored interstellar frontier with autonomous alien civilizations. | Approved design; not implemented |
 
 ```mermaid
 flowchart LR
@@ -52,7 +53,7 @@ flowchart LR
     class C,D,E,U future
 ```
 
-*Solid connections represent current playable modes; dashed connections describe planned development. UNDERSTRIKE is an expansion track, not a separate confirmed game mode.*
+*Solid connections represent current playable modes; dashed connections describe planned development. UNDERSTRIKE is a planned integrated base-game addition, not DLC.*
 
 ## Core gameplay systems
 
@@ -535,7 +536,7 @@ Campaign retains authored milestones and personally played battles; Living World
 
 > **Civilization does not stop at the surface.**
 
-*Planned Human A expansion track · G11–G13 foundations and G16 high-fidelity work.*
+*Planned integrated base-game addition, not DLC · Human A track · G11–G13 foundations and G16 high-fidelity work.*
 
 The surface battlefield is only one layer of the war. UNDERSTRIKE introduces a military-industrial domain beneath it: excavated facilities, vertically connected infrastructure, underground logistics and subterranean defense.
 
@@ -558,7 +559,7 @@ The simulation is intended to use hierarchical detail and persistence rather tha
 
 > **Beyond the Apex.**
 
-*Planned downloadable expansion following Living World. One expansion, with successive in-game milestones—not separate DLC releases.*
+*DLC 2: planned home-star-system expansion following Living World. Its internal aerospace milestones remain one package.*
 
 For generations, humanity fought to reclaim Earth. It rebuilt cities, restored industry and created civilizations capable of extraordinary technological achievements. But the atmosphere is no longer the final boundary of military power.
 
@@ -764,3 +765,9 @@ Detailed narrative design material is not linked from this public overview. Some
 ---
 
 **Win the war. Survive the siege. Build the legacy. Shape the world. Reach beyond it.**
+
+## BEYOND CIVILIZATION — DLC 3 (approved design)
+
+A finite authored frontier of approximately 50 star systems across seven regions, including the home system. Start in the Core Region; DLC 2 opens one system, DLC 3 opens the remaining 49. Campaign outcomes directly determine starting assets, relationships and crises. Explore, colonize, build, research and fight across planetary and interstellar domains with familiar RTS controls and optional autonomous delegation. New DLC factions are fully playable in Skirmish only; Campaign and Living World retain the existing player civilization. Five initial major alien powers (including the two existing arrival powers), four minor/emerging concepts and an ancient precursor layer are planned. **XENOGENESIS**, the fifth coordinated director, has 20 logical subsystems for extraterrestrial civilization and ecosystem intelligence. **Myrieme Forge** supplies 15 language engines and eight integration adapters across both DLC packages, fully offline. No mandatory micromanagement or endless procedural universe. Existing G18 and G19 remain intact; DLC 3 gate unassigned. All features are approved design, not shipped software.
+
+[Master DLC GDD](game/docs/BEYOND_CIVILIZATION_GDD.md) · [Universe and civilization bible](game/docs/INTERSTELLAR_UNIVERSE.md) · [XENOGENESIS](game/docs/XENOGENESIS.md) · [Myrieme Forge](game/docs/MYRIEME_FORGE_INTEGRATION.md) · [Development pipeline and tests](game/docs/DLC_DELIVERY_PLAN.md)
