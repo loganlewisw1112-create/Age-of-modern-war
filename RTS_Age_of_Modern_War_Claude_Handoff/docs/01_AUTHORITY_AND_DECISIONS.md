@@ -28,3 +28,7 @@ Current user instructions control this handoff. The v1.3 documents explicitly di
 ## Change control
 
 Preserve original evidence. Assign a decision ID, source, affected feature/test IDs and explicit status to any change. Never silently turn a fixture, assistant suggestion or reconstructed catalog into a user-approved fact. Request a decision only when a material choice cannot be resolved from sources; complete bounded planning work first. This handoff request authorizes documentation packaging, not game implementation.
+
+
+## Approved DLC addendum — 2026-11-27
+Owner-approved 2026-11-27 addendum: all 26 DLC decisions and five finalization components are approved design, not implemented or frozen gate scope. The current owner-approved addendum controls conflicts; archived source text remains unchanged. See [decision register](../../../game/docs/BEYOND_CIVILIZATION_GDD.md).
