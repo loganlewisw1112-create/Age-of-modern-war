@@ -27,4 +27,4 @@ AI autonomy test starts with finite opening assets and no player-triggered event
 
 
 ## Approved DLC addendum — 2026-11-27
-Four existing directors remain; DLC 3 adds [XENOGENESIS](../../../game/docs/XENOGENESIS.md), with 20 logical subsystems and shared authority, imperfect information, bounded plans, and no default AI cheats. [Forge integration](../../../game/docs/MYRIEME_FORGE_INTEGRATION.md) supports communication and evolution.
+Four existing directors remain; DLC 3 adds [XENOGENESIS](../../game/docs/XENOGENESIS.md), with 20 logical subsystems and shared authority, imperfect information, bounded plans, and no default AI cheats. [Forge integration](../../game/docs/MYRIEME_FORGE_INTEGRATION.md) supports communication and evolution.
