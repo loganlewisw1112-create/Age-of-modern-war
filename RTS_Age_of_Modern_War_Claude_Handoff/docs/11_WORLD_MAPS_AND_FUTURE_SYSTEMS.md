@@ -28,4 +28,4 @@ These retain their v1.0 detail in the consolidated master and full source text. 
 
 
 ## Approved DLC addendum — 2026-11-27
-[Universe bible](../../../game/docs/INTERSTELLAR_UNIVERSE.md): finite authored 50-system baseline, seven regions; one home system in DLC 2 and remaining 49 in DLC 3, deterministic planetary detail and dynamic political history. UNDERSTRIKE remains base-game addition.
+[Universe bible](../../game/docs/INTERSTELLAR_UNIVERSE.md): finite authored 50-system baseline, seven regions; one home system in DLC 2 and remaining 49 in DLC 3, deterministic planetary detail and dynamic political history. UNDERSTRIKE remains base-game addition.
