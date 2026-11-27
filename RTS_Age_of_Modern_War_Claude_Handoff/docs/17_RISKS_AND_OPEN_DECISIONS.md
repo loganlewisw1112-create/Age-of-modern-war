@@ -24,3 +24,12 @@ Claude should return a bounded G0 implementation plan after reading this package
 
 ## Approved DLC addendum — 2026-11-27
 [DLC risks and production backlog](../../game/docs/DLC_DELIVERY_PLAN.md): final names, species/rosters, system catalog and coordinates, planet inventories, performance budgets, software and release contracts remain pending; no implementation claims.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Provisional names, numerical orbital modeling, material properties, individual model definitions, canonical narrative revelations, performance budgets and commercial entitlement details pending production.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

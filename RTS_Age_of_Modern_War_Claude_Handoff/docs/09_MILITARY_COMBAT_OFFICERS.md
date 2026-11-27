@@ -33,3 +33,12 @@ Model wounded, dead, disabled and salvageable outcomes distinctly where implemen
 Officer mission proposal: objective, zone, assigned assets, priority, risk bound, authority, supply limit and status. Phases could include assess, move, secure, hold, resupply and withdraw. Manual player override cancels or supersedes delegated intent under a documented policy. Persist membership, mission, progress and reason for replanning.
 
 JPEG taxonomy is a broad military concept sheet: infantry specialties; light vehicle/APC/IFV/MBT/AA/artillery/rocket/recon/engineering/logistics; helicopters/jets/drones/VTOL; naval classes; emplacements; mobile HQ/comms/recovery. It is not a final roster or balanced production catalog. First slice minimum roles remain builders, infantry equivalent, recon/specialists, mobile/heavy combat, artillery and logistics for each faction.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Shared multi-domain warfare and physical supply; preserve six space hull rosters and arrival-war outcomes; commander scopes and manual takeover.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

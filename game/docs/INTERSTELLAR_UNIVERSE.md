@@ -1,8 +1,8 @@
-# Interstellar universe and civilization bible — DLC 3
+# Interstellar universe and civilization bible — DLC 2
 Owner-approved framework, 2026-11-27. Names below are working names except existing canon references (which themselves may be placeholders in Campaign Vision). No final star catalog, coordinates, planet inventories, unit roster or language packages yet. [Master DLC GDD](BEYOND_CIVILIZATION_GDD.md) · [Existing arrival canon](CAMPAIGN_VISION.md).
 
 ## Fixed geography, dynamic history
-50-system planning baseline (40–60 approved design range), seven regions; includes home system. Base game starts on homeworld in Core; DLC 2 opens home system; DLC 3 opens 49 remaining systems. Geography, major origins and authored locations consistent between players; campaign outcome sets starting circumstances. Procedural environmental detail only inside authored finite bounds. No infinite map generation. Borders, danger, trade routes and faction power evolve. Exploration not artificially level-gated; propulsion, supplies, information, hazards and infrastructure constrain reach.
+50-system planning baseline (40–60 approved design range), seven regions; includes home system. Base game starts on homeworld in Core; DLC 1 opens home system; DLC 2 opens 49 remaining systems. Geography, major origins and authored locations consistent between players; campaign outcome sets starting circumstances. Procedural environmental detail only inside authored finite bounds. No infinite map generation. Borders, danger, trade routes and faction power evolve. Exploration not artificially level-gated; propulsion, supplies, information, hazards and infrastructure constrain reach.
 
 | Region | Systems | Identity |
 |---|---:|---|
@@ -21,8 +21,8 @@ Five initial major powers, four minor/emerging concepts, one ancient layer. Mino
 
 | Civilization | Initial role | Identity and proposed gameplay |
 |---|---|---|
-| Vhessar | Major, existing DLC 2 | Preserve existing conqueror/seed/caste/beachhead/Ark/boarding doctrine and 21 hulls. No kneel mechanic. Verify details against Campaign Vision and existing faction-depth decisions. |
-| Unbound | Major, existing DLC 2 | Preserve existing cult, defectors, stripped hulls, Free Yards, warbands, Strip/Turn/Unseed and 19 hulls. Existing origins/relationship unchanged. |
+| Vhessar | Major, existing DLC 1 | Preserve existing conqueror/seed/caste/beachhead/Ark/boarding doctrine and 21 hulls. No kneel mechanic. Verify details against Campaign Vision and existing faction-depth decisions. |
+| Unbound | Major, existing DLC 1 | Preserve existing cult, defectors, stripped hulls, Free Yards, warbands, Strip/Turn/Unseed and 19 hulls. Existing origins/relationship unchanged. |
 | Kharvethi Directorate | Major, new | High-gravity mineral-rich origin, dense anatomy; heavy conventional armor, artillery, fortifications, industry, military fleets; material/energy intensive; clipped vocal military registers. |
 | Othalyrian Concord | Major, new | Oceanic amphibious pressure-adapted biology; underwater cities, submersible carriers, pressure engineering, aquatic superiority; habitat dependence; acoustic harmonics and visual signals. |
 | Nexarith Continuum | Major, new | Independent extraterrestrial synthetic lineage, unrelated to Earth Machine; modular bodies, distributed compute, resilient manufacturing and adaptive fleets; energy/specialty material dependency; structured symbolic signals. |
@@ -37,3 +37,12 @@ For every civilization: stable IDs, authored origin/homeworld and history, biolo
 
 ## Catalog production schema and validation
 System {id, regionId, canonicalNameId, coordinates, stellarClass, bodies[], routes[], authoredSites[], originHistoryRef}; Body {id, systemId, orbit, radius, gravity, atmosphere, climate, biomeSeed, resourceProfile, lifeProfile, landingRules, siteRefs}; Civilization {id, speciesId, originSite, initialTerritoryRefs, canonProfileRef, techProfile, languageFamilyId, rosterRef}; Site {id, bodyOrOrbitRef, kind, fixedLocation, historyRef, discoveryRules, initialOwner}; dynamic state stored separately. Exact values and IDs to be authored, no invented claims of completion. Validate unique IDs, 50 baseline systems, seven regions, connected feasible routes (including alternative discovery routes), reference integrity, authored identity and meaningful activity, environmental suitability, finite boundaries, campaign-dependent initial state, ownership gating, persistence and reproducibility. Content production and tests pending.
+
+
+## 2026-11-27 — Authoritative expansion integration
+
+DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (future unnumbered). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
+
+Asterion (working name) is the single home system included in 50 systems; 49 further systems in DLC 2. Fixed geography, dynamic history. Existing civilizations retain canon.
+
+[SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)

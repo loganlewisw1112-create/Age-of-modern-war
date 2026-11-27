@@ -284,3 +284,8 @@ The stop note is the "SLICE STOP" block at the top of `PROGRESS.md`.
 - **Visual direction** for later gates: `docs/vision/` (owner mockups; reference only, not scope).
 - All costs and stats are **provisional balance fixtures** (`game/content/*.json`), not approved numbers.
 - Design sources: `RTS_Age_of_Modern_War_Claude_Handoff/` (immutable). Engineering contracts: `game/docs/CONTRACTS.md`, `CONTRACTS_G2.md`, `CONTRACTS_G3a.md`, `CONTRACTS_G3b.md`.
+
+
+## Future expansion authority (2026-11-27)
+
+[Space Expansion master design](docs/SPACE_EXPANSION_GDD.md) records the approved DLC 1 / DLC 2 numbering, True Dynasty and independent starts, stellar catalog, Hidden Chronicle and engineering guidance. These are future planning specifications only; do not implement ahead of existing gates. No change to current source, build, save format or completion status.

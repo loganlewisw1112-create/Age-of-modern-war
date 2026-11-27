@@ -1332,4 +1332,13 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
 
 
 ## Owner-approved DLC continuity addendum — 2026-11-27
-The [Beyond Civilization master GDD](BEYOND_CIVILIZATION_GDD.md) supersedes the old one-expansion-only boundary: G18/DLC 2 remains a single home-system package with its internal milestones and arrival war unchanged; DLC 3 opens the finite wider universe. Preserve the authored endings and secrets, six hull rosters and campaign personally played battles. Base campaign outcomes directly initialize Living World and DLC starting conditions; arrival outcomes carry forward. New DLC factions unlock as fully playable in Skirmish only, never as player civilization in Campaign/Living World. No mandatory restart. UNDERSTRIKE is a base-game addition. [Universe](INTERSTELLAR_UNIVERSE.md) · [Delivery plan](DLC_DELIVERY_PLAN.md).
+The [Beyond Civilization master GDD](BEYOND_CIVILIZATION_GDD.md) supersedes the old one-expansion-only boundary: G18/DLC 1 remains a single home-system package with its internal milestones and arrival war unchanged; DLC 2 opens the finite wider universe. Preserve the authored endings and secrets, six hull rosters and campaign personally played battles. Base campaign outcomes directly initialize Living World and DLC starting conditions; arrival outcomes carry forward. New DLC factions unlock as fully playable in Skirmish only, never as player civilization in Campaign/Living World. No mandatory restart. UNDERSTRIKE is a base-game addition. [Universe](INTERSTELLAR_UNIVERSE.md) · [Delivery plan](DLC_DELIVERY_PLAN.md).
+
+
+## 2026-11-27 — Authoritative expansion integration
+
+DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (future unnumbered). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
+
+Older Earth/Moon wording records the existing campaign homeworld and primary moon; literal real Solar System geography is superseded by the original fictional 12-planet system. Preserve all authored events and secrets. Hidden Chronicle extends existing story without overwriting it.
+
+[SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)

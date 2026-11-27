@@ -73,4 +73,13 @@ Approved design direction, implementation pending. No gameplay code or existing 
 
 
 ## DLC director extension — owner-approved 2026-11-27
-The four base-game directors remain authoritative. DLC 3 adds one fifth director, [XENOGENESIS](XENOGENESIS.md), with 20 logical extraterrestrial subsystems sharing the existing deterministic ledger, validator and simulation fidelity model. [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md) adds independent production tooling and lightweight offline linguistic runtime across DLC 2 and DLC 3. No additional global director or duplicate authority; existing base-game gates unchanged. Read [master expansion design](BEYOND_CIVILIZATION_GDD.md) and [delivery plan](DLC_DELIVERY_PLAN.md). No implementation claimed.
+The four base-game directors remain authoritative. DLC 2 adds one fifth director, [XENOGENESIS](XENOGENESIS.md), with 20 logical extraterrestrial subsystems sharing the existing deterministic ledger, validator and simulation fidelity model. [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md) adds independent production tooling and lightweight offline linguistic runtime across DLC 1 and DLC 2. No additional global director or duplicate authority; existing base-game gates unchanged. Read [master expansion design](BEYOND_CIVILIZATION_GDD.md) and [delivery plan](DLC_DELIVERY_PLAN.md). No implementation claimed.
+
+
+## 2026-11-27 — Authoritative expansion integration
+
+DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (future unnumbered). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
+
+Four existing directors share one authoritative ledger; Hidden Chronicle is a framework, not a sixth director. Use hierarchical stellar/planetary/region/tactical state and automated routine responses; XENOGENESIS remains DLC 2 only.
+
+[SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)

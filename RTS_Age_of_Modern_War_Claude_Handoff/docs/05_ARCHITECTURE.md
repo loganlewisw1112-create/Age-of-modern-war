@@ -130,3 +130,12 @@ Future fidelity transitions require before/after conservation of people, equipme
 
 ## Approved DLC addendum — 2026-11-27
 Approved future extension: [XENOGENESIS](../../game/docs/XENOGENESIS.md) is one fifth director with 20 logical subsystems, sharing authoritative state with existing directors. [Myrieme Forge](../../game/docs/MYRIEME_FORGE_INTEGRATION.md) provides 15 engines and eight adapters, offline. See those contracts for data, event and persistence boundaries.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Single authoritative ledger, stable IDs, versioned snapshots, deterministic intents, hierarchical simulation, physical conservation, offline; proposal only.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

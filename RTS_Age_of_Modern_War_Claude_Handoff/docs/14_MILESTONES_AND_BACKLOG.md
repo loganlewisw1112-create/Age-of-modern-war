@@ -190,4 +190,13 @@ Every feature status starts NOT IMPLEMENTED / NOT VERIFIED in this handoff becau
 
 
 ## Approved DLC addendum — 2026-11-27
-[Current roadmap](../../game/docs/ROADMAP.md) and [DLC delivery pipeline](../../game/docs/DLC_DELIVERY_PLAN.md) govern sequencing. Preserve G10.1 regression, G11–G19 and current frozen contracts; DLC 3 future unnumbered track. No premature implementation.
+[Current roadmap](../../game/docs/ROADMAP.md) and [DLC delivery pipeline](../../game/docs/DLC_DELIVERY_PLAN.md) govern sequencing. Preserve G10.1 regression, G11–G19 and current frozen contracts; DLC 2 future unnumbered track. No premature implementation.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+G18 SP-01–15 planned; G10.1 wider regression open; no new numbered DLC 2 gate, existing G11–G19 protected.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

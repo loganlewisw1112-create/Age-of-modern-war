@@ -28,4 +28,13 @@ These retain their v1.0 detail in the consolidated master and full source text. 
 
 
 ## Approved DLC addendum — 2026-11-27
-[Universe bible](../../game/docs/INTERSTELLAR_UNIVERSE.md): finite authored 50-system baseline, seven regions; one home system in DLC 2 and remaining 49 in DLC 3, deterministic planetary detail and dynamic political history. UNDERSTRIKE remains base-game addition.
+[Universe bible](../../game/docs/INTERSTELLAR_UNIVERSE.md): finite authored 50-system baseline, seven regions; one home system in DLC 1 and remaining 49 in DLC 2, deterministic planetary detail and dynamic political history. UNDERSTRIKE remains base-game addition.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Original Asterion fictional system (12/48/5), physical scale, gas/ice giant atmosphere/orbit only; 49 additional systems in DLC 2.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

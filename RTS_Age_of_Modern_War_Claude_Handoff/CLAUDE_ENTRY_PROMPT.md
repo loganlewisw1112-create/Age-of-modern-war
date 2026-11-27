@@ -18,3 +18,8 @@ Respect these constraints:
 - Every implementation claim needs runnable evidence. Every performance claim needs named hardware, build/config and measured scenario. 500–2,000 soldiers is a stress-test ambition, not an achieved on-screen count.
 
 Initial requested output: a concise source-grounded handoff assessment, prioritized unresolved decisions, and a concrete G0 plan with dependencies, proposed architecture, smallest content set, acceptance scenarios and verification steps. Maintain feature/test IDs. Preserve the broader full-game vision without expanding G0 to implement it. Clearly distinguish source-reported approved direction, provisional values, new recommendations and tested results. Ask only decisions that materially block the next authorized work.
+
+
+## Future expansion authority (2026-11-27)
+
+[Space Expansion master design](../game/docs/SPACE_EXPANSION_GDD.md) records the approved DLC 1 / DLC 2 numbering, True Dynasty and independent starts, stellar catalog, Hidden Chronicle and engineering guidance. These are future planning specifications only; do not implement ahead of existing gates. No change to current source, build, save format or completion status.

@@ -1,5 +1,5 @@
 # XENOGENESIS — intelligent extraterrestrial species and civilization director
-Owner-approved design 2026-11-27; implementation pending. Fifth coordinated director, DLC 3 only; no independent heavyweight engine or competing authoritative world state. Read [master DLC GDD](BEYOND_CIVILIZATION_GDD.md) and [existing directors](NEXTGEN_SIMULATION_GDD.md).
+Owner-approved design 2026-11-27; implementation pending. Fifth coordinated director, DLC 2 only; no independent heavyweight engine or competing authoritative world state. Read [master DLC GDD](BEYOND_CIVILIZATION_GDD.md) and [existing directors](NEXTGEN_SIMULATION_GDD.md).
 
 ## Responsibilities
 | ID | Logical subsystem | Inputs → bounded outputs |
@@ -40,3 +40,12 @@ Explore, investigate, contact, trade, ally, defend, colonize, invade, research, 
 
 ## Acceptance
 XG-01..20 each require deterministic fixture, negative validation, integration and soak tests. Cross-director duplicate event/conflict tests; resource and population conservation; same seed+commands reproducibility including save/load and LOD; multiple independent AI powers with no player input; belief-limited decisions; no illegal campaign faction switch or auto-resolved mandatory battle; interrupted manual takeover; ecology and evolution bounds; no uncapped queue/faction proliferation; measurable CPU/memory/save budgets; offline operation; player can play traditional RTS without administration. All tests NOT RUN.
+
+
+## 2026-11-27 — Authoritative expansion integration
+
+DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (future unnumbered). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
+
+Consume bounded DLC 1 historical state and Chronicle effects exactly once. Respect knowledge propagation and stable IDs; no omniscience or competing authoritative state.
+
+[SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)

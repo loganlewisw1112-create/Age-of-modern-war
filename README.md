@@ -23,7 +23,7 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 </p>
 <p align="center"><em>Dusk on the wire · core compound inside the inner wall</em></p>
 
-[Play](#play-the-packaged-build) · [Skirmish](#skirmish) · [Factions](#factions-playable-now) · [Last Protocol](#last-protocol) · [Inheritance](#inheritance--campaign) · [Living World](#living-world) · [UNDERSTRIKE](#understrike) · [Space Expansion](#space-expansion) · [Beyond Civilization](#beyond-civilization--dlc-3) · [Roadmap](#development-status) · [Developer guide](#technical-architecture)
+[Play](#play-the-packaged-build) · [Skirmish](#skirmish) · [Factions](#factions-playable-now) · [Last Protocol](#last-protocol) · [Inheritance](#inheritance--campaign) · [Living World](#living-world) · [UNDERSTRIKE](#understrike) · [Space Expansion](#space-expansion) · [Beyond Civilization](#beyond-civilization--DLC-2) · [Roadmap](#development-status) · [Developer guide](#technical-architecture)
 
 ---
 
@@ -36,8 +36,8 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 | **Inheritance** | Guide a civilization through thirteen chapters and successive generations. | Planned |
 | **Living World** | Shape an enduring world of autonomous civilizations after the campaign. | Planned |
 | **UNDERSTRIKE** | Build and defend an underground military-industrial civilization. | Planned base-game addition |
-| **Space Expansion (DLC 2)** | Extend civilization into one home star system. | Planned DLC |
-| **Beyond Civilization (DLC 3)** | Explore a finite authored interstellar frontier with autonomous alien civilizations. | Approved design; not implemented |
+| **Space Expansion (DLC 1)** | Extend civilization into one home star system. | Planned DLC |
+| **Beyond Civilization (DLC 2)** | Explore a finite authored interstellar frontier with autonomous alien civilizations. | Approved design; not implemented |
 
 ```mermaid
 flowchart LR
@@ -558,47 +558,60 @@ The simulation is intended to use hierarchical detail and persistence rather tha
 
 ## Space Expansion
 
-> **Beyond the Apex.**
+*DLC 1 · Owner-approved planned design · G18 · Not implemented.*
 
-*DLC 2: planned home-star-system expansion following Living World. Its internal aerospace milestones remain one package.*
+**True Dynasty:** Inheritance → Living World → Space Expansion → Beyond Civilization. One earned civilization history, with progression prerequisites, accumulated wars, discoveries, commanders, technologies, infrastructure and political consequences. Separate new saves allow seamless preset or customized starts in either owned DLC with coherent initialized history; they never alter Dynasty. Existing campaign battle rules remain. New DLC factions playable only in Skirmish.
 
-For generations, humanity fought to reclaim Earth. It rebuilt cities, restored industry and created civilizations capable of extraordinary technological achievements. But the atmosphere is no longer the final boundary of military power.
+### The original home star system
 
-The Space Expansion extends the same civilization into a connected strategic domain beyond the thirteen terrestrial stages. Progress is marked by aerospace milestones rather than additional numbered eras. The world below remains essential.
+Asterion (working name): twelve original planets, 48 individually identified moons, five dynamic asteroid belts. Existing campaign homeworld lore preserved; fictional celestial geography replaces literal Solar System assumptions. Realistic scale, stable orbits, atmospheric and geological conditions, rotation, tides, eclipses, radiation, ecosystems and physical travel require scientific validation. Gas and ice giants have no playable solid surface.
 
-### I — The Race to Orbit
+| Planet | Moons | Gameplay |
+|---|---:|---|
+| Veyra | 0 | Scorched metal extraction and heat-resistant industry |
+| Ignaris | 1 | Volcanic metallurgy and geothermal energy |
+| Homeworld | 2 | Existing civilization and aerospace capital |
+| Thalora | 2 | Ocean cities and aquatic industry |
+| Kharon | 3 | Heavy industrial and military civilization |
+| Nythera | 2 | Exotic minerals and experimental science |
+| Vesperon | 12 | Gas giant harvesting and orbital megastructures |
+| Cryovex | 3 | Frozen industry and subsurface oceans |
+| Orynth | 11 | Ice giant atmosphere and remote logistics |
+| Vaelith | 4 | Exotic biology and biotechnology |
+| Erevos | 5 | Ancient structures and archaeology |
+| Noxaris | 3 | Remote expeditions and mysteries |
 
-The first challenge is not winning a battle in space. It is reaching space at all.
+Ember Belt, Iron Expanse, Shattered Ring, Crystal Drift and Outer Veil offer finite mining, collisions, salvage, anchored bases and contested logistics. Most moons specialize in industry, military or science, not mandatory large settlements.
 
-Recover lost aerospace knowledge, engineers and guidance technology. Establish launch infrastructure and develop the industrial capacity needed for rockets and spaceplanes. Rival powers pursue their own milestones, and spaceports and tracking stations become valuable strategic objectives. Launch costs may strain a civilization severely enough to reverse terrestrial development.
+### Seven gameplay phases
 
-### II — Orbital Civilization
+1. **Race to Orbit:** aerospace knowledge, launch infrastructure and sustainable orbital operations.
+2. **Orbital Supremacy:** stations, shipyards, factories, defenses and physical cargo fleets.
+3. **Lunar and Asteroid Frontier:** personally establish mining, science and military bases, then appoint commanders.
+4. **Age of Discovery:** exotic materials, reverse engineering, new technology and optional mysteries.
+5. **Interplanetary Civilization:** autonomous colonies, cities, trade and industrial networks.
+6. **War for the Star System:** fleet, orbital, atmospheric, ground, aquatic, underground and boarding operations; existing arrival war preserved.
+7. **Beyond the System:** advanced propulsion, massive engineering and readiness for DLC 2. DLC 1 remains independently playable indefinitely.
 
-Establish a permanent presence beyond the atmosphere. Develop orbital installations, spacecraft, logistical connections and military capabilities. What happens in orbit can influence terrestrial battles; what happens on the ground can determine whether your orbital presence survives.
+These are nonlinear capabilities, not new civilization stages or mandatory quests.
 
-The planned orbital view sits above the continental layer and operates in real time with pause. First orbit and first docking are milestones, not events guaranteed by a fixed clock.
+### Space industry and extraordinary technology
 
-### III — The Lunar Frontier
+Fifteen proposed fictional materials unlock 13 technology branches through research, extraction, refining and production. Original mining ships, autonomous drones, atmospheric harvesters, mobile refineries, landers, rovers, construction ships, freighters, colony vessels, research craft, military fleets and support ships. New functional command buildings, orbital factories, shipyards, cities, fortresses, megastations, feasible elevators and stellar collectors. Actual resource, energy, engineering and transportation constraints; no crafting micromanagement.
 
-The Moon becomes the next frontier. Develop off-world operations, secure resources and establish the industrial and transportation capacity needed to sustain activity beyond Earth. Rival powers compete for strategically important locations while the challenges of supply grow more demanding.
+### Autonomous Space Command
 
-### IV — The Home System
+Build personally with familiar RTS controls, then appoint commanders and delegate operations. Nine directives: Balanced, Expansionist, Industrial, Military, Offensive, Defensive, Scientific, Economic and Custom. Competence, experience, doctrine, limited knowledge, actual supplies and delegated authority shape autonomous outcomes. Take direct control and resume autonomy whenever permitted. Physical logistics, military campaigns and environmental emergencies handled automatically with actionable alerts.
 
-Extend civilization into the wider home system. Pursue off-world resource operations, orbital manufacturing and increasingly independent settlements. Develop fleets capable of supporting military and industrial activities far from Earth. Colonies may develop their own political interests and break away.
+### A living star system
 
-### V — Beyond the Known Frontier
+Interactive 3D stellar navigation connects planetary, orbital, regional and tactical views. Shared persistent resources, casualties, infrastructure, territory and history. Solar events, collisions, storms, discoveries, depletion, independent colonies, political shifts and industrial breakthroughs arise from causal state. Hierarchical simulation preserves physical scale without full-detail processing everywhere. Fully offline.
 
-As civilization's reach expands, so does uncertainty. New challenges await beyond familiar military doctrine. What lies beyond remains undisclosed; DLC 2's playable geographical scope remains the home system; interstellar travel belongs to the separate Beyond Civilization expansion (DLC 3).
+### The Hidden Chronicle
 
-```mermaid
-flowchart LR
-    E[Earth: industry and launch sites] --> O[First orbit and docking]
-    O --> M[Lunar operations]
-    M --> H[Home-system expansion]
-    H -.-> F[Undisclosed frontier]
-    classDef space fill:#344052,stroke:#8199b5,color:#fff
-    class E,O,M,H,F space
-```
+Optional discoveries, unexplained signals and ancient mysteries can arise through player actions, rival civilizations and natural events. Some never activate. Knowledge spreads with delays, and consequential choices permanently shape future civilization history and DLC 2 encounters. Existing campaign secrets remain protected. No mandatory quest grind or predetermined outcome.
+
+**Specifications:** [SPACE EXPANSION GDD](game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [AUTONOMOUS SPACE COMMAND](game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md). Internal narrative specification may contain spoilers.
 
 ### Space warfare and fleet command
 
@@ -625,13 +638,13 @@ The road to orbit depends on the world inherited from Inheritance and Living Wor
 
 ---
 
-## Beyond Civilization — DLC 3
+## Beyond Civilization — DLC 2
 
 > **Beyond the home system. Beyond the civilizations we know.**
 
 *Owner-approved expansion design · Not implemented · Development gate and release date unassigned.*
 
-Beyond Civilization extends the same persistent world into a finite, authored interstellar frontier. The player begins in the Core Region with the civilization inherited from the base campaign and Living World. Where Space Expansion (DLC 2) opens the home star system, DLC 3 opens the rest of the Core and six surrounding regions. The intended experience combines the freedom of space exploration, the mystery of isolated worlds and the danger of a lawless frontier with the familiar build, command and fight loop of Age of Modern War.
+Beyond Civilization extends the same persistent world into a finite, authored interstellar frontier. The primary True Dynasty path begins in the Core Region with the civilization inherited from the base campaign, Living World and DLC 1; separate independent starts are also supported. Where Space Expansion (DLC 1) opens the home star system, DLC 2 opens the rest of the Core and six surrounding regions. The intended experience combines the freedom of space exploration, the mystery of isolated worlds and the danger of a lawless frontier with the familiar build, command and fight loop of Age of Modern War.
 
 **The geography is authored. The history is dynamic. The gameplay remains RTS.** No endless procedural galaxy, mandatory ship piloting, diplomatic paperwork or colony micromanagement.
 
@@ -658,8 +671,8 @@ Explore a target of **50 authored star systems across seven regions**, including
 
 ```mermaid
 flowchart TD
-    A[Base game: homeworld] --> B[DLC 2: home star system]
-    B --> C[DLC 3: Core Region and wider frontier]
+    A[Base game: homeworld] --> B[DLC 1: home star system]
+    B --> C[DLC 2: Core Region and wider frontier]
     C --> D[Sovereign Reach]
     C --> E[Veiled Territories]
     C --> F[Broken Frontier]
@@ -729,7 +742,7 @@ XENOGENESIS proposes bounded decisions through the existing shared event ledger 
 
 ### Myrieme Forge — languages that evolve with civilizations
 
-The independent procedural language foundry is planned for full production and offline runtime integration across both DLCs. DLC 2 uses it for colony dialects, fleet and station names, military signals, trade and emerging societies. DLC 3 extends it to complete native language families, alien communication modalities, ancient scripts and automated first-contact interpretation.
+The independent procedural language foundry is planned for full production and offline runtime integration across both DLCs. DLC 1 uses it for colony dialects, fleet and station names, military signals, trade and emerging societies. DLC 2 extends it to complete native language families, alien communication modalities, ancient scripts and automated first-contact interpretation.
 
 | Core engine group | Planned engines |
 |---|---|
@@ -794,9 +807,9 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 | G14 | All Thirteen: remaining factions’ Stages 1–6 and 11–13 |
 | G15 | Inheritance campaign |
 | G16–G17 | High-fidelity underground and Living World |
-| G18 | Space Expansion (DLC 2): home star system |
+| G18 | Space Expansion (DLC 1): home star system |
 | G19 | Offline-first 2–4-player Last Protocol co-op; solo remains the reference |
-| Future (unassigned) | Beyond Civilization (DLC 3): finite interstellar frontier, XENOGENESIS and full Myrieme Forge integration |
+| Future (unassigned) | Beyond Civilization (DLC 2): finite interstellar frontier, XENOGENESIS and full Myrieme Forge integration |
 
 Future gates require their own frozen acceptance contracts. This is a development pipeline, not a release-date or storefront promise.
 

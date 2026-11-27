@@ -33,3 +33,12 @@ A future gameplay delivery must include an actual launchable project/build, vers
 
 ## Approved DLC addendum — 2026-11-27
 [Master DLC decision register 01–26](../../game/docs/BEYOND_CIVILIZATION_GDD.md) traces approved design; [XG-01..20](../../game/docs/XENOGENESIS.md), [Forge engines and MF-A01..08](../../game/docs/MYRIEME_FORGE_INTEGRATION.md), [DLC-01..19](../../game/docs/DLC_DELIVERY_PLAN.md) trace proposed implementation and acceptance. Existing archived requirements remain intact.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Trace S1–15 and final four decisions via Space GDD and SP-QA-01–32; existing contracts remain intact.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

@@ -31,3 +31,12 @@ Production order: queued → inputs reserved → processing → output placed; s
 Power is a connected capacity/consumption flow. Fuel and ammunition are physical stocks. Human provisions and machine charge/parts are distinct dependencies. Shared economy profiles change abstraction and service rules; they do not spawn unlimited stock or bypass the shared ledger.
 
 Research changes knowledge; tooling enables manufacture; production creates actual gear. Stage advancement checks active capabilities and explicit grants. Destroyed infrastructure may remove capacity without erasing learned science. Exact rates, thresholds, costs, refund policies, markets and tax formulas remain provisional.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Physical finite deposits, mining fleets, freight, refining, exotic resource research and modular construction; 15 materials and 13 branches; automate routine production.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

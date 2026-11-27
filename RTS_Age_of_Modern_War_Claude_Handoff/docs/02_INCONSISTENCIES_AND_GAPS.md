@@ -23,3 +23,12 @@ Sources: [Civilization_Bible_v1.3](../source_text/Civilization_Bible_v1.3.md), [
 ## Open decisions requiring actual evidence
 
 Exact Godot minor version, renderer and programming language boundary; target OS and hardware; art angle, pixels per world unit and animation directions; canonical faction/continent names; map dimensions and slots; precise recipe rates/costs; stage gate thresholds; combat formulas and fog-memory targeting policy; difficulty cadence; victory scope, tie handling and capture rules; save compatibility policy; release format, licensing and distribution. None is silently fixed by this package.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Superseded: old DLC numbering, literal Solar System geography, mandatory progression for independent saves. Campaign lore preserved; numerical parameters and canonical revelations remain open production tasks.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

@@ -27,3 +27,12 @@ The complete game adds adaptive close/tactical/operational/strategic zoom, survi
 Setup summary shows exactly granted assets, unsupported options and load warnings before Start. HUD exposes credits/materials, power, unit/supply status, selected stage, minimap and contextual actions. Production panels display blocked reason and missing prerequisites. Stage panel distinguishes science, tooling and usable equipment. Officer panel shows mission, phase and player override. Results explain each victory clause and allow Endless continuation where configured.
 
 Use remappable input bindings, keyboard navigation, readable scalable text, redundant team markers, reduced flashing, subtitles/visual alerts, configurable gore, pause and speed control. No final exact hotkey for attack-move modifier is locked by the source. Building rotation is separate from the prohibited free camera rotation. A fresh player must complete HQ/depot/barracks/squad actions using contextual feedback; UI-01 is a playtest, not a documentation checkbox.
+
+
+## 2026-11-27 — Current expansion design authority
+
+DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+
+Classic RTS controls, build/research/produce/move/attack, simple directive and authority presets, direct takeover; hierarchical navigation and actionable notifications.
+
+[SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)

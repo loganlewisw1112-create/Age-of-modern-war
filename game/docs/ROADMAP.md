@@ -245,4 +245,13 @@ creep/countdown, Tide). Solo LP stays untouched as the 1v1 reference.
 
 
 ## Owner-approved DLC extension — 2026-11-27
-UNDERSTRIKE is a base-game addition, not DLC. G18 is DLC 2 (one home star system); its existing six ship rosters and arrival war are preserved. G19 remains Last Protocol Combined Arms. DLC 3 Beyond Civilization is a subsequent unnumbered track, not a change to current gate order or contracts. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
+UNDERSTRIKE is a base-game addition, not DLC. G18 is DLC 1 (one home star system); its existing six ship rosters and arrival war are preserved. G19 remains Last Protocol Combined Arms. DLC 2 Beyond Civilization is a subsequent unnumbered track, not a change to current gate order or contracts. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
+
+
+## 2026-11-27 — Authoritative expansion integration
+
+DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (future unnumbered). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
+
+G18 encompasses 15 SP workstreams and 32 acceptance criteria; all NOT RUN. No change to G10.1 wider regression or G11–G19 sequencing.
+
+[SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)

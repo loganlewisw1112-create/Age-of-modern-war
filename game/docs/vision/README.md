@@ -27,3 +27,8 @@ These images show where the owner wants the game to go visually and in scale. Th
   These map onto roadmap G3b–G6 and need their own scoping.
 - The scale shown (hundreds of units on screen) is beyond the measured cap: about 512 simulated units within budget, and roughly 20–24 fps at about 440 units (see `perf/`). Getting there needs the G4 work: a sim thread and rendering LOD.
 - File hashes (sha256, first 16 hex): 01 `868ce2cdbe8d6d03`, 02 `14c659cea2b9fd53`, 03 `47624a6137066171`, 04 `d7eedbfb66d6a07c`, 05 `11635fb0195886a1`, 06 `207dc3efa5723ff9`.
+
+
+## Future expansion authority (2026-11-27)
+
+[Space Expansion master design](../SPACE_EXPANSION_GDD.md) records the approved DLC 1 / DLC 2 numbering, True Dynasty and independent starts, stellar catalog, Hidden Chronicle and engineering guidance. These are future planning specifications only; do not implement ahead of existing gates. No change to current source, build, save format or completion status.
