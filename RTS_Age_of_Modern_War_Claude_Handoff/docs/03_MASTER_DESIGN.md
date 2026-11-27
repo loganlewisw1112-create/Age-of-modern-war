@@ -201,4 +201,4 @@ Final game title; canon factions and history; exact world dimensions; target OS/
 
 
 ## Approved DLC addendum — 2026-11-27
-Full approved expansion design is incorporated by reference: [master DLC GDD](../../../game/docs/BEYOND_CIVILIZATION_GDD.md). UNDERSTRIKE is base-game content, DLC 2 is one home system and DLC 3 the finite interstellar frontier. Campaign outcomes directly affect starting conditions; classic RTS controls and automation remain mandatory.
+Full approved expansion design is incorporated by reference: [master DLC GDD](../../game/docs/BEYOND_CIVILIZATION_GDD.md). UNDERSTRIKE is base-game content, DLC 2 is one home system and DLC 3 the finite interstellar frontier. Campaign outcomes directly affect starting conditions; classic RTS controls and automation remain mandatory.
