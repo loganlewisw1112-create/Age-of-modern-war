@@ -23,7 +23,7 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 </p>
 <p align="center"><em>Dusk on the wire · core compound inside the inner wall</em></p>
 
-[Play](#play-the-packaged-build) · [Skirmish](#skirmish) · [Factions](#factions-playable-now) · [Last Protocol](#last-protocol) · [Inheritance](#inheritance--campaign) · [Living World](#living-world) · [UNDERSTRIKE](#understrike) · [Space Expansion](#space-expansion) · [Roadmap](#development-status) · [Developer guide](#technical-architecture)
+[Play](#play-the-packaged-build) · [Skirmish](#skirmish) · [Factions](#factions-playable-now) · [Last Protocol](#last-protocol) · [Inheritance](#inheritance--campaign) · [Living World](#living-world) · [UNDERSTRIKE](#understrike) · [Space Expansion](#space-expansion) · [Beyond Civilization](#beyond-civilization--dlc-3) · [Roadmap](#development-status) · [Developer guide](#technical-architecture)
 
 ---
 
@@ -46,6 +46,7 @@ flowchart LR
     S -.-> C[Inheritance]
     C -. Same world and save .-> D[Living World]
     D -.-> E[Space Expansion]
+    E -.-> F3[Beyond Civilization]
     S -.-> U[UNDERSTRIKE systems]
     classDef live fill:#244b43,stroke:#6ca596,color:#fff
     classDef future fill:#344052,stroke:#8199b5,color:#fff
@@ -587,7 +588,7 @@ Extend civilization into the wider home system. Pursue off-world resource operat
 
 ### V — Beyond the Known Frontier
 
-As civilization's reach expands, so does uncertainty. New challenges await beyond familiar military doctrine. What lies beyond remains undisclosed; the expansion's playable geographical vision centers on Earth orbit, the Moon and the home system, not unrestricted travel between stars.
+As civilization's reach expands, so does uncertainty. New challenges await beyond familiar military doctrine. What lies beyond remains undisclosed; DLC 2's playable geographical scope remains the home system; interstellar travel belongs to the separate Beyond Civilization expansion (DLC 3).
 
 ```mermaid
 flowchart LR
@@ -624,6 +625,150 @@ The road to orbit depends on the world inherited from Inheritance and Living Wor
 
 ---
 
+## Beyond Civilization — DLC 3
+
+> **Beyond the home system. Beyond the civilizations we know.**
+
+*Owner-approved expansion design · Not implemented · Development gate and release date unassigned.*
+
+Beyond Civilization extends the same persistent world into a finite, authored interstellar frontier. The player begins in the Core Region with the civilization inherited from the base campaign and Living World. Where Space Expansion (DLC 2) opens the home star system, DLC 3 opens the rest of the Core and six surrounding regions. The intended experience combines the freedom of space exploration, the mystery of isolated worlds and the danger of a lawless frontier with the familiar build, command and fight loop of Age of Modern War.
+
+**The geography is authored. The history is dynamic. The gameplay remains RTS.** No endless procedural galaxy, mandatory ship piloting, diplomatic paperwork or colony micromanagement.
+
+### I — Beyond the Home System
+
+Develop interstellar propulsion and the infrastructure to sustain expeditions beyond familiar territory. Your campaign outcome directly determines the forces, technology, resources, settlements, alliances, rivalries and crises with which you begin. Existing saves carry forward; purchasing the expansion opens its content without granting free ships or bypassing technological prerequisites.
+
+Select a destination and dispatch a fleet, or take direct command. Autonomous crews handle navigation, refueling, repairs, resupply and escorts. Discover distress signals, abandoned ships, hidden stations, hostile fleets and unexpected opportunities along the route. Trade corridors and gateways can develop, become contested or collapse.
+
+### II — The Interstellar Frontier
+
+Explore a target of **50 authored star systems across seven regions**, including the original home system. Each has a distinctive geographical foundation and history; political borders, military activity and economic conditions change autonomously. The planning range is 40–60 systems, subject to content and performance validation.
+
+| Region | Systems (baseline) | Character |
+|---|---:|---|
+| Core Region | 5 | Home system and neighboring stars; familiar starting territory, never permanently safe |
+| Sovereign Reach | 10 | Established powers, major cities, military and industrial centers |
+| Veiled Territories | 9 | Isolated civilizations, exotic environments and limited contact |
+| Broken Frontier | 7 | Contested colonies, pirates, mercenaries and independent settlements |
+| Meridian Expanse | 8 | Resource-rich worlds, mining, trade and colonial competition |
+| Silent Verge | 5 | Ancient ruins, abandoned infrastructure and dormant technologies |
+| Uncharted Reach | 6 | Remote hazardous systems, unknown life and rare discoveries |
+| **Total** | **50** | **One home system + 49 additional systems** |
+
+```mermaid
+flowchart TD
+    A[Base game: homeworld] --> B[DLC 2: home star system]
+    B --> C[DLC 3: Core Region and wider frontier]
+    C --> D[Sovereign Reach]
+    C --> E[Veiled Territories]
+    C --> F[Broken Frontier]
+    C --> G[Meridian Expanse]
+    C --> H[Silent Verge]
+    C --> I[Uncharted Reach]
+    classDef frontier fill:#344052,stroke:#8199b5,color:#fff
+    class A,B,C,D,E,F,G,H,I frontier
+```
+
+*Access progression, not a canonical route map. Region names other than Core and individual stellar inventories remain subject to content approval.*
+
+Land on suitable planetary surfaces, explore authored cities and ruins, establish bases and colonies, and uncover native flora and fauna. Gravity, atmosphere, climate, terrain and resources influence viable operations. Procedural terrain detail fills the authored geography without expanding its finite boundaries. Construction, discoveries, territorial changes and destruction persist when you leave and return. UNDERSTRIKE supplies the planned underground layer where applicable.
+
+### III — First Contact
+
+Encounter civilizations with their own biology, culture, history, languages, technology and military doctrine. An unknown transmission can lead to reconnaissance, identification, automatic interpretation and first contact; encounters vary according to the species and circumstances. Some civilizations seek cooperation, others remain isolated or hostile. Investigate personally, delegate or continue your expedition.
+
+The initial ecosystem plans five major powers (including the two established arrival powers), four minor or emerging civilization concepts and an ancient precursor layer. New concepts include an industrial military power, an ocean-origin civilization and an independent extraterrestrial synthetic intelligence, alongside eusocial organisms, nomadic fleets, unusual mineral-adapted life and developing societies. Minor powers can rise; major powers can fragment, decline or recover. Existing arrival lore is preserved; final identities, native names and unit rosters require content approval.
+
+Alien environments also evolve independently: populations migrate, predators and prey interact, ecosystems adapt or collapse, and biological discoveries can open new economic or scientific opportunities. No individual organism management is required.
+
+### IV — Colonies, Civilizations and Lost Worlds
+
+Build settlements, military bases, research facilities, orbital stations and industrial networks. Choose a colony priority or place buildings directly; autonomous commanders handle routine development, construction and logistics. Trade, scarcity, blockades, migration and political fragmentation influence the wider universe.
+
+Discover ancient cities, buried facilities, derelict fleets and dormant installations. Research recovered technology, compete with rival expeditions, salvage equipment or cooperate with foreign powers. Discoveries can unlock new units, technologies and construction opportunities. Independent civilizations pursue their own research, military development and megastructure projects, from orbital habitats and shipyards to stellar collectors and interstellar gateways, constrained by knowledge, resources and engineering.
+
+Diplomacy remains straightforward: communicate, trade, ally, request assistance, defend or declare war. The underlying political simulation handles negotiations, treaties, rivalries and historical consequences.
+
+### V — Interstellar Warfare
+
+Command fleets, defend systems, blockade enemy infrastructure, invade planets and coordinate forces across interstellar, orbital, atmospheric, surface and subterranean combat. Alien militaries adapt their doctrines through observed successes and failures, with distinct biological, synthetic, conventional and exotic capabilities. Capture and reverse-engineer technology where prerequisites allow.
+
+Issue a civilization-scale objective such as **Invade Planet**, **Defend System** or **Expand Industry**, then delegate execution or jump into an individual RTS battle. Autonomous commanders coordinate forces and supplies; the same authoritative combat, economy and logistics systems track equipment, casualties, resources and territory. Existing campaign rules for personally played battles remain intact; delegated battles are supported in Living World.
+
+### VI — A Living Interstellar Civilization
+
+Wars, alliances, discoveries, ecological crises and technological breakthroughs can occur independently of the player. The Core is not protected by artificial difficulty scaling; distant regions are not automatically hostile. Civilizations act on imperfect information and finite resources rather than omniscient AI or invisible resource cheats by default. Selectable challenge levels and actionable alerts keep the experience approachable.
+
+| Player order | Autonomous execution |
+|---|---|
+| Explore system | Dispatch reconnaissance, survey and report discoveries |
+| Investigate signal | Identify, interpret and assess the encounter |
+| Colonize planet | Establish infrastructure, supply and development |
+| Establish trade | Coordinate routes, offers and transport |
+| Research technology | Allocate research and verify prerequisites |
+| Invade planet | Organize fleets, troops, reinforcements and logistics |
+| Build megastructure | Plan construction and supply materials |
+| Take control | Return to familiar RTS selection and direct orders |
+
+These six gameplay phases describe a proposed progression and recurring opportunities, not mandatory linear quests or separate DLC releases.
+
+### XENOGENESIS — the fifth intelligent director
+
+One new extraterrestrial civilization director extends the existing four coordinated directors, rather than duplicating the simulation. Its 20 logical subsystems are grouped below for readability.
+
+| Intelligence domain | Subsystems |
+|---|---|
+| Biology and ecology | Species Genesis, Biological Evolution, Ecological Intelligence, Population Dynamics |
+| Society and expansion | Civilization Evolution, Cultural Intelligence, Political Intelligence, Colonization Intelligence |
+| Strategy | Military Evolution, Technological Evolution, Economic Intelligence, Diplomatic Intelligence |
+| Advanced civilizations | Engineering Intelligence, Ancient Civilization Intelligence, First Contact Intelligence, Interstellar Expansion |
+| Cognitive intelligence | Historical Memory, Behavioral Adaptation, Strategic Forecasting, Civilization Decision Core |
+
+XENOGENESIS proposes bounded decisions through the existing shared event ledger and command validator. The active battlefield receives full unit simulation while distant regions, planets and systems use progressively aggregated models. Stable identities, resources, losses, infrastructure and historical events remain persistent across simulation tiers. The entire expansion is intended to operate offline. Exact scale and hardware budgets require profiling.
+
+### Myrieme Forge — languages that evolve with civilizations
+
+The independent procedural language foundry is planned for full production and offline runtime integration across both DLCs. DLC 2 uses it for colony dialects, fleet and station names, military signals, trade and emerging societies. DLC 3 extends it to complete native language families, alien communication modalities, ancient scripts and automated first-contact interpretation.
+
+| Core engine group | Planned engines |
+|---|---|
+| Language foundations | Seed, World Profile, Phonology, Phonotactics, Prosody |
+| Grammar and vocabulary | Morphology, Syntax, Lexicon, NameForge |
+| Communication and evolution | Script & Glyph, Translation, Audio, Evolution |
+| Production integrity | Quality, Exporter |
+
+Eight game integration modules connect those engines to civilization events: Civilization Language Bridge, Multimodal Communication, First Contact Intelligence, Xenolinguistic Archaeology, Interstellar Naming Registry, Cultural Exchange, Environmental Language and Runtime Communication.
+
+Canon-locked packages provide consistent names, grammar, writing, audio and terminology. Migration, trade, isolation and political fragmentation can drive bounded linguistic evolution. Translation is automatic and can reflect incomplete intelligence; no mandatory language puzzles, external AI services or subscriptions.
+
+### Expanded Skirmish
+
+Ownership of a DLC unlocks its new playable factions in **Skirmish only**, with full coherent unit, building and technology rosters. In Campaign and Living World, the player retains the inherited civilization and encounters alien powers as autonomous AI civilizations.
+
+Planned presets include Classic RTS, Alien Invasion, First Contact, Planetary Conquest, Fleet Warfare, Civilization Wars, Survival Frontier and Total Sandbox. Optional advanced settings cover compatible environments, factions, alliances, starting technologies, wildlife, dynamic events, difficulty and victory conditions. Quick-start remains the default.
+
+### Internal development phases
+
+| Phase | Deliverable |
+|---|---|
+| 1 — Shared foundation | Persistent IDs, save migration, hierarchical simulation, entitlement and shared director contracts |
+| 2 — Myrieme Forge | Fifteen engines, eight adapters, canon-reviewed packages and offline runtime |
+| 3 — Home-system dependency | Complete G18 Space Expansion and validate campaign/arrival continuity |
+| 4 — XENOGENESIS | Implement and validate all 20 logical subsystems and cross-director arbitration |
+| 5 — Universe and factions | Author seven regions, system catalog, planetary environments, species, languages and complete playable rosters |
+| 6 — Exploration | Validate travel, landing, first contact, ancient discoveries and delegation through playable slices |
+| 7 — Civilization gameplay | Autonomous ecosystems, diplomacy, economies, colonization, research and engineering |
+| 8 — Warfare | Multi-domain campaigns, adaptive militaries, fleet logistics and direct takeover |
+| 9 — Skirmish | Full entitlement-aware faction rosters, presets, legal scenarios and balance |
+| 10 — Integration and release | Offline packaging, save compatibility, performance, AI, regression and gameplay playtests |
+
+Internal phases are dependency-driven and may overlap where safe. Release requires the complete polished expansion, not unfinished public content drops. Existing G18/G19 order and base-game gates are unchanged. All phases are planned; no implementation or release date is claimed.
+
+**Design specifications (may contain spoilers):** [Master DLC GDD](game/docs/BEYOND_CIVILIZATION_GDD.md) · [Universe and civilization bible](game/docs/INTERSTELLAR_UNIVERSE.md) · [XENOGENESIS](game/docs/XENOGENESIS.md) · [Myrieme Forge](game/docs/MYRIEME_FORGE_INTEGRATION.md) · [Development pipeline and acceptance tests](game/docs/DLC_DELIVERY_PLAN.md)
+
+---
+
 ## Development status
 
 **Latest documented stabilization build:** G10.1 · November 27, 2026 · `09313a2d` · `g71`. The G10 gate is closed; wider regression acceptance remains open.
@@ -649,8 +794,9 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 | G14 | All Thirteen: remaining factions’ Stages 1–6 and 11–13 |
 | G15 | Inheritance campaign |
 | G16–G17 | High-fidelity underground and Living World |
-| G18 | Space Expansion |
+| G18 | Space Expansion (DLC 2): home star system |
 | G19 | Offline-first 2–4-player Last Protocol co-op; solo remains the reference |
+| Future (unassigned) | Beyond Civilization (DLC 3): finite interstellar frontier, XENOGENESIS and full Myrieme Forge integration |
 
 Future gates require their own frozen acceptance contracts. This is a development pipeline, not a release-date or storefront promise.
 
@@ -765,9 +911,3 @@ Detailed narrative design material is not linked from this public overview. Some
 ---
 
 **Win the war. Survive the siege. Build the legacy. Shape the world. Reach beyond it.**
-
-## BEYOND CIVILIZATION — DLC 3 (approved design)
-
-A finite authored frontier of approximately 50 star systems across seven regions, including the home system. Start in the Core Region; DLC 2 opens one system, DLC 3 opens the remaining 49. Campaign outcomes directly determine starting assets, relationships and crises. Explore, colonize, build, research and fight across planetary and interstellar domains with familiar RTS controls and optional autonomous delegation. New DLC factions are fully playable in Skirmish only; Campaign and Living World retain the existing player civilization. Five initial major alien powers (including the two existing arrival powers), four minor/emerging concepts and an ancient precursor layer are planned. **XENOGENESIS**, the fifth coordinated director, has 20 logical subsystems for extraterrestrial civilization and ecosystem intelligence. **Myrieme Forge** supplies 15 language engines and eight integration adapters across both DLC packages, fully offline. No mandatory micromanagement or endless procedural universe. Existing G18 and G19 remain intact; DLC 3 gate unassigned. All features are approved design, not shipped software.
-
-[Master DLC GDD](game/docs/BEYOND_CIVILIZATION_GDD.md) · [Universe and civilization bible](game/docs/INTERSTELLAR_UNIVERSE.md) · [XENOGENESIS](game/docs/XENOGENESIS.md) · [Myrieme Forge](game/docs/MYRIEME_FORGE_INTEGRATION.md) · [Development pipeline and tests](game/docs/DLC_DELIVERY_PLAN.md)
