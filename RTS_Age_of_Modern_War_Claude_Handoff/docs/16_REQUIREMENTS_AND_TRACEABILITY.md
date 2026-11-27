@@ -29,3 +29,7 @@ Offline operation; one authoritative state; bounded AI work; no unmeasured capac
 ## Delivery requirements
 
 A future gameplay delivery must include an actual launchable project/build, versioned source and content, setup/run instructions, required licenses, evidence for claimed gates, known issues and supported hardware. This handoff includes design/reference material and integrity evidence only. New generated JSON is not tested Godot data and no original starter validator was recovered.
+
+
+## Approved DLC addendum — 2026-11-27
+[Master DLC decision register 01–26](../../../game/docs/BEYOND_CIVILIZATION_GDD.md) traces approved design; [XG-01..20](../../../game/docs/XENOGENESIS.md), [Forge engines and MF-A01..08](../../../game/docs/MYRIEME_FORGE_INTEGRATION.md), [DLC-01..19](../../../game/docs/DLC_DELIVERY_PLAN.md) trace proposed implementation and acceptance. Existing archived requirements remain intact.
