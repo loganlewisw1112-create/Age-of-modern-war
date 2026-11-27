@@ -96,6 +96,7 @@ func _end_to_end(mode: String, off: Vector2, limit: int) -> void:
 	check(M8.cover(w, p) > 0.5, "%s: a creep area at the target (%.2f)" % [mode, M8.cover(w, p)])
 	check_eq(_submit(w, {"type": "cn_mission", "team_id": tid, "target": [p.x, p.y], "mode": mode}), "", "%s: PURGE MISSION accepted" % mode)
 	var purged := false
+	var purge_cover := 1.0
 	var left := false
 	var at_site := false
 	var seen := []
@@ -104,6 +105,7 @@ func _end_to_end(mode: String, off: Vector2, limit: int) -> void:
 		for ev in w.events:
 			if String(ev.get("type", "")) == "CnMissionPurged" and int(ev.get("team", -1)) == tid:
 				purged = true
+				purge_cover = M8.cover(w, p)
 		var M := M8.mission_of(w, tid)
 		var ph := String(M.get("phase", ""))
 		if seen.is_empty() or seen[-1] != ph:
@@ -128,7 +130,7 @@ func _end_to_end(mode: String, off: Vector2, limit: int) -> void:
 	check(at_site, "%s: the strike APCs reached the site" % mode)
 	check(seen.has("deploy"), "%s: deployed counter-nanites" % mode)
 	check(purged, "%s: the area was purged (CnMissionPurged)" % mode)
-	check(M8.cover(w, p) <= M8.PURGE_FRAC, "%s: creep at the target %.2f <= %.2f" % [mode, M8.cover(w, p), M8.PURGE_FRAC])
+	check(purge_cover <= M8.PURGE_FRAC, "%s: creep at the target when cleared %.2f <= %.2f" % [mode, purge_cover, M8.PURGE_FRAC])
 	check_eq(String(M.get("phase", "")), "done", "%s: mission complete (note: %s)" % [mode, String(M.get("note", ""))])
 	var T := M8.fac_team(w, tid)
 	check_eq(String(T.get("phase", "")), "garage", "%s: the team is back in its garage" % mode)

@@ -37,6 +37,21 @@ static func load_all() -> void:
 		push_warning("ArtCatalog: manifest.json missing; run tools/gen_art.gd. Using placeholders.")
 	_merge_g5()
 	_merge_anim8()
+	_merge_shared_art()
+
+
+## Variants can share a chassis, uniform or facility prefab. Standalone artwork takes precedence.
+static func _merge_shared_art() -> void:
+	var path := "res://assets/art/shared_roster.json"
+	var aliases = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not aliases is Dictionary:
+		return
+	for id in aliases:
+		var source: String = aliases[id]
+		for section in ["infantry", "vehicles", "buildings", "vehicle_wrecks", "icons"]:
+			var entries: Dictionary = _man.get(section, {})
+			if entries.has(source) and not entries.has(id):
+				entries[id] = entries[source]
 
 
 # ---------------------------------------------------------------- G5 art groups (VIEW5)
@@ -390,7 +405,9 @@ static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) ->
 		"wreck":
 			var vw: Dictionary = _man.get("vehicle_wrecks", {}).get(def, {})
 			if not vw.is_empty():
-				return _sheet_sprite(vw, Color.WHITE, 0, facing_index(float(e.get("facing", 0.0))), false)
+				var facings := maxi(1, int(vw.get("facings", 1)))
+				var row := unit_sheet_row(facing_index(float(e.get("facing", 0.0))), facings)
+				return _sheet_sprite(vw, Color.WHITE, 0, posmod(row, facings), false)
 			var rb: Dictionary = _man.get("rubble", {}).get(str(clampi(int(e.get("size", 1)), 1, 3)), {})
 			if not rb.is_empty():
 				return {"texture": _texture(String(rb.file)), "offset": Vector2(-float(rb.pivot[0]), -float(rb.pivot[1])), "flip_h": false}
@@ -506,12 +523,12 @@ static func icon(id: String) -> Texture2D:
 	if _texs.has(key):
 		return _texs[key]
 	var spec: Dictionary = _man.get("infantry", {}).get(def, _man.get("vehicles", {}).get(def, {}))
-	if spec.is_empty():
-		return _ph()
-	var src := _image(String(spec.get("file", "")))
+	var building: Dictionary = _man.get("buildings", {}).get(def, {})
+	var path: String = spec.get("file", building.get("states", {}).get("built", {}).get("file", ""))
+	var src := _image(path)
 	if src == null:
 		return _ph()
-	var frame := src.get_region(Rect2i(0, 0, int(spec.fw), int(spec.fh)))
+	var frame := src if spec.is_empty() else src.get_region(Rect2i(0, 0, int(spec.fw), int(spec.fh)))
 	var box := frame.get_used_rect()
 	if not box.has_area():
 		return _ph()
