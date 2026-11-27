@@ -126,3 +126,7 @@ Persistence: versioned config/content references + world snapshot + RNG/time + o
 AI planners read observer-filtered state, submit the same commands and tolerate rejection. Budget strategic planning, tactical decisions and path requests separately. First use bounded state machines/utility scores; more complex planners require measured benefit. No runtime LLM dependency.
 
 Future fidelity transitions require before/after conservation of people, equipment, resources, injuries, ownership and knowledge. Historical research survives capacity loss unless a specific loss mechanism applies. These are future contracts; no current continental scaling proof exists.
+
+
+## Approved DLC addendum — 2026-11-27
+Approved future extension: [XENOGENESIS](../../../game/docs/XENOGENESIS.md) is one fifth director with 20 logical subsystems, sharing authoritative state with existing directors. [Myrieme Forge](../../../game/docs/MYRIEME_FORGE_INTEGRATION.md) provides 15 engines and eight adapters, offline. See those contracts for data, event and persistence boundaries.
