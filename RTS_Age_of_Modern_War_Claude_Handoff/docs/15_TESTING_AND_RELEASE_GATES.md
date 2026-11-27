@@ -81,4 +81,4 @@ Test ID; expected result; build/hash; environment; config/seed; reproduction ste
 
 
 ## Approved DLC addendum — 2026-11-27
-[DLC acceptance matrix DLC-01..19](../../../game/docs/DLC_DELIVERY_PLAN.md) and detailed subsystem tests extend existing requirements. All new tests NOT RUN; budgets and evidence required before release.
+[DLC acceptance matrix DLC-01..19](../../game/docs/DLC_DELIVERY_PLAN.md) and detailed subsystem tests extend existing requirements. All new tests NOT RUN; budgets and evidence required before release.
