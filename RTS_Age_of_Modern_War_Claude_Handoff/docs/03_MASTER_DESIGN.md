@@ -198,3 +198,7 @@ Mitigations
 Vertical slices, deterministic replay, simulation invariants, authoritative world-state model, data-driven content, simulation dashboards, automated soak tests, profiled budgets and progressive fidelity.
 Still undecided
 Final game title; canon factions and history; exact world dimensions; target OS/hardware; pixel scale and camera geometry; final art pipeline; specific combat ballistics; economy formulas; narrative cast; modding policy; monetization/distribution; team size and production schedule. Do not treat these as finalized.
+
+
+## Approved DLC addendum — 2026-11-27
+Full approved expansion design is incorporated by reference: [master DLC GDD](../../../game/docs/BEYOND_CIVILIZATION_GDD.md). UNDERSTRIKE is base-game content, DLC 2 is one home system and DLC 3 the finite interstellar frontier. Campaign outcomes directly affect starting conditions; classic RTS controls and automation remain mandatory.
