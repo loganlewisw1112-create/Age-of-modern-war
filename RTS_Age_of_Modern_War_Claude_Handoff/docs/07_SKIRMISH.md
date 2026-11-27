@@ -50,3 +50,7 @@ Preview computes effective assets after preset and override application and show
 Proposed objective tree nodes: ALL, ANY and typed leaves (elimination, HQ capture, territory threshold, hold target, score, research, defense duration). Specify time units, allied ownership accounting, interruption resets and simultaneous victories before implementation. Endless suppresses automatic terminal wins; progress may still be displayed. Contradictory forced end rules are rejected or explicitly resolved in preview, according to an agreed policy.
 
 Initial QA fixtures: Human A Stage 8 / Human B Stage 7 / Machine Stage 9; repeated seed; asymmetric stockpiles; missing prerequisite; blocked spawn; AI free-for-all; no-timer Endless; bridge hold AND territory threshold. Illustrative 50,000 credits, 60% control and five-minute hold are source scenarios, not balance locks.
+
+
+## Approved DLC addendum — 2026-11-27
+DLC ownership immediately unlocks new DLC playable factions in Skirmish only, not Campaign or Living World. Add quick presets and optional expanded scenario settings with compatible environments and validated starts. [Approved expansion design](../../../game/docs/BEYOND_CIVILIZATION_GDD.md).
