@@ -222,6 +222,9 @@ func test_drive_all() -> void:
 	check_eq(_cmd(w, {"type": "so_mission", "team_id": int(tac[2]), "kind": "recon", "mode": "drive", "target": [rp.x, rp.y]}), "", "recon accepted")
 	check_eq(_cmd(w, {"type": "so_mission", "team_id": int(tac[3]), "kind": "rescue", "mode": "drive", "target": [resc.x, resc.y]}), "", "rescue accepted")
 	w.step()
+	var rescue_team := SO.fac_team(w, int(tac[3]))
+	var home := CnFacility.evac_point(CnFacility.fac(w, int(rescue_team.fac)))
+	var delivered := {}
 	evc = {}
 	# recon checks while the marks are live (they expire after the mark time by design; the whole run lasts far longer):
 	# taken when the recon squad finishes scouting (enters "ret")
@@ -246,6 +249,10 @@ func test_drive_all() -> void:
 	on_tick = func(ww: SimWorld) -> void:
 		if ww.tick % 20 == 0 and ["board", "exit", "travel"].has(String(SO.mission_of(ww, int(tac[3])).get("phase", ""))):
 			_clear(ww, resc, 5)
+		for ev in ww.events:
+			if ev.type == "UnitUnloaded" and ev.get("cause", "") == "so_rescue" and int(ev.id) in surv:
+				if Vector2(ev.pos).distance_to(home) <= 30.0 and ww.entities.has(int(ev.id)):
+					delivered[int(ev.id)] = true
 	var seen := _run(w, tac, 30000, [int(st[0])])
 	on_phase = Callable()
 	on_tick = Callable()
@@ -268,13 +275,7 @@ func test_drive_all() -> void:
 	var Mr := SO.mission_of(w, int(tac[3]))
 	check(int(Mr.get("saved", 0)) >= 3, "rescue recovered the downed group (%d)" % int(Mr.get("saved", 0)))
 	check(_n_events(w, "SoCasualtyCarried") >= 1 and _n_events(w, "SoCasualtyAboard") >= 1, "the wounded soldier was carried aboard")
-	var home := CnFacility.evac_point(CnFacility.fac(w, int(CnFacility.facilities(w, fid)[0])))
-	var near_home := 0
-	for id in surv:
-		var e = w.entities.get(int(id))
-		if e != null and Vector2(e.pos).distance_to(home) <= 30.0:
-			near_home += 1
-	check(near_home >= 2, "survivors brought home (%d near the gate)" % near_home)
+	check(delivered.size() >= 2, "survivors brought home alive (%d unloaded near the gate)" % delivered.size())
 
 
 # ================================================================ fly: raid and rescue (lost-squad beacon)
