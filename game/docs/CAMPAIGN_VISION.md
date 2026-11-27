@@ -10,6 +10,8 @@
 
 ---
 
+> **Owner-approved update — 2026-11-27:** [Next-generation simulation GDD extension](NEXTGEN_SIMULATION_GDD.md) records all 25 approved decisions and four coordinated directors. It supersedes older restrictions on regional intelligence: optional uncertain/stale intel and autonomous intelligence are now planned, while tactical fog stays intact. Campaign diplomacy remains authored where story requires; systemic behavior operates around those milestones. All campaign battles remain personally played; routine military automation is allowed, and battle delegation unlocks in Living World. Narrative secrets, authored beats, endings and existing expansion scope remain intact. Classic RTS simplicity, automatic routine management and optional direct intervention are mandatory. Approved design, not frozen implementation scope.
+
 # Part 0: How this fits RTS: Age of Modern War (added 2026-10-28)
 Everything in this file is **the campaign and expansion for the existing game**, not a separate project. It runs on the
 same Godot 4.7.2 + Rust `rts_core` engine, the same three factions (plus the G8 Shadow Coalition), the same stages,
