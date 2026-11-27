@@ -2,7 +2,7 @@
 
 Owner-approved direction, 2026-11-27. PLANNED / NOT IMPLEMENTED. All examples are non-executable documentation guidance. No runtime changes or gate changes authorized.
 
-G18 expanded scope only; G10.1 wider regression open; existing gate statuses preserved; G20 (DLC 2) follows G18 and precedes G19. No actual implementation or tests run.
+G18 expanded scope only; G10.1 wider regression open; existing gate statuses preserved; full XENOGENESIS and Forge acceptance precedes G19; G20 (DLC 2) follows G19. No actual implementation or tests run.
 
 | Workstream | Deliverable |
 |---|---|
@@ -60,6 +60,6 @@ SP-01 first; SP-02/03/04 build foundation; extraction, planetary, command, logis
 Risks: orbital stability, precision, content scope, migration, director contention, performance, narrative conflict. Mitigate with validated catalogs, coordinate frames, deterministic fixtures, single authoritative ledger, bounded simulation tiers, profiling and canon review. Exact hardware budgets, numerical parameters, individual vehicle specs and final narrative revelations pending. No fake completion. [SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)
 
 
-## Owner-approved execution sequence — G20 before G19
+## Corrected owner-approved execution sequence
 
-G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.
+Owner-approved sequence: G18 Space Expansion → full XENOGENESIS and Myrieme Forge integration acceptance (mandatory pre-G19 dependency; may be developed earlier) → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted before G19 begins, not merely prototyped. G20's actual interstellar gameplay and content development follows G19. Pre-G19 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.

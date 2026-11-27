@@ -19,7 +19,7 @@ G6.1 / G7 / G7.1 did.
 
 ## Owner-approved next-generation simulation extension (2026-11-27)
 
-[Canonical GDD extension and 25 decisions](NEXTGEN_SIMULATION_GDD.md). Four coordinated directors, autonomous population/industry/military institutions, organic settlements, physical logistics, persistent environments, adaptive command and historical continuity are approved design direction for G15/G17. Introduce shared persistent IDs, event ledger, deterministic director framework and LOD foundation before dependent features; then civilian/settlement, industry/transport, military/facilities, environment/immersion and director behavior progressively. Integrate campaign at G15, Living World at G17, and reuse foundations in UNDERSTRIKE and G18 where relevant. The original director update does not widen frozen contracts; the subsequent owner-approved G20 sequencing supersedes the prior order. G10.1 regression remains open. Each future slice requires its own owner-reviewed acceptance contract, performance budgets and proof of classic RTS playability without mandatory micromanagement. Scale figures are research targets only.
+[Canonical GDD extension and 25 decisions](NEXTGEN_SIMULATION_GDD.md). Four coordinated directors, autonomous population/industry/military institutions, organic settlements, physical logistics, persistent environments, adaptive command and historical continuity are approved design direction for G15/G17. Introduce shared persistent IDs, event ledger, deterministic director framework and LOD foundation before dependent features; then civilian/settlement, industry/transport, military/facilities, environment/immersion and director behavior progressively. Integrate campaign at G15, Living World at G17, and reuse foundations in UNDERSTRIKE and G18 where relevant. The original director update does not widen frozen contracts; the subsequent owner-approved integration checkpoint and G20 sequencing supersede earlier planning assumptions. G10.1 regression remains open. Each future slice requires its own owner-reviewed acceptance contract, performance budgets and proof of classic RTS playability without mandatory micromanagement. Scale figures are research targets only.
 
 ## Shipped (for orientation)
 G0 engine spike → G1 core RTS → G2 smart warfare → G3a/G3b slice content (3 factions, stages 7–9, maps) → G4 harden +
@@ -198,11 +198,9 @@ endless crisis.
   buttons; warbands can ignore player; doctrine unlock at tech stage (AI adapts live); pressure = steal/turn + messy
   ally risk + unpredictability. Same plan file.
 
-## G20 — Beyond Civilization (DLC 2)
+## Mandatory pre-G19 integration checkpoint
 
-G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.
-
-Completion includes all 50 systems (including the home system), seven regions, complete XENOGENESIS and Myrieme Forge production/runtime integration, faction rosters, continuity, independent starts, offline operation and acceptance qualification. See [master design](BEYOND_CIVILIZATION_GDD.md) and [delivery plan](DLC_DELIVERY_PLAN.md).
+Owner-approved sequence: G18 Space Expansion → full XENOGENESIS and Myrieme Forge integration acceptance (mandatory pre-G19 dependency; may be developed earlier) → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted before G19 begins, not merely prototyped. G20's actual interstellar gameplay and content development follows G19. Pre-G19 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.
 
 ## G19 "Last Protocol: Combined Arms" — co-op Last Protocol (owner 2026-11-23; was parked)
 Offline-first co-op siege on the **same** LP ruleset (Human A vs Machine, 512²+ map, 3 rings, CN facility, cores,
@@ -244,25 +242,30 @@ creep/countdown, Tide). Solo LP stays untouched as the 1v1 reference.
    names are working designations, decision register note; the role and Human A exclusivity are unchanged.)
 4. **Speed and settings:** G7.1 stays as decided (no speed control, no visible quality trades). G11 adds game-speed
    controls and an accessibility menu (reduced shake / flash, UI scale, remappable keys, non-colour threat cues).
-5. **Order approved:** G7.1 → G8 → G9 → G10 → G11 → G12 → G13 → G14 → G15 → G16 → G17 → G18 → **G20 → G19** as listed.
+5. **Order approved:** G7.1 → G8 → G9 → G10 → G11 → G12 → G13 → G14 → G15 → G16 → G17 → G18 → full XENOGENESIS + Myrieme Forge acceptance → **G19 → G20** as listed.
    The [PROPOSED] slice placements above are the owner-approved plan; each slice still gets its own Q&A and Done-when.
    (G19 co-op LP, G12 no-pop-cap, G10 leftover dark/G7.1 ideas added owner 2026-11-23.)
 6. **Dark pass (2026-10-31): everything goes into G7.1** (part J), not a separate slice.
 
 
 ## Owner-approved DLC extension — 2026-11-27
-UNDERSTRIKE is a base-game addition, not DLC. G18 is DLC 1 (one home star system); its existing six ship rosters and arrival war are preserved. G19 remains Last Protocol Combined Arms. DLC 2 Beyond Civilization is G20, executed and accepted after G18 and before G19. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
+UNDERSTRIKE is a base-game addition, not DLC. G18 is DLC 1 (one home star system); its existing six ship rosters and arrival war are preserved. G19 remains Last Protocol Combined Arms. DLC 2 Beyond Civilization is G20 after G19; full XENOGENESIS and Myrieme Forge integration is mandatory before G19. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
 
 
 ## 2026-11-27 — Authoritative expansion integration
 
 DLC 1 = Space Expansion (G18); DLC 2 = Beyond Civilization (G20). UNDERSTRIKE is integrated base game. True Dynasty is the primary earned progression from Inheritance through Living World and both expansions, preserving the same civilization history. Independent preset/custom starts in either owned DLC are separate saves, never modifying Dynasty; DLC 1 standalone can continue to DLC 2. New DLC factions playable only in Skirmish. Existing campaign battle rules, endings, arrival war, rosters and current gate statuses are protected. All new work is planned, not implemented.
 
-G18 encompasses 15 SP workstreams and 32 acceptance criteria; all NOT RUN. G10.1 wider regression and earlier gates remain unchanged; G20 precedes G19.
+G18 encompasses 15 SP workstreams and 32 acceptance criteria; all NOT RUN. G10.1 wider regression and earlier gate scopes remain unchanged; full director and Forge integration precedes G19; G20 follows G19.
 
 [SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)
 
 
-## Owner-approved execution sequence — G20 before G19
+## G20 — Beyond Civilization (DLC 2)
 
-G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.
+After G19: complete the finite 50-system interstellar universe, seven regions, faction content, gameplay, continuity and release qualification using the already accepted XENOGENESIS and Myrieme Forge systems.
+
+
+## Corrected owner-approved execution sequence
+
+Owner-approved sequence: G18 Space Expansion → full XENOGENESIS and Myrieme Forge integration acceptance (mandatory pre-G19 dependency; may be developed earlier) → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted before G19 begins, not merely prototyped. G20's actual interstellar gameplay and content development follows G19. Pre-G19 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.

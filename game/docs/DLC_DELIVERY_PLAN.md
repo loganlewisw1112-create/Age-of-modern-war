@@ -1,14 +1,14 @@
 # DLC delivery pipeline and release gates
-Owner-approved direction 2026-11-27. No implementation started or tests run. Existing [roadmap](ROADMAP.md) and frozen gate contracts take precedence for current development; G10.1 wider regression remains open. G11–G17 base game precedes G18 Space Expansion, then G20 Beyond Civilization, then G19 Last Protocol Combined Arms. Dates not assigned. [Master design](BEYOND_CIVILIZATION_GDD.md).
+Owner-approved direction 2026-11-27. No implementation started or tests run. Existing [roadmap](ROADMAP.md) and frozen gate contracts take precedence for current development; G10.1 wider regression remains open. G11–G17 base game precedes G18 Space Expansion, full XENOGENESIS and Myrieme Forge acceptance, G19 Last Protocol Combined Arms, then G20 Beyond Civilization. Dates not assigned. [Master design](BEYOND_CIVILIZATION_GDD.md).
 
 | Workstream | Dependencies | Deliverable / exit criteria |
 |---|---|---|
 | P0 Base game | Current roadmap | Existing regression and milestone acceptance; UNDERSTRIKE integrated base-game work, campaign and Living World |
 | P1 Shared foundations | Existing contracts and owner-reviewed future scope | Stable IDs, event ledger, versioned saves, deterministic scheduling, conservation, entitlement registry, hierarchical simulation, interfaces; no premature implementation |
-| P2 Myrieme Forge | Approved independent tool design | 15 engines, versioned canonical packages, 8 adapters, offline runtime; golden tests and content approval; parallel independent development permitted |
+| P2 Myrieme Forge | Approved independent tool design | 15 engines, versioned canonical packages, 8 adapters, offline runtime; golden tests and integration acceptance before G19; parallel independent development permitted |
 | P3 DLC 1 (G18) | G17, relevant P1/P2 | Home system, existing aerospace milestones/arrival war/six hull rosters, planet/orbit/ground interoperability, colony naming and language, outcome import, ownership/skirmish tests |
-| P4 XENOGENESIS | P1, existing four directors, P2 interfaces | XG-01..20 bounded deterministic prototypes, cross-director arbitration and soak |
-| P5 DLC 2 content | P2/P4 contracts | Seven regions, 50-system baseline, five major/four minor/one precursor concepts, canon-reviewed species/languages, complete playable rosters and authored locations |
+| P4 XENOGENESIS | P1, existing four directors, P2 interfaces | All XG-01..20 fully implemented and integrated, deterministic validation, cross-director arbitration and soak; full acceptance before G19 |
+| P5 DLC 2 content (G20) | G19 complete; P2/P4 fully accepted | Seven regions, 50-system baseline, five major/four minor/one precursor concepts, canon-reviewed species/languages, complete playable rosters and authored locations |
 | P6 Exploration slice | P3–P5 | Home-to-neighbor route, landing and RTS control, first contact, ancient discovery, save/load and delegation |
 | P7 Civilization slice | P4–P6 | Autonomous ecology, diplomacy, economy, migration, research, engineering; distinct civilizations with credible evolution and constraints |
 | P8 Warfare slice | P6–P7 | Interstellar/orbital/air/surface/underground battles; logistics, adaptive fleets and invasion/takeover |
@@ -41,7 +41,7 @@ Work in small dependency-driven vertical slices. Each implementation slice requi
 | DLC-19 | Complete release qualification, regression of existing modes, packaged build and reproducible evidence; no tests marked pass without evidence |
 
 ## Risks and open production work
-Scope and performance: prototype one star-system transition and two independent alien powers before scaling. Content cost: modular validated roster/terrain/asset pipelines, not generic reskins. Save migration: stable IDs, transactional snapshots and regression fixtures. Director conflicts: one authoritative ledger and deterministic intent validation. Linguistic authenticity: independent tool implementation, non-acoustic adapter R&D, canon approval and fallback. Final species names, unit/building rosters, stellar catalog/coordinates/planet inventories and exact budgets remain production work; no fake completion. G20 assigned before G19 and no additional DLC invented. Protect base-game delivery above all.
+Scope and performance: prototype one star-system transition and two independent alien powers before scaling. Content cost: modular validated roster/terrain/asset pipelines, not generic reskins. Save migration: stable IDs, transactional snapshots and regression fixtures. Director conflicts: one authoritative ledger and deterministic intent validation. Linguistic authenticity: independent tool implementation, non-acoustic adapter R&D, canon approval and fallback. Final species names, unit/building rosters, stellar catalog/coordinates/planet inventories and exact budgets remain production work; no fake completion. G20 assigned after G19; no additional DLC invented. Protect base-game delivery above all.
 
 
 ## 2026-11-27 — Authoritative expansion integration
@@ -53,6 +53,6 @@ SP-01–15 and SP-QA-01–32 extend G18. Validate separate-save isolation and en
 [SPACE EXPANSION GDD](SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](SPACE_EXPANSION_DELIVERY_PLAN.md)
 
 
-## Owner-approved execution sequence — G20 before G19
+## Corrected owner-approved execution sequence
 
-G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.
+Owner-approved sequence: G18 Space Expansion → full XENOGENESIS and Myrieme Forge integration acceptance (mandatory pre-G19 dependency; may be developed earlier) → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted before G19 begins, not merely prototyped. G20's actual interstellar gameplay and content development follows G19. Pre-G19 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.

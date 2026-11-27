@@ -776,7 +776,7 @@ Planned presets include Classic RTS, Alien Invasion, First Contact, Planetary Co
 | 9 — Skirmish | Full entitlement-aware faction rosters, presets, legal scenarios and balance |
 | 10 — Integration and release | Offline packaging, save compatibility, performance, AI, regression and gameplay playtests |
 
-Internal phases are dependency-driven and may overlap where safe. Release requires the complete polished expansion, not unfinished public content drops. Execution order is G18 → G20 → G19; earlier base-game gates are unchanged. All phases are planned; no implementation or release date is claimed.
+Internal phases are dependency-driven and may overlap where safe. Release requires the complete polished expansion, not unfinished public content drops. G18 precedes the mandatory full XENOGENESIS and Myrieme Forge acceptance checkpoint, then G19, then G20. All phases are planned; no implementation or release date is claimed.
 
 **Design specifications (may contain spoilers):** [Master DLC GDD](game/docs/BEYOND_CIVILIZATION_GDD.md) · [Universe and civilization bible](game/docs/INTERSTELLAR_UNIVERSE.md) · [XENOGENESIS](game/docs/XENOGENESIS.md) · [Myrieme Forge](game/docs/MYRIEME_FORGE_INTEGRATION.md) · [Development pipeline and acceptance tests](game/docs/DLC_DELIVERY_PLAN.md)
 
@@ -808,8 +808,9 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 | G15 | Inheritance campaign |
 | G16–G17 | High-fidelity underground and Living World |
 | G18 | Space Expansion (DLC 1): home star system |
-| G20 | Beyond Civilization (DLC 2): finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration |
+| Pre-G19 mandatory dependency | Full XENOGENESIS and Myrieme Forge integration, tested and accepted |
 | G19 | Offline-first 2–4-player Last Protocol co-op; solo remains the reference |
+| G20 | Beyond Civilization (DLC 2): finite interstellar expanse, using the previously completed XENOGENESIS and Myrieme Forge systems |
 
 Future gates require their own frozen acceptance contracts. This is a development pipeline, not a release-date or storefront promise.
 
@@ -926,6 +927,6 @@ Detailed narrative design material is not linked from this public overview. Some
 **Win the war. Survive the siege. Build the legacy. Shape the world. Reach beyond it.**
 
 
-## Owner-approved execution sequence — G20 before G19
+## Corrected owner-approved execution sequence
 
-G20 — Beyond Civilization (DLC 2), including the complete finite interstellar expanse, XENOGENESIS and full Myrieme Forge integration, must be implemented and accepted in full after G18 and before any G19 Last Protocol Combined Arms development begins. Execution order: G18 → G20 → G19. Gate IDs are stable identifiers, not numerical execution order. No gate completion is claimed; release dates remain unassigned.
+Owner-approved sequence: G18 Space Expansion → full XENOGENESIS and Myrieme Forge integration acceptance (mandatory pre-G19 dependency; may be developed earlier) → G19 Last Protocol: Combined Arms → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted before G19 begins, not merely prototyped. G20's actual interstellar gameplay and content development follows G19. Pre-G19 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.
