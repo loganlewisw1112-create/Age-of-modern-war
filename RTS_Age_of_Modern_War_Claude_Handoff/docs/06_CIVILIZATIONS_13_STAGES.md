@@ -346,4 +346,4 @@ For future expansion of each card, record: faction-specific institutions and pre
 
 
 ## Approved DLC addendum — 2026-11-27
-Preserve exactly thirteen stage IDs; aerospace milestones do not introduce new numbered stages. The [interstellar civilization bible](../../../game/docs/INTERSTELLAR_UNIVERSE.md) adds extraterrestrial profiles, capability and roster requirements without replacing existing canon. Names and content inventories pending production.
+Preserve exactly thirteen stage IDs; aerospace milestones do not introduce new numbered stages. The [interstellar civilization bible](../../game/docs/INTERSTELLAR_UNIVERSE.md) adds extraterrestrial profiles, capability and roster requirements without replacing existing canon. Names and content inventories pending production.
