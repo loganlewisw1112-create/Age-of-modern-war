@@ -242,3 +242,7 @@ creep/countdown, Tide). Solo LP stays untouched as the 1v1 reference.
    The [PROPOSED] slice placements above are the owner-approved plan; each slice still gets its own Q&A and Done-when.
    (G19 co-op LP, G12 no-pop-cap, G10 leftover dark/G7.1 ideas added owner 2026-11-23.)
 6. **Dark pass (2026-10-31): everything goes into G7.1** (part J), not a separate slice.
+
+
+## Owner-approved DLC extension — 2026-11-27
+UNDERSTRIKE is a base-game addition, not DLC. G18 is DLC 2 (one home star system); its existing six ship rosters and arrival war are preserved. G19 remains Last Protocol Combined Arms. DLC 3 Beyond Civilization is a subsequent unnumbered track, not a change to current gate order or contracts. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
