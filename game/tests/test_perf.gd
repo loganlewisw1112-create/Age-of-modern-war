@@ -11,8 +11,8 @@ const Construction = preload("res://sim/systems/construction.gd")
 
 
 ## Endless 2-side world on the default map with the start units removed (HQs in the corners stay).
-func _clean(seed_v: int = 3) -> SimWorld:
-	var w := make_world({"seed": seed_v, "victory": "endless"})
+func _clean(seed_v: int = 3, map_id: String = "river_crossing_s") -> SimWorld:
+	var w := make_world({"seed": seed_v, "victory": "endless", "map": map_id})
 	w.ai_state = {}
 	for id in w.entities.keys():
 		var k: String = w.entities[id].kind
@@ -35,7 +35,7 @@ func _armies(w: SimWorld, n0: int, n1: int, far: float = 86.0) -> Array:
 		a.append(_place(w, "ifv" if i % 4 == 3 else "rifleman", 0, Vector2(8 + (i % 4) * 2, 8 + (i / 4) * 2)))
 	for i in n1:
 		b.append(_place(w, "ifv" if i % 4 == 3 else "rifleman", 1, Vector2(far - (i % 4) * 2, far - (i / 4) * 2)))
-	var mid := Vector2(48.5, 48.5)
+	var mid := Vector2(float(w.map.w) * 0.5 + 0.5, float(w.map.h) * 0.5 + 0.5)
 	w.submit({"type": "attack_move", "issuer": 0, "unit_ids": a, "target": mid})
 	w.submit({"type": "attack_move", "issuer": 1, "unit_ids": b, "target": mid})
 	return [a, b]
@@ -68,8 +68,8 @@ func _totals(w: SimWorld) -> Dictionary:
 
 func test_tier_promotion_on_contact_and_no_duplication() -> void:
 	Tiers.force_off = false
-	var w := _clean()
-	_armies(w, 8, 8, 92.0)   # G7.1 A5: bucket 44 (g7_a_fpv 16.8), so side 1 starts at >= 88 (bucket 2) to be REDUCED at first
+	var w := _clean(3, "industrial_heartland_m")
+	_armies(w, 8, 8, Tiers.bucket_size() * 2.0 + 10.0)
 	var cr := Tiers.contact_radius()
 	var saw_reduced := 0
 	var flips := 0
@@ -106,12 +106,10 @@ func test_tier_promotion_on_contact_and_no_duplication() -> void:
 
 
 func test_attack_order_promotes_at_once() -> void:
-	var w := _clean()
-	# G7 (SUITMISC7): the tier bucket grew from 36 to 41 tiles (G7 content: a_g7_vtol_pad size 6, g7_a_fpv speed 14), so on
-	# the 96-tile map the side-1 HQ (cell 80) now falls in the 3x3 neighbourhood of a unit at (8, 8): that unit is
-	# correctly FULL (conservative). The lone unit is therefore side 1's, in the far corner (bucket 2), whose 3x3 holds
-	# only its own HQ; the enemy HQ (cell 13) is in bucket 0. Same property under test.
-	var a := _place(w, "rifleman", 1, Vector2(92, 92))
+	var w := _clean(3, "industrial_heartland_m")
+	# Start two tier buckets away from the enemy HQ, even if the roster increases the bucket size.
+	var far := Tiers.bucket_size() * 2.0 + 10.0
+	var a := _place(w, "rifleman", 1, Vector2(far, far))
 	var b := _place(w, "rifleman", 0, Vector2(8, 8))
 	w.run_ticks(17)
 	check(Tiers.is_reduced(w.entities[a]), "lone far unit is REDUCED")

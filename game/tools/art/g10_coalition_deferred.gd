@@ -184,8 +184,8 @@ const BUILDINGS := {
 static func build_buildings(out: Dictionary) -> void:
 	var rules: Dictionary = Content.rules().get("g10_buildings", {})
 	for id in BUILDINGS:
-		var spec := {"states": {}, "g5": {"variants": "rot"}, "g10": {"owner_look_approved": true}}
 		var footprint := float(Content.building(id).get("size", 2))
+		var spec := {"size": footprint, "states": {}, "g5": {"variants": "rot"}, "g10": {"owner_look_approved": true}}
 		var hatch: bool = id in rules.get("hatch_surface_defs", [])
 		var fw := ceili(64 * footprint) + 24
 		var fh := ceili(32 * footprint) + 44

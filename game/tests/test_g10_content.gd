@@ -316,6 +316,7 @@ func test_g10_approved_art_is_drawable() -> void:
 			"%s has owner-approved art" % id)
 		check(ArtCatalog.icon(id) != ArtCatalog._ph(), "%s has a drawable icon" % id)
 		if man.buildings.has(id):
+			check_eq(int(spec.get("size", 0)), int(Content.building(id).size), "%s art footprint" % id)
 			for facing in 4:
 				for state in ["", "_hidden", "_damaged", "_build_0", "_build_1", "_build_2"]:
 					var name := "rot_%d%s" % [facing, state]

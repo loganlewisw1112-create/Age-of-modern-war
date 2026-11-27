@@ -1688,7 +1688,7 @@
         "ore": 0
       },
       "train_time": 22,
-      "hotkey": "C",
+      "hotkey": "T",
       "faction": "shadow_coalition",
       "stage_min": 1,
       "g10": true
@@ -1722,7 +1722,7 @@
         "ore": 0
       },
       "train_time": 20,
-      "hotkey": "C",
+      "hotkey": "M",
       "faction": "shadow_coalition",
       "stage_min": 1,
       "g10": true
@@ -1790,7 +1790,7 @@
         "ore": 0
       },
       "train_time": 20,
-      "hotkey": "P",
+      "hotkey": "R",
       "faction": "shadow_coalition",
       "stage_min": 8,
       "g10": true
@@ -1807,7 +1807,7 @@
         "ore": 0
       },
       "train_time": 22,
-      "hotkey": "P",
+      "hotkey": "F",
       "faction": "shadow_coalition",
       "stage_min": 8,
       "g10": true
@@ -1824,7 +1824,7 @@
         "ore": 0
       },
       "train_time": 26,
-      "hotkey": "P",
+      "hotkey": "N",
       "faction": "shadow_coalition",
       "stage_min": 8,
       "g10": true
@@ -1841,7 +1841,7 @@
         "ore": 0
       },
       "train_time": 28,
-      "hotkey": "P",
+      "hotkey": "U",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -1858,7 +1858,7 @@
         "ore": 0
       },
       "train_time": 30,
-      "hotkey": "C",
+      "hotkey": "O",
       "faction": "shadow_coalition",
       "stage_min": 7,
       "g10": true
@@ -1892,7 +1892,7 @@
         "ore": 0
       },
       "train_time": 26,
-      "hotkey": "B",
+      "hotkey": "H",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -1926,7 +1926,7 @@
         "ore": 0
       },
       "train_time": 30,
-      "hotkey": "T",
+      "hotkey": "R",
       "faction": "shadow_coalition",
       "stage_min": 7,
       "g10": true
@@ -1943,7 +1943,7 @@
         "ore": 0
       },
       "train_time": 30,
-      "hotkey": "T",
+      "hotkey": "A",
       "faction": "shadow_coalition",
       "stage_min": 7,
       "g10": true
@@ -1960,7 +1960,7 @@
         "ore": 0
       },
       "train_time": 32,
-      "hotkey": "T",
+      "hotkey": "M",
       "faction": "shadow_coalition",
       "stage_min": 7,
       "g10": true
@@ -1977,7 +1977,7 @@
         "ore": 0
       },
       "train_time": 30,
-      "hotkey": "T",
+      "hotkey": "C",
       "faction": "shadow_coalition",
       "stage_min": 7,
       "g10": true
@@ -2079,7 +2079,7 @@
         "ore": 0
       },
       "train_time": 34,
-      "hotkey": "E",
+      "hotkey": "M",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2113,7 +2113,7 @@
         "ore": 0
       },
       "train_time": 36,
-      "hotkey": "G",
+      "hotkey": "C",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2130,7 +2130,7 @@
         "ore": 0
       },
       "train_time": 55,
-      "hotkey": "P",
+      "hotkey": "K",
       "faction": "shadow_coalition",
       "stage_min": 10,
       "g10": true
@@ -2147,7 +2147,7 @@
         "ore": 0
       },
       "train_time": 22,
-      "hotkey": "S",
+      "hotkey": "V",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2164,7 +2164,7 @@
         "ore": 0
       },
       "train_time": 22,
-      "hotkey": "S",
+      "hotkey": "J",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2215,7 +2215,7 @@
         "ore": 0
       },
       "train_time": 42,
-      "hotkey": "S",
+      "hotkey": "T",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2232,7 +2232,7 @@
         "ore": 0
       },
       "train_time": 45,
-      "hotkey": "P",
+      "hotkey": "C",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2334,7 +2334,7 @@
         "ore": 0
       },
       "train_time": 40,
-      "hotkey": "D",
+      "hotkey": "L",
       "faction": "shadow_coalition",
       "stage_min": 8,
       "g10": true
@@ -2351,7 +2351,7 @@
         "ore": 0
       },
       "train_time": 38,
-      "hotkey": "D",
+      "hotkey": "N",
       "faction": "shadow_coalition",
       "stage_min": 8,
       "g10": true
@@ -2368,7 +2368,7 @@
         "ore": 0
       },
       "train_time": 36,
-      "hotkey": "S",
+      "hotkey": "F",
       "faction": "shadow_coalition",
       "stage_min": 8,
       "g10": true
@@ -2385,7 +2385,7 @@
         "ore": 0
       },
       "train_time": 42,
-      "hotkey": "S",
+      "hotkey": "U",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2402,7 +2402,7 @@
         "ore": 0
       },
       "train_time": 40,
-      "hotkey": "S",
+      "hotkey": "I",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2419,7 +2419,7 @@
         "ore": 0
       },
       "train_time": 38,
-      "hotkey": "S",
+      "hotkey": "Y",
       "faction": "shadow_coalition",
       "stage_min": 9,
       "g10": true
@@ -2453,7 +2453,7 @@
         "ore": 0
       },
       "train_time": 34,
-      "hotkey": "A",
+      "hotkey": "B",
       "faction": "shadow_coalition",
       "stage_min": 8,
       "g10": true

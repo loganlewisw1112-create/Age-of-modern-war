@@ -94,6 +94,7 @@
         76.0,
         60.0
       ],
+      "size": 2,
       "states": {
         "build_0": {
           "file": "buildings/x_black_market/rot_0_build_0.png",
@@ -220,6 +221,7 @@
         76.0,
         60.0
       ],
+      "size": 2,
       "states": {
         "build_0": {
           "file": "buildings/x_broker_exchange/rot_0_build_0.png",
@@ -346,6 +348,7 @@
         44.0,
         44.0
       ],
+      "size": 1,
       "states": {
         "build_0": {
           "file": "buildings/x_bunker_hatch/rot_0_build_0.png",
@@ -472,6 +475,7 @@
         76.0,
         60.0
       ],
+      "size": 2,
       "states": {
         "build_0": {
           "file": "buildings/x_cache/rot_0_build_0.png",
@@ -598,6 +602,7 @@
         108.0,
         76.0
       ],
+      "size": 3,
       "states": {
         "build_0": {
           "file": "buildings/x_disguised_workshop/rot_0_build_0.png",
@@ -724,6 +729,7 @@
         76.0,
         60.0
       ],
+      "size": 2,
       "states": {
         "build_0": {
           "file": "buildings/x_forward_repair/rot_0_build_0.png",
@@ -850,6 +856,7 @@
         140.0,
         92.0
       ],
+      "size": 4,
       "states": {
         "build_0": {
           "file": "buildings/x_ghost_complex/rot_0_build_0.png",
@@ -976,6 +983,7 @@
         76.0,
         60.0
       ],
+      "size": 2,
       "states": {
         "build_0": {
           "file": "buildings/x_patron_office/rot_0_build_0.png",
@@ -1102,6 +1110,7 @@
         108.0,
         76.0
       ],
+      "size": 3,
       "states": {
         "build_0": {
           "file": "buildings/x_safehouse/rot_0_build_0.png",
@@ -1228,6 +1237,7 @@
         44.0,
         44.0
       ],
+      "size": 1,
       "states": {
         "build_0": {
           "file": "buildings/x_tunnel_entrance/rot_0_build_0.png",
@@ -1354,6 +1364,7 @@
         108.0,
         76.0
       ],
+      "size": 3,
       "states": {
         "build_0": {
           "file": "buildings/x_underground_barracks/rot_0_build_0.png",
@@ -1480,6 +1491,7 @@
         108.0,
         76.0
       ],
+      "size": 3,
       "states": {
         "build_0": {
           "file": "buildings/x_underground_factory/rot_0_build_0.png",
@@ -1606,6 +1618,7 @@
         108.0,
         76.0
       ],
+      "size": 3,
       "states": {
         "build_0": {
           "file": "buildings/x_vault_core/rot_0_build_0.png",
@@ -1732,6 +1745,7 @@
         108.0,
         76.0
       ],
+      "size": 3,
       "states": {
         "build_0": {
           "file": "buildings/x_weld_shop/rot_0_build_0.png",
