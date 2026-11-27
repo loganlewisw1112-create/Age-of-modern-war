@@ -53,4 +53,4 @@ Initial QA fixtures: Human A Stage 8 / Human B Stage 7 / Machine Stage 9; repeat
 
 
 ## Approved DLC addendum — 2026-11-27
-DLC ownership immediately unlocks new DLC playable factions in Skirmish only, not Campaign or Living World. Add quick presets and optional expanded scenario settings with compatible environments and validated starts. [Approved expansion design](../../../game/docs/BEYOND_CIVILIZATION_GDD.md).
+DLC ownership immediately unlocks new DLC playable factions in Skirmish only, not Campaign or Living World. Add quick presets and optional expanded scenario settings with compatible environments and validated starts. [Approved expansion design](../../game/docs/BEYOND_CIVILIZATION_GDD.md).
