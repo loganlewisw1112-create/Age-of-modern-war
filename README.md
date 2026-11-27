@@ -514,6 +514,23 @@ In Inheritance, you experience history. In Living World, you create it.
 
 ---
 
+### Next-generation living simulation (approved design)
+
+The Campaign and Living World are designed around **deep simulation underneath, classic RTS simplicity on top**. People, cities, industries, military institutions and rival civilizations operate autonomously; the player builds, explores, researches and commands with familiar RTS controls, taking direct control or delegating routine responsibilities whenever appropriate.
+
+Four coordinated directors share a single persistent world state:
+
+| Director | Purpose |
+|---|---|
+| Dynamic World | Unpredictable, causally grounded discoveries, environmental events, crises and opportunities |
+| Geopolitical | Independent governments, diplomacy, alliances, rivalries and shifting power |
+| Historical & Generational | Persistent people, institutions, battlefields, succession and historical consequences |
+| Faction Evolution | Distinct civilization development, research specialization and military adaptation |
+
+Planned simulation depth includes organic city growth, autonomous civilian routines, physical manufacturing and supply chains, functioning military installations, transport networks, component damage, emergency response and reconstruction. Contextual animations and spatial audio make real activity visible without changing the established art style. Familiar build/train/research orders drive the underlying systems automatically; optional panels expose details, not required chores.
+
+Campaign retains authored milestones and personally played battles; Living World unlocks delegated battles and unrestricted emergent history. Adaptive simulation detail and persistent identities are intended to support large worlds offline; actual scale and hardware performance remain subject to validation. These are owner-approved design additions, not shipped features or release promises. Every system must demonstrably improve gameplay without increasing mandatory player complexity.
+
 ## UNDERSTRIKE
 
 > **Civilization does not stop at the surface.**
