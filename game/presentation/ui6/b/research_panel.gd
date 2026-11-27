@@ -142,13 +142,16 @@ static func state_of(r: Dictionary) -> String:
 	return "ready" if String(r.reason) == "" else "locked"
 
 
-## Stage 10 unlock names for a faction (stage_roles "10": role -> def), sorted.
+## Stage 10 unlock names and role highlights for a faction, sorted.
 static func stage10_unlocks(faction_id: String) -> Array:
 	var f: Dictionary = Content.table("factions").get(faction_id, {})
 	var sr: Dictionary = (f.get("stage_roles", {}) as Dictionary).get("10", {})
 	var out: Array = []
-	for role in sr:
-		var d := String(sr[role])
+	var ids := PData.stage_unlock_ids(faction_id, 10)
+	ids.append_array(f.get("stage_unlocks", {}).get("10", []))
+	ids.append_array(sr.values())
+	for id in ids:
+		var d := String(id)
 		if d == "":
 			continue
 		var nm := String(Content.unit(d).get("name", Content.production(d).get("name", Content.building(d).get("name", d))))

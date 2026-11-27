@@ -84,6 +84,30 @@ static func production_reason(w: SimWorld, fid: int, item: String) -> String:
 	return ""
 
 
+## Entries on the build and production cards that open at the specified stage.
+static func stage_unlock_ids(faction_id: String, stage: int) -> Array:
+	var ids: Array = []
+	for id in Content.buildable_for(faction_id):
+		var d := Content.building(id)
+		if int(d.get("stage_min", 7)) == stage and (d.get("requires_research", []) as Array).is_empty():
+			ids.append(id)
+	for id in Content.ids("production"):
+		var item := Content.production(id)
+		if String(item.get("faction", "")) != faction_id or String(item.get("facility", "")) == "":
+			continue
+		if String(item.get("needs_research", "")) != "" or not (item.get("requires_research", []) as Array).is_empty():
+			continue
+		var min_stage := int(item.get("stage_min", 7))
+		var has_research := false
+		for uid in item.get("spawns", []):
+			var u := Content.unit(uid)
+			min_stage = maxi(min_stage, int(u.get("stage_min", 7)))
+			has_research = has_research or not (u.get("requires_research", []) as Array).is_empty()
+		if min_stage == stage and not has_research:
+			ids.append(id)
+	return ids
+
+
 ## Stage-aware role lookup for a side (Content.role with the side's current stage).
 static func role(w: SimWorld, fid: int, role_name: String) -> String:
 	var f: Dictionary = w.factions[fid]

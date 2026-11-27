@@ -371,6 +371,10 @@ func test_late_profiles_mk3_distributed_apex() -> void:
 	check((p13.get("build", []) as Array).has("x_apex_patron_desk"), "stage 13 patron desk")
 	check_eq(int(Content.building("x_apex_vault_wing").get("stage_min", 0)), 13, "apex vault stage")
 	check_eq(int(Content.building("x_apex_patron_desk").get("stage_min", 0)), 13, "apex patron stage")
+	for id in LATE_LEAK_MARKERS:
+		var sprite := ArtCatalog.entity_sprite({"kind": "building", "def": id}, Color.WHITE, 0.0)
+		check(sprite.texture.get_width() >= int(Content.building(id).size) * 64, "%s has full-sized art" % id)
+		check(ArtCatalog.icon(id) != ArtCatalog._ph(), "%s has a build icon" % id)
 	# Openers align with profiles
 	var coal: Dictionary = Content.rules().get("coalition10", {})
 	var openers: Dictionary = coal.get("stage_openers", {})

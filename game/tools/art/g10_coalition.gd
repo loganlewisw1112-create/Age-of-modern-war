@@ -228,6 +228,7 @@ static func build_bulk() -> Dictionary:
 	_build_anim_states(out)
 	DEFERRED.build_vehicles(out)
 	DEFERRED.build_buildings(out)
+	DEFERRED.build_buildings(out, DEFERRED.LATE_BUILDINGS)
 	return out
 
 

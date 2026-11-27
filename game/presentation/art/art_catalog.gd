@@ -497,7 +497,33 @@ static func icon(id: String) -> Texture2D:
 	var rel = _man.get("icons", {}).get(id)
 	if rel is Dictionary:
 		rel = rel.get("file")
-	return _texture(rel) if rel is String else _ph()
+	if rel is String:
+		return _texture(rel)
+	var item := Content.production(id)
+	var units: Array = item.get("spawns", [])
+	var def := String(units[0]) if not units.is_empty() else id
+	var key := "derived_icon:" + def
+	if _texs.has(key):
+		return _texs[key]
+	var spec: Dictionary = _man.get("infantry", {}).get(def, _man.get("vehicles", {}).get(def, {}))
+	if spec.is_empty():
+		return _ph()
+	var src := _image(String(spec.get("file", "")))
+	if src == null:
+		return _ph()
+	var frame := src.get_region(Rect2i(0, 0, int(spec.fw), int(spec.fh)))
+	var box := frame.get_used_rect()
+	if not box.has_area():
+		return _ph()
+	var crop := frame.get_region(box)
+	var scale := 28.0 / float(maxi(box.size.x, box.size.y))
+	crop.resize(maxi(1, roundi(box.size.x * scale)), maxi(1, roundi(box.size.y * scale)), Image.INTERPOLATE_LANCZOS)
+	var tile := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	crop.convert(Image.FORMAT_RGBA8)
+	tile.blit_rect(crop, Rect2i(Vector2i.ZERO, crop.get_size()), (tile.get_size() - crop.get_size()) / 2)
+	var tex := ImageTexture.create_from_image(tile)
+	_texs[key] = tex
+	return tex
 
 
 ## Iso ellipse ring sized to `size_tiles` (footprint width in tiles); drawn centred on the entity.

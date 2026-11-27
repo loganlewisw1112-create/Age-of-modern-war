@@ -83,6 +83,256 @@
     "x_vault_core"
   ],
   "buildings": {
+    "x_apex_patron_desk": {
+      "g10": {},
+      "g5": {
+        "variants": "rot"
+      },
+      "pivot": [
+        76.0,
+        60.0
+      ],
+      "size": 2.0,
+      "states": {
+        "build_0": {
+          "file": "buildings/x_apex_patron_desk/rot_0_build_0.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/x_apex_patron_desk/rot_0_build_1.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/x_apex_patron_desk/rot_0_build_2.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/x_apex_patron_desk/rot_0.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/x_apex_patron_desk/rot_0.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/x_apex_patron_desk/rot_0_build_0.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/x_apex_patron_desk/rot_0_build_1.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/x_apex_patron_desk/rot_0_build_2.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/x_apex_patron_desk/rot_0_damaged.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_damaged_mask.png"
+        },
+        "rot_0_hidden": {
+          "file": "buildings/x_apex_patron_desk/rot_0_hidden.png",
+          "mask": "buildings/x_apex_patron_desk/rot_0_hidden_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/x_apex_patron_desk/rot_1.png",
+          "mask": "buildings/x_apex_patron_desk/rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/x_apex_patron_desk/rot_1_build_0.png",
+          "mask": "buildings/x_apex_patron_desk/rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/x_apex_patron_desk/rot_1_build_1.png",
+          "mask": "buildings/x_apex_patron_desk/rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/x_apex_patron_desk/rot_1_build_2.png",
+          "mask": "buildings/x_apex_patron_desk/rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/x_apex_patron_desk/rot_1_damaged.png",
+          "mask": "buildings/x_apex_patron_desk/rot_1_damaged_mask.png"
+        },
+        "rot_1_hidden": {
+          "file": "buildings/x_apex_patron_desk/rot_1_hidden.png",
+          "mask": "buildings/x_apex_patron_desk/rot_1_hidden_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/x_apex_patron_desk/rot_2.png",
+          "mask": "buildings/x_apex_patron_desk/rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/x_apex_patron_desk/rot_2_build_0.png",
+          "mask": "buildings/x_apex_patron_desk/rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/x_apex_patron_desk/rot_2_build_1.png",
+          "mask": "buildings/x_apex_patron_desk/rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/x_apex_patron_desk/rot_2_build_2.png",
+          "mask": "buildings/x_apex_patron_desk/rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/x_apex_patron_desk/rot_2_damaged.png",
+          "mask": "buildings/x_apex_patron_desk/rot_2_damaged_mask.png"
+        },
+        "rot_2_hidden": {
+          "file": "buildings/x_apex_patron_desk/rot_2_hidden.png",
+          "mask": "buildings/x_apex_patron_desk/rot_2_hidden_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/x_apex_patron_desk/rot_3.png",
+          "mask": "buildings/x_apex_patron_desk/rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/x_apex_patron_desk/rot_3_build_0.png",
+          "mask": "buildings/x_apex_patron_desk/rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/x_apex_patron_desk/rot_3_build_1.png",
+          "mask": "buildings/x_apex_patron_desk/rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/x_apex_patron_desk/rot_3_build_2.png",
+          "mask": "buildings/x_apex_patron_desk/rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/x_apex_patron_desk/rot_3_damaged.png",
+          "mask": "buildings/x_apex_patron_desk/rot_3_damaged_mask.png"
+        },
+        "rot_3_hidden": {
+          "file": "buildings/x_apex_patron_desk/rot_3_hidden.png",
+          "mask": "buildings/x_apex_patron_desk/rot_3_hidden_mask.png"
+        }
+      }
+    },
+    "x_apex_vault_wing": {
+      "g10": {},
+      "g5": {
+        "variants": "rot"
+      },
+      "pivot": [
+        108.0,
+        76.0
+      ],
+      "size": 3.0,
+      "states": {
+        "build_0": {
+          "file": "buildings/x_apex_vault_wing/rot_0_build_0.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/x_apex_vault_wing/rot_0_build_1.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/x_apex_vault_wing/rot_0_build_2.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/x_apex_vault_wing/rot_0.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/x_apex_vault_wing/rot_0.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/x_apex_vault_wing/rot_0_build_0.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/x_apex_vault_wing/rot_0_build_1.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/x_apex_vault_wing/rot_0_build_2.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/x_apex_vault_wing/rot_0_damaged.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_damaged_mask.png"
+        },
+        "rot_0_hidden": {
+          "file": "buildings/x_apex_vault_wing/rot_0_hidden.png",
+          "mask": "buildings/x_apex_vault_wing/rot_0_hidden_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/x_apex_vault_wing/rot_1.png",
+          "mask": "buildings/x_apex_vault_wing/rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/x_apex_vault_wing/rot_1_build_0.png",
+          "mask": "buildings/x_apex_vault_wing/rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/x_apex_vault_wing/rot_1_build_1.png",
+          "mask": "buildings/x_apex_vault_wing/rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/x_apex_vault_wing/rot_1_build_2.png",
+          "mask": "buildings/x_apex_vault_wing/rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/x_apex_vault_wing/rot_1_damaged.png",
+          "mask": "buildings/x_apex_vault_wing/rot_1_damaged_mask.png"
+        },
+        "rot_1_hidden": {
+          "file": "buildings/x_apex_vault_wing/rot_1_hidden.png",
+          "mask": "buildings/x_apex_vault_wing/rot_1_hidden_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/x_apex_vault_wing/rot_2.png",
+          "mask": "buildings/x_apex_vault_wing/rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/x_apex_vault_wing/rot_2_build_0.png",
+          "mask": "buildings/x_apex_vault_wing/rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/x_apex_vault_wing/rot_2_build_1.png",
+          "mask": "buildings/x_apex_vault_wing/rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/x_apex_vault_wing/rot_2_build_2.png",
+          "mask": "buildings/x_apex_vault_wing/rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/x_apex_vault_wing/rot_2_damaged.png",
+          "mask": "buildings/x_apex_vault_wing/rot_2_damaged_mask.png"
+        },
+        "rot_2_hidden": {
+          "file": "buildings/x_apex_vault_wing/rot_2_hidden.png",
+          "mask": "buildings/x_apex_vault_wing/rot_2_hidden_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/x_apex_vault_wing/rot_3.png",
+          "mask": "buildings/x_apex_vault_wing/rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/x_apex_vault_wing/rot_3_build_0.png",
+          "mask": "buildings/x_apex_vault_wing/rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/x_apex_vault_wing/rot_3_build_1.png",
+          "mask": "buildings/x_apex_vault_wing/rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/x_apex_vault_wing/rot_3_build_2.png",
+          "mask": "buildings/x_apex_vault_wing/rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/x_apex_vault_wing/rot_3_damaged.png",
+          "mask": "buildings/x_apex_vault_wing/rot_3_damaged_mask.png"
+        },
+        "rot_3_hidden": {
+          "file": "buildings/x_apex_vault_wing/rot_3_hidden.png",
+          "mask": "buildings/x_apex_vault_wing/rot_3_hidden_mask.png"
+        }
+      }
+    },
     "x_black_market": {
       "g10": {
         "owner_look_approved": true
@@ -718,6 +968,131 @@
         }
       }
     },
+    "x_distributed_relay": {
+      "g10": {},
+      "g5": {
+        "variants": "rot"
+      },
+      "pivot": [
+        76.0,
+        60.0
+      ],
+      "size": 2.0,
+      "states": {
+        "build_0": {
+          "file": "buildings/x_distributed_relay/rot_0_build_0.png",
+          "mask": "buildings/x_distributed_relay/rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/x_distributed_relay/rot_0_build_1.png",
+          "mask": "buildings/x_distributed_relay/rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/x_distributed_relay/rot_0_build_2.png",
+          "mask": "buildings/x_distributed_relay/rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/x_distributed_relay/rot_0.png",
+          "mask": "buildings/x_distributed_relay/rot_0_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/x_distributed_relay/rot_0.png",
+          "mask": "buildings/x_distributed_relay/rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/x_distributed_relay/rot_0_build_0.png",
+          "mask": "buildings/x_distributed_relay/rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/x_distributed_relay/rot_0_build_1.png",
+          "mask": "buildings/x_distributed_relay/rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/x_distributed_relay/rot_0_build_2.png",
+          "mask": "buildings/x_distributed_relay/rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/x_distributed_relay/rot_0_damaged.png",
+          "mask": "buildings/x_distributed_relay/rot_0_damaged_mask.png"
+        },
+        "rot_0_hidden": {
+          "file": "buildings/x_distributed_relay/rot_0_hidden.png",
+          "mask": "buildings/x_distributed_relay/rot_0_hidden_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/x_distributed_relay/rot_1.png",
+          "mask": "buildings/x_distributed_relay/rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/x_distributed_relay/rot_1_build_0.png",
+          "mask": "buildings/x_distributed_relay/rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/x_distributed_relay/rot_1_build_1.png",
+          "mask": "buildings/x_distributed_relay/rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/x_distributed_relay/rot_1_build_2.png",
+          "mask": "buildings/x_distributed_relay/rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/x_distributed_relay/rot_1_damaged.png",
+          "mask": "buildings/x_distributed_relay/rot_1_damaged_mask.png"
+        },
+        "rot_1_hidden": {
+          "file": "buildings/x_distributed_relay/rot_1_hidden.png",
+          "mask": "buildings/x_distributed_relay/rot_1_hidden_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/x_distributed_relay/rot_2.png",
+          "mask": "buildings/x_distributed_relay/rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/x_distributed_relay/rot_2_build_0.png",
+          "mask": "buildings/x_distributed_relay/rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/x_distributed_relay/rot_2_build_1.png",
+          "mask": "buildings/x_distributed_relay/rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/x_distributed_relay/rot_2_build_2.png",
+          "mask": "buildings/x_distributed_relay/rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/x_distributed_relay/rot_2_damaged.png",
+          "mask": "buildings/x_distributed_relay/rot_2_damaged_mask.png"
+        },
+        "rot_2_hidden": {
+          "file": "buildings/x_distributed_relay/rot_2_hidden.png",
+          "mask": "buildings/x_distributed_relay/rot_2_hidden_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/x_distributed_relay/rot_3.png",
+          "mask": "buildings/x_distributed_relay/rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/x_distributed_relay/rot_3_build_0.png",
+          "mask": "buildings/x_distributed_relay/rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/x_distributed_relay/rot_3_build_1.png",
+          "mask": "buildings/x_distributed_relay/rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/x_distributed_relay/rot_3_build_2.png",
+          "mask": "buildings/x_distributed_relay/rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/x_distributed_relay/rot_3_damaged.png",
+          "mask": "buildings/x_distributed_relay/rot_3_damaged_mask.png"
+        },
+        "rot_3_hidden": {
+          "file": "buildings/x_distributed_relay/rot_3_hidden.png",
+          "mask": "buildings/x_distributed_relay/rot_3_hidden_mask.png"
+        }
+      }
+    },
     "x_forward_repair": {
       "g10": {
         "owner_look_approved": true
@@ -1096,6 +1471,131 @@
         "rot_3_hidden": {
           "file": "buildings/x_patron_office/rot_3_hidden.png",
           "mask": "buildings/x_patron_office/rot_3_hidden_mask.png"
+        }
+      }
+    },
+    "x_remote_cache": {
+      "g10": {},
+      "g5": {
+        "variants": "rot"
+      },
+      "pivot": [
+        76.0,
+        60.0
+      ],
+      "size": 2.0,
+      "states": {
+        "build_0": {
+          "file": "buildings/x_remote_cache/rot_0_build_0.png",
+          "mask": "buildings/x_remote_cache/rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/x_remote_cache/rot_0_build_1.png",
+          "mask": "buildings/x_remote_cache/rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/x_remote_cache/rot_0_build_2.png",
+          "mask": "buildings/x_remote_cache/rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/x_remote_cache/rot_0.png",
+          "mask": "buildings/x_remote_cache/rot_0_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/x_remote_cache/rot_0.png",
+          "mask": "buildings/x_remote_cache/rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/x_remote_cache/rot_0_build_0.png",
+          "mask": "buildings/x_remote_cache/rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/x_remote_cache/rot_0_build_1.png",
+          "mask": "buildings/x_remote_cache/rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/x_remote_cache/rot_0_build_2.png",
+          "mask": "buildings/x_remote_cache/rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/x_remote_cache/rot_0_damaged.png",
+          "mask": "buildings/x_remote_cache/rot_0_damaged_mask.png"
+        },
+        "rot_0_hidden": {
+          "file": "buildings/x_remote_cache/rot_0_hidden.png",
+          "mask": "buildings/x_remote_cache/rot_0_hidden_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/x_remote_cache/rot_1.png",
+          "mask": "buildings/x_remote_cache/rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/x_remote_cache/rot_1_build_0.png",
+          "mask": "buildings/x_remote_cache/rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/x_remote_cache/rot_1_build_1.png",
+          "mask": "buildings/x_remote_cache/rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/x_remote_cache/rot_1_build_2.png",
+          "mask": "buildings/x_remote_cache/rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/x_remote_cache/rot_1_damaged.png",
+          "mask": "buildings/x_remote_cache/rot_1_damaged_mask.png"
+        },
+        "rot_1_hidden": {
+          "file": "buildings/x_remote_cache/rot_1_hidden.png",
+          "mask": "buildings/x_remote_cache/rot_1_hidden_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/x_remote_cache/rot_2.png",
+          "mask": "buildings/x_remote_cache/rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/x_remote_cache/rot_2_build_0.png",
+          "mask": "buildings/x_remote_cache/rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/x_remote_cache/rot_2_build_1.png",
+          "mask": "buildings/x_remote_cache/rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/x_remote_cache/rot_2_build_2.png",
+          "mask": "buildings/x_remote_cache/rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/x_remote_cache/rot_2_damaged.png",
+          "mask": "buildings/x_remote_cache/rot_2_damaged_mask.png"
+        },
+        "rot_2_hidden": {
+          "file": "buildings/x_remote_cache/rot_2_hidden.png",
+          "mask": "buildings/x_remote_cache/rot_2_hidden_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/x_remote_cache/rot_3.png",
+          "mask": "buildings/x_remote_cache/rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/x_remote_cache/rot_3_build_0.png",
+          "mask": "buildings/x_remote_cache/rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/x_remote_cache/rot_3_build_1.png",
+          "mask": "buildings/x_remote_cache/rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/x_remote_cache/rot_3_build_2.png",
+          "mask": "buildings/x_remote_cache/rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/x_remote_cache/rot_3_damaged.png",
+          "mask": "buildings/x_remote_cache/rot_3_damaged_mask.png"
+        },
+        "rot_3_hidden": {
+          "file": "buildings/x_remote_cache/rot_3_hidden.png",
+          "mask": "buildings/x_remote_cache/rot_3_hidden_mask.png"
         }
       }
     },
@@ -1911,6 +2411,102 @@
     "x_vault_core"
   ],
   "files": {
+    "buildings/x_apex_patron_desk/rot_0.png": "b3a7be6cd725b85471b939c409f4e6e8",
+    "buildings/x_apex_patron_desk/rot_0_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_apex_patron_desk/rot_0_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_0_build_1.png": "f60449cd1729f9e92c3bf72b40b8391a",
+    "buildings/x_apex_patron_desk/rot_0_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_0_build_2.png": "23273752ddffa711b15a0cc2e147f7dd",
+    "buildings/x_apex_patron_desk/rot_0_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_0_damaged.png": "1d197700382ffc7b5f52c47f3f294162",
+    "buildings/x_apex_patron_desk/rot_0_damaged_mask.png": "1e94a841457c70fcea23dd06de89d249",
+    "buildings/x_apex_patron_desk/rot_0_hidden.png": "38a1cc12efc3f5efece41c675d0a445b",
+    "buildings/x_apex_patron_desk/rot_0_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_0_mask.png": "1e94a841457c70fcea23dd06de89d249",
+    "buildings/x_apex_patron_desk/rot_1.png": "e5f04046a87df72c3afd2afe76d6a389",
+    "buildings/x_apex_patron_desk/rot_1_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_apex_patron_desk/rot_1_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_1_build_1.png": "eacdb43d66fed6ec31ab5cb098fbcf3f",
+    "buildings/x_apex_patron_desk/rot_1_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_1_build_2.png": "06ed930907bb485c0ba44116adc913a0",
+    "buildings/x_apex_patron_desk/rot_1_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_1_damaged.png": "0ebdc67df9167ddd112cd592e78f6064",
+    "buildings/x_apex_patron_desk/rot_1_damaged_mask.png": "3a420feb47941cae519786aa33ddd37b",
+    "buildings/x_apex_patron_desk/rot_1_hidden.png": "e3ad704a61527c44435f1c6985cefcdd",
+    "buildings/x_apex_patron_desk/rot_1_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_1_mask.png": "3a420feb47941cae519786aa33ddd37b",
+    "buildings/x_apex_patron_desk/rot_2.png": "b9cbb67cea891b78f8da1abfe30d1238",
+    "buildings/x_apex_patron_desk/rot_2_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_apex_patron_desk/rot_2_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_2_build_1.png": "f60449cd1729f9e92c3bf72b40b8391a",
+    "buildings/x_apex_patron_desk/rot_2_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_2_build_2.png": "23273752ddffa711b15a0cc2e147f7dd",
+    "buildings/x_apex_patron_desk/rot_2_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_2_damaged.png": "0943b4bd482b8e9e849b4f48a4b9f823",
+    "buildings/x_apex_patron_desk/rot_2_damaged_mask.png": "a0e517d708750d8ea7b1408f650a6d3d",
+    "buildings/x_apex_patron_desk/rot_2_hidden.png": "a5c9f33bba5f543fc1cbb5bd3402649d",
+    "buildings/x_apex_patron_desk/rot_2_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_2_mask.png": "a0e517d708750d8ea7b1408f650a6d3d",
+    "buildings/x_apex_patron_desk/rot_3.png": "13b69b02de3d3bf1e6366494479e6d1c",
+    "buildings/x_apex_patron_desk/rot_3_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_apex_patron_desk/rot_3_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_3_build_1.png": "eacdb43d66fed6ec31ab5cb098fbcf3f",
+    "buildings/x_apex_patron_desk/rot_3_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_3_build_2.png": "06ed930907bb485c0ba44116adc913a0",
+    "buildings/x_apex_patron_desk/rot_3_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_3_damaged.png": "57d67df2c75399d92babcd1feba70637",
+    "buildings/x_apex_patron_desk/rot_3_damaged_mask.png": "3df121a0a9124d1166a2aec394fa381f",
+    "buildings/x_apex_patron_desk/rot_3_hidden.png": "796e1860609912f2fd1edeb6b1da7d4e",
+    "buildings/x_apex_patron_desk/rot_3_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_apex_patron_desk/rot_3_mask.png": "3df121a0a9124d1166a2aec394fa381f",
+    "buildings/x_apex_vault_wing/rot_0.png": "106f940c20ed5e98d6882bfcc89fd4f8",
+    "buildings/x_apex_vault_wing/rot_0_build_0.png": "23a15de29b4a69cd43df2514023d5259",
+    "buildings/x_apex_vault_wing/rot_0_build_0_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_0_build_1.png": "3ce439b39cc88b845574361d12052f7c",
+    "buildings/x_apex_vault_wing/rot_0_build_1_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_0_build_2.png": "b60eba0cef42b8478531cea8c969583b",
+    "buildings/x_apex_vault_wing/rot_0_build_2_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_0_damaged.png": "d05719b9c4e450af6ae831c987100299",
+    "buildings/x_apex_vault_wing/rot_0_damaged_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_0_hidden.png": "7b9e63e1ba7a885f54130bd1b1d7a2c7",
+    "buildings/x_apex_vault_wing/rot_0_hidden_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_0_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_1.png": "349a6a93c2970a1fb2dabb6ec00275b8",
+    "buildings/x_apex_vault_wing/rot_1_build_0.png": "23a15de29b4a69cd43df2514023d5259",
+    "buildings/x_apex_vault_wing/rot_1_build_0_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_1_build_1.png": "c72da165cda9f4052ac238a09ae30600",
+    "buildings/x_apex_vault_wing/rot_1_build_1_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_1_build_2.png": "efa90c15f78404bb445d2c75c261a8b4",
+    "buildings/x_apex_vault_wing/rot_1_build_2_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_1_damaged.png": "1a5d1ca810a77d779cd6aa07d25d7dca",
+    "buildings/x_apex_vault_wing/rot_1_damaged_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_1_hidden.png": "17f4e24936b8891bc6872e02db4802c6",
+    "buildings/x_apex_vault_wing/rot_1_hidden_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_1_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_2.png": "0db57887e771c7ad0c2a4424088b68f6",
+    "buildings/x_apex_vault_wing/rot_2_build_0.png": "23a15de29b4a69cd43df2514023d5259",
+    "buildings/x_apex_vault_wing/rot_2_build_0_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_2_build_1.png": "3ce439b39cc88b845574361d12052f7c",
+    "buildings/x_apex_vault_wing/rot_2_build_1_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_2_build_2.png": "b60eba0cef42b8478531cea8c969583b",
+    "buildings/x_apex_vault_wing/rot_2_build_2_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_2_damaged.png": "c3a31f33517a2381a2df94d800053a81",
+    "buildings/x_apex_vault_wing/rot_2_damaged_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_2_hidden.png": "193e8e6e0e404a059b13fb9e7634512c",
+    "buildings/x_apex_vault_wing/rot_2_hidden_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_2_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_3.png": "7da31067aa2a4030aa07a751add685d5",
+    "buildings/x_apex_vault_wing/rot_3_build_0.png": "23a15de29b4a69cd43df2514023d5259",
+    "buildings/x_apex_vault_wing/rot_3_build_0_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_3_build_1.png": "c72da165cda9f4052ac238a09ae30600",
+    "buildings/x_apex_vault_wing/rot_3_build_1_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_3_build_2.png": "efa90c15f78404bb445d2c75c261a8b4",
+    "buildings/x_apex_vault_wing/rot_3_build_2_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_3_damaged.png": "bd2fa263b9241da94934890180d9b901",
+    "buildings/x_apex_vault_wing/rot_3_damaged_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_3_hidden.png": "53d5e82f06398c7102c351ca36e69c27",
+    "buildings/x_apex_vault_wing/rot_3_hidden_mask.png": "2280ed4a6f6648b6779da67ad671c644",
+    "buildings/x_apex_vault_wing/rot_3_mask.png": "2280ed4a6f6648b6779da67ad671c644",
     "buildings/x_black_market/rot_0.png": "8ad3a81625ae1d4738f29c80fc79937d",
     "buildings/x_black_market/rot_0_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
     "buildings/x_black_market/rot_0_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
@@ -2151,6 +2747,54 @@
     "buildings/x_disguised_workshop/rot_3_hidden.png": "377621c8e0cb81d2e5cf8a84bcbc6246",
     "buildings/x_disguised_workshop/rot_3_hidden_mask.png": "2280ed4a6f6648b6779da67ad671c644",
     "buildings/x_disguised_workshop/rot_3_mask.png": "77dd1465e5fc86ae9472204bcaaf4fff",
+    "buildings/x_distributed_relay/rot_0.png": "7a3cc6d9ba925a2d4913a1e94c163374",
+    "buildings/x_distributed_relay/rot_0_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_distributed_relay/rot_0_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_0_build_1.png": "f60449cd1729f9e92c3bf72b40b8391a",
+    "buildings/x_distributed_relay/rot_0_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_0_build_2.png": "23273752ddffa711b15a0cc2e147f7dd",
+    "buildings/x_distributed_relay/rot_0_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_0_damaged.png": "2e9f0348d54ac0d4b222bb55a1627abd",
+    "buildings/x_distributed_relay/rot_0_damaged_mask.png": "f9864db671551af5ad0adfa13541a3c4",
+    "buildings/x_distributed_relay/rot_0_hidden.png": "95178748f00bbe50a67781728446be3b",
+    "buildings/x_distributed_relay/rot_0_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_0_mask.png": "f9864db671551af5ad0adfa13541a3c4",
+    "buildings/x_distributed_relay/rot_1.png": "6807e3833abef7e5c625aeb565278255",
+    "buildings/x_distributed_relay/rot_1_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_distributed_relay/rot_1_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_1_build_1.png": "eacdb43d66fed6ec31ab5cb098fbcf3f",
+    "buildings/x_distributed_relay/rot_1_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_1_build_2.png": "06ed930907bb485c0ba44116adc913a0",
+    "buildings/x_distributed_relay/rot_1_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_1_damaged.png": "93a116c9992b77b2ad6f298d066188bc",
+    "buildings/x_distributed_relay/rot_1_damaged_mask.png": "9f24c85460a5ddcff665a433c3ea0e1f",
+    "buildings/x_distributed_relay/rot_1_hidden.png": "705138cbf4eaff0007753e5d0b73cac1",
+    "buildings/x_distributed_relay/rot_1_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_1_mask.png": "9f24c85460a5ddcff665a433c3ea0e1f",
+    "buildings/x_distributed_relay/rot_2.png": "4555d1bb833fe69105d448d2d8d54642",
+    "buildings/x_distributed_relay/rot_2_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_distributed_relay/rot_2_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_2_build_1.png": "f60449cd1729f9e92c3bf72b40b8391a",
+    "buildings/x_distributed_relay/rot_2_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_2_build_2.png": "23273752ddffa711b15a0cc2e147f7dd",
+    "buildings/x_distributed_relay/rot_2_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_2_damaged.png": "930625345b2dc8610fcda4d838e4c1f7",
+    "buildings/x_distributed_relay/rot_2_damaged_mask.png": "a27f415c2309bac3b5fa288200a6a826",
+    "buildings/x_distributed_relay/rot_2_hidden.png": "0d10a1c6bba528f85e6965982f3cc3a0",
+    "buildings/x_distributed_relay/rot_2_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_2_mask.png": "a27f415c2309bac3b5fa288200a6a826",
+    "buildings/x_distributed_relay/rot_3.png": "7417f16c76cef823828f1ef5c2c343d0",
+    "buildings/x_distributed_relay/rot_3_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_distributed_relay/rot_3_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_3_build_1.png": "eacdb43d66fed6ec31ab5cb098fbcf3f",
+    "buildings/x_distributed_relay/rot_3_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_3_build_2.png": "06ed930907bb485c0ba44116adc913a0",
+    "buildings/x_distributed_relay/rot_3_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_3_damaged.png": "db1048e47cb0f7e7998f1565d3a3b14d",
+    "buildings/x_distributed_relay/rot_3_damaged_mask.png": "15023738a9e78787e3373cc11311d234",
+    "buildings/x_distributed_relay/rot_3_hidden.png": "5cbb1b61091e4d3bf827de493ff43e07",
+    "buildings/x_distributed_relay/rot_3_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_distributed_relay/rot_3_mask.png": "15023738a9e78787e3373cc11311d234",
     "buildings/x_forward_repair/rot_0.png": "b3a20648c8fe40340ec30c700fa088d3",
     "buildings/x_forward_repair/rot_0_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
     "buildings/x_forward_repair/rot_0_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
@@ -2295,6 +2939,54 @@
     "buildings/x_patron_office/rot_3_hidden.png": "796e1860609912f2fd1edeb6b1da7d4e",
     "buildings/x_patron_office/rot_3_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
     "buildings/x_patron_office/rot_3_mask.png": "3df121a0a9124d1166a2aec394fa381f",
+    "buildings/x_remote_cache/rot_0.png": "16c726c044151d99b480358bc586fcd6",
+    "buildings/x_remote_cache/rot_0_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_remote_cache/rot_0_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_0_build_1.png": "f60449cd1729f9e92c3bf72b40b8391a",
+    "buildings/x_remote_cache/rot_0_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_0_build_2.png": "23273752ddffa711b15a0cc2e147f7dd",
+    "buildings/x_remote_cache/rot_0_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_0_damaged.png": "7ffb7d512e430e6c49e5e466cf42472c",
+    "buildings/x_remote_cache/rot_0_damaged_mask.png": "f9864db671551af5ad0adfa13541a3c4",
+    "buildings/x_remote_cache/rot_0_hidden.png": "bff84fad6f5f2284553246d1e9a9bdd3",
+    "buildings/x_remote_cache/rot_0_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_0_mask.png": "f9864db671551af5ad0adfa13541a3c4",
+    "buildings/x_remote_cache/rot_1.png": "c13ebe6a3e99ecf211b36bc1f56d635d",
+    "buildings/x_remote_cache/rot_1_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_remote_cache/rot_1_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_1_build_1.png": "eacdb43d66fed6ec31ab5cb098fbcf3f",
+    "buildings/x_remote_cache/rot_1_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_1_build_2.png": "06ed930907bb485c0ba44116adc913a0",
+    "buildings/x_remote_cache/rot_1_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_1_damaged.png": "b39984ec9bdab5725c4e1cec8e3ddd10",
+    "buildings/x_remote_cache/rot_1_damaged_mask.png": "9f24c85460a5ddcff665a433c3ea0e1f",
+    "buildings/x_remote_cache/rot_1_hidden.png": "b320ec781479a80640cc03cb508d909a",
+    "buildings/x_remote_cache/rot_1_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_1_mask.png": "9f24c85460a5ddcff665a433c3ea0e1f",
+    "buildings/x_remote_cache/rot_2.png": "7714d0211746348b5ab87051ed2d9630",
+    "buildings/x_remote_cache/rot_2_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_remote_cache/rot_2_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_2_build_1.png": "f60449cd1729f9e92c3bf72b40b8391a",
+    "buildings/x_remote_cache/rot_2_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_2_build_2.png": "23273752ddffa711b15a0cc2e147f7dd",
+    "buildings/x_remote_cache/rot_2_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_2_damaged.png": "5a0efe85636565b99bcc9dbfd7705bdb",
+    "buildings/x_remote_cache/rot_2_damaged_mask.png": "a27f415c2309bac3b5fa288200a6a826",
+    "buildings/x_remote_cache/rot_2_hidden.png": "a028392141f3326bf1025c26baea54b2",
+    "buildings/x_remote_cache/rot_2_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_2_mask.png": "a27f415c2309bac3b5fa288200a6a826",
+    "buildings/x_remote_cache/rot_3.png": "689b6dbfaa731081b6f38f91672a800b",
+    "buildings/x_remote_cache/rot_3_build_0.png": "f7f6a43f2bc4926bd22682a38ff781b1",
+    "buildings/x_remote_cache/rot_3_build_0_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_3_build_1.png": "eacdb43d66fed6ec31ab5cb098fbcf3f",
+    "buildings/x_remote_cache/rot_3_build_1_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_3_build_2.png": "06ed930907bb485c0ba44116adc913a0",
+    "buildings/x_remote_cache/rot_3_build_2_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_3_damaged.png": "90a214a6f940e72c2af8480515849e2b",
+    "buildings/x_remote_cache/rot_3_damaged_mask.png": "15023738a9e78787e3373cc11311d234",
+    "buildings/x_remote_cache/rot_3_hidden.png": "238b64fe41ddf4ec4e9e97a0ae3c0712",
+    "buildings/x_remote_cache/rot_3_hidden_mask.png": "bf2b04ef27d62a3aaffb3fd32496fac2",
+    "buildings/x_remote_cache/rot_3_mask.png": "15023738a9e78787e3373cc11311d234",
     "buildings/x_safehouse/rot_0.png": "f267ad5c45be0cef73d9d06140191830",
     "buildings/x_safehouse/rot_0_build_0.png": "23a15de29b4a69cd43df2514023d5259",
     "buildings/x_safehouse/rot_0_build_0_mask.png": "2280ed4a6f6648b6779da67ad671c644",
@@ -2586,6 +3278,8 @@
     "icons/x_ambush_cell.png": "a84945aae5d304db30baa30b0085860c",
     "icons/x_anchor_medic.png": "396b04037130b37880bf3188532b0795",
     "icons/x_anchor_tech.png": "67766bc7a5ff3ad8200c07f8183b8267",
+    "icons/x_apex_patron_desk.png": "ee4763aeaab437bbff628f19619692b6",
+    "icons/x_apex_vault_wing.png": "2afb10d7a5258c513ac5fdcfbd79724f",
     "icons/x_backdoor_hacker.png": "901a9517882e9bb049c86c5e290880cc",
     "icons/x_black_market.png": "9e09d2d0f7f42d8119c31f2f2215bec2",
     "icons/x_broker.png": "60886bcbf9fd503665dcd169b63d436a",
@@ -2601,6 +3295,7 @@
     "icons/x_death_recon.png": "500c0302feec61d7a6ff18199272d1d0",
     "icons/x_death_strike.png": "a9262316dccc0d2f2d57fa6590d3d32a",
     "icons/x_disguised_workshop.png": "350f51b2aadca15ce19891f56395ddbe",
+    "icons/x_distributed_relay.png": "de6035d50dfa53f669c9d7135f5cb006",
     "icons/x_exo_mule.png": "d9e71171c5649667fa2eea336da54486",
     "icons/x_forward_repair.png": "7bc1573dd127555d4f4397b6a344db58",
     "icons/x_ghost_ace_01.png": "2a783770be436f98fa02d9eb8aee7363",
@@ -2637,6 +3332,7 @@
     "icons/x_recon_drone.png": "444980651f3c202a01d47c81be13983e",
     "icons/x_recovery_truck.png": "beb982f9deaa6f1668c6f6ea1798de40",
     "icons/x_refit_ifv.png": "736aefccda1b99c33699637b59f82a62",
+    "icons/x_remote_cache.png": "d4427c79cb40e60e257a98fa53d2cd4f",
     "icons/x_river_ghost.png": "24d047e0bd45ba0abc52299b17b0d482",
     "icons/x_safehouse.png": "ee7ca60f0b2f0452bd3986d6b485b72e",
     "icons/x_shadow_decoy.png": "6dc91eb340393b2d2ced8480e8b54649",
@@ -3064,6 +3760,8 @@
       "file": "icons/x_anchor_tech.png",
       "fw": 80
     },
+    "x_apex_patron_desk": "icons/x_apex_patron_desk.png",
+    "x_apex_vault_wing": "icons/x_apex_vault_wing.png",
     "x_backdoor_hacker": {
       "fh": 64,
       "file": "icons/x_backdoor_hacker.png",
@@ -3115,6 +3813,7 @@
       "fw": 80
     },
     "x_disguised_workshop": "icons/x_disguised_workshop.png",
+    "x_distributed_relay": "icons/x_distributed_relay.png",
     "x_exo_mule": "icons/x_exo_mule.png",
     "x_forward_repair": "icons/x_forward_repair.png",
     "x_ghost_ace_01": {
@@ -3255,6 +3954,7 @@
     },
     "x_recovery_truck": "icons/x_recovery_truck.png",
     "x_refit_ifv": "icons/x_refit_ifv.png",
+    "x_remote_cache": "icons/x_remote_cache.png",
     "x_river_ghost": "icons/x_river_ghost.png",
     "x_safehouse": "icons/x_safehouse.png",
     "x_shadow_decoy": {

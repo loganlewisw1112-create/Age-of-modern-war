@@ -181,17 +181,26 @@ const BUILDINGS := {
 }
 
 
-static func build_buildings(out: Dictionary) -> void:
+const LATE_BUILDINGS := {
+	"x_remote_cache": ["storage yard", TAN, TEAL],
+	"x_distributed_relay": ["relay mast", STEEL, TEAL],
+	"x_apex_vault_wing": ["vault hatch", DARK, AMBER],
+	"x_apex_patron_desk": ["office", STEEL, AMBER],
+}
+
+
+static func build_buildings(out: Dictionary, styles: Dictionary = BUILDINGS) -> void:
 	var rules: Dictionary = Content.rules().get("g10_buildings", {})
-	for id in BUILDINGS:
+	for id in styles:
 		var footprint := float(Content.building(id).get("size", 2))
-		var spec := {"size": footprint, "states": {}, "g5": {"variants": "rot"}, "g10": {"owner_look_approved": true}}
-		var hatch: bool = id in rules.get("hatch_surface_defs", [])
+		var approval := {"owner_look_approved": true} if BUILDINGS.has(id) else {}
+		var spec := {"size": footprint, "states": {}, "g5": {"variants": "rot"}, "g10": approval}
+		var hatch: bool = id in rules.get("hatch_surface_defs", []) or id == "x_apex_vault_wing"
 		var fw := ceili(64 * footprint) + 24
 		var fh := ceili(32 * footprint) + 44
 		var pivot := Vector2(fw * 0.5, fh - 16.0 - 16.0 * footprint)
 		spec.pivot = [pivot.x, pivot.y]
-		var style: Array = BUILDINGS[id]
+		var style: Array = styles[id]
 		for face in 4:
 			for state in ["", "_hidden", "_damaged", "_build_0", "_build_1", "_build_2"]:
 				var name := "rot_%d%s" % [face, state]
@@ -209,6 +218,17 @@ static func build_buildings(out: Dictionary) -> void:
 					elif state.begins_with("_build_"):
 						spec.states[state.trim_prefix("_")] = spec.states[name]
 		out.manifest.buildings[id] = spec
+		if LATE_BUILDINGS.has(id):
+			var icon: Image = (out.images[spec.states.built.file] as Image).duplicate()
+			var box := icon.get_used_rect()
+			icon = icon.get_region(box)
+			var scale := 28.0 / float(maxi(box.size.x, box.size.y))
+			icon.resize(maxi(1, roundi(box.size.x * scale)), maxi(1, roundi(box.size.y * scale)), Image.INTERPOLATE_LANCZOS)
+			var tile := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+			tile.blit_rect(icon, Rect2i(Vector2i.ZERO, icon.get_size()), (tile.get_size() - icon.get_size()) / 2)
+			var path := "icons/%s.png" % id
+			out.images[path] = tile
+			out.manifest.icons[id] = path
 
 
 static func _building(cv, pivot: Vector2, face: int, footprint: float, style: Array, hatch: bool, state: String) -> void:
@@ -263,6 +283,12 @@ static func _facility(cv, r: Dictionary, span: float, profile: String, paint: Co
 		height *= 0.72
 	_box(cv, r, -span * 0.19, 0, 3, hx, hy, height, paint, Vector2(0.04, 0.04))
 	_box(cv, r, -span * 0.19, 0, 3 + height, hx * 1.06, hy * 1.06, 3.2, DARK, Vector2(0.08, 0.08))
+	if profile == "relay mast":
+		var foot := _point(r, -span * 0.22, 0, height + 6)
+		var top := _point(r, -span * 0.22, 0, height + 22)
+		C.tube(cv, foot, top, 1.4, C.ramp(STEEL))
+		C.tube(cv, _point(r, -span * 0.48, 0, height + 18),
+			_point(r, span * 0.04, 0, height + 18), 1.4, C.ramp(accent))
 	if high:
 		_box(cv, r, -span * 0.21, 0, 6.2 + height, hx * 0.96, hy * 0.83, 8, paint, Vector2(0.13, hy * 0.78))
 	for side in [-1.0, 1.0]:

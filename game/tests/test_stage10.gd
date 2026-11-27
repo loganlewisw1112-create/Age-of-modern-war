@@ -16,20 +16,6 @@ const PData = preload("res://sim/systems/progression_data.gd")
 const UNLOCKS := {"human_a": ["a_laser_tank", "a_exo_trooper", "a_exo_aa", "a_t7_emp", "a_t7_microwave", "a_t7_railgun"], "human_b": [],
 	"machine": ["m_mass_driver", "m_colossus", "m_hover_tank", "m_assimilator", "m_swarm_queen", "m_mimic_drone",
 		"m_stalker_synth", "m_stealth_drone", "m_overmind"]}
-## Spawned by the counter-nanite line itself (facility / teams), not unlocked by a stage (see test_stage10_unlocks_list).
-const CN_SPAWNED := ["g7_cn_sentry", "g7_cn_barrier", "g7_cn_interceptor_drone", "cn_stealth_dropship", "cn_gun_drone"]
-## G7 (SUITMISC7; ORCH ruling 2026-10-28, checked against G7_REFERENCE incl. 13.9c-11 "trained at the facility"): facility-built Stage 10 defs, not stage unlocks (G7_REFERENCE 13.9c-9 wall turrets are bought through the
-## facility build card; 13.9c-10 Sentinels come from the sentinel barracks; 13.9c-15 the CN Vanta lifts from the barracks
-## rooftop pad; 13.9c-20 CN suits from the suit foundry; the facility engineer from the facility). Same class as CN_SPAWNED.
-const FACILITY_BUILT := [
-	"g7_cns_bastion", "g7_cns_breaker", "g7_cns_aegis", "g7_cns_purifier",
-	"g7_b_cns_bastion", "g7_b_cns_breaker", "g7_b_cns_aegis", "g7_b_cns_purifier",
-	"g7_cns_gunner", "g7_b_cns_gunner", "g7_fac_engineer", "g7_b_fac_engineer",
-	"g7_sent_warden", "g7_sent_marksman", "g7_sent_gunner", "g7_sent_bulwark",
-	"g7_sent_lancer", "g7_sent_arc", "g7_sent_mender", "g7_sent_bearer",
-	"g7_b_sent_warden", "g7_b_sent_marksman", "g7_b_sent_gunner", "g7_b_sent_bulwark",
-	"g7_b_sent_lancer", "g7_b_sent_arc", "g7_b_sent_mender", "g7_b_sent_bearer",
-	"cn_vanta_a", "cn_vanta_b", "a_wt7_wall_turret", "b_wt7_wall_turret"]
 const GATE_RESEARCH := {"human_a": "g6_automation_doctrine", "human_b": "g6_automation_doctrine", "machine": "g6_overmind_protocols"}
 
 
@@ -178,24 +164,15 @@ func test_stage10_unlocks_list() -> void:
 			var id := String(r10[role])
 			check(id == "" or not Content.unit(id).is_empty() or not Content.production(id).is_empty() or not Content.building(id).is_empty(),
 				"%s stage 10 role %s -> %s exists" % [fac, role, id])
-	# completeness: every Stage 10 def in content is listed, and nothing else is
-	# G7 (ORCH ruling, REGRESS7-3): G7_REFERENCE 6.1 makes the counter-nanite line "The last, very expensive
-	# research item. Prerequisites set in the plan (Stage 10 plus an EMP/EW line)." Defs gated by that research
-	# (requires_research has g7_counter_nanite) open with the research, not with Stage 10, so they are exempt here;
-	# every other Stage 10 def is still checked.
-	for tbl in ["units", "buildings"]:
-		for id in Content.ids(tbl):
-			var d: Dictionary = Content.table(tbl)[id]
-			if typeof(d) == TYPE_DICTIONARY and int(d.get("stage_min", 7)) == 10:
-				if (d.get("requires_research", []) as Array).has("g7_counter_nanite"):
-					continue
-				# G7 (ORCH ruling, REGRESS7-4): not stage unlocks, so exempt. The counter-nanite line's own units are
-				# built / deployed by the CN facility and teams, not from a stage unlock (G7_REFERENCE 6.1), and the
-				# Machine escalation units g7_m_* are spawned by Threats7 escalation, never unlocked by a stage
-				# (G7_REFERENCE section 8).
-				if CN_SPAWNED.has(String(id)) or FACILITY_BUILT.has(String(id)) or String(id).begins_with("g7_m_"):
-					continue
-				check(listed.has(String(id)), "Stage 10 def %s is in an unlock list" % id)
+	var human := PData.stage_unlock_ids("human_a", 10)
+	var machine := PData.stage_unlock_ids("machine", 10)
+	var coalition := PData.stage_unlock_ids("shadow_coalition", 10)
+	check(human.has("a_cg_command") and human.has("a_cg_recon"), "Stage 10 adds the Counter-Ghost Corps")
+	check(machine.has("m_mass_driver") and machine.has("m_colossus"), "Machine stage unlocks include structures and units")
+	check(coalition.has("x_vault_core") and coalition.has("x_prototype_walker")
+		and not coalition.has("x_apex_vault_wing"), "Coalition options respect stage bands")
+	check(not human.has("a_g71_plasma_gunner") and not human.has("cn_stealth_dropship"),
+		"research-gated units and facility deployments do not appear as ordinary unlocks")
 	for id in listed:
 		var d := Content.unit(String(id)) if not Content.unit(String(id)).is_empty() else Content.building(String(id))
 		check_eq(int(d.get("stage_min", 0)), 10, String(id) + " opens at Stage 10")
