@@ -13,6 +13,8 @@ static func evaluate_machine_threat(w: SimWorld) -> float:
 	var score := 0.0
 	var mfs := Creep.machine_fids(w)
 	for fid in mfs:
+		if not bool(w.factions[fid].get("alive", true)):
+			continue
 		for e in w.units_of(fid):
 			var d := Content.unit(String(e.def))
 			if String(d.get("weapon", "")) == "":
@@ -27,7 +29,11 @@ static func evaluate_machine_threat(w: SimWorld) -> float:
 static func human_fids(w: SimWorld) -> Array:
 	var out := []
 	for fid in w.factions.keys():
-		if not Creep.is_machine(w, int(fid)) and bool(w.factions[fid].get("alive", true)):
+		if Creep.is_machine(w, int(fid)) or not bool(w.factions[fid].get("alive", true)):
+			continue
+		var allied_to_machine := Creep.machine_fids(w).any(
+			func(machine): return w.is_ally(int(fid), int(machine)))
+		if not allied_to_machine:
 			out.append(int(fid))
 	out.sort()
 	return out

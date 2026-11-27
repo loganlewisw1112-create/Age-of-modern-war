@@ -86,7 +86,7 @@ const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 
 
 class FakeMV extends Node:
-	var world: SimWorld = null
+	var _world: SimWorld = null
 	var player_fid := 0
 	var centered := Vector2(-1, -1)
 	var selected: Array = []
@@ -109,7 +109,7 @@ class FakeMV extends Node:
 
 func _hub(w: SimWorld) -> Array:
 	var mv := FakeMV.new()
-	mv.world = w
+	mv._world = w
 	var hub = OpsPanel.new()
 	hub.mv = mv
 	hub._ready()

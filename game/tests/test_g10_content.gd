@@ -303,7 +303,7 @@ func test_g10_approved_art_catalog_coverage() -> void:
 		check(icons.has(id), "%s icon present" % id)
 
 
-func test_g10_deferred_art_is_drawable_and_pending_approval() -> void:
+func test_g10_approved_art_is_drawable() -> void:
 	var BatchArt = preload("res://presentation/view/batch_art.gd")
 	var art = BatchArt.new()
 	var man := ArtCatalog.manifest()
@@ -312,9 +312,9 @@ func test_g10_deferred_art_is_drawable_and_pending_approval() -> void:
 		var id: String = G10_DEFERRED_ART_IDS[i]
 		var spec := _g10_art_spec(id)
 		var style: Dictionary = spec.get("g10", {})
-		check(bool(style.get("candidate_look", false)) and not bool(style.get("approved_core", false)),
-			"%s has candidate art pending approval" % id)
-		check(man.icons.has(id), "%s has an icon" % id)
+		check(bool(style.get("owner_look_approved", false)) and not bool(style.get("approved_core", false)),
+			"%s has owner-approved art" % id)
+		check(ArtCatalog.icon(id) != ArtCatalog._ph(), "%s has a drawable icon" % id)
 		if man.buildings.has(id):
 			for facing in 4:
 				for state in ["", "_hidden", "_damaged", "_build_0", "_build_1", "_build_2"]:

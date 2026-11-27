@@ -9,7 +9,7 @@ const SHEETS := ["fig_tech", "fig_guard", "fig_staff", "dog", "forklift", "fuel_
 
 
 class _StubView extends Node:
-	var world: SimWorld = null
+	var _world: SimWorld = null
 	var camera = null
 	var _alpha := 0.0
 	func sim_busy() -> bool:
@@ -47,7 +47,7 @@ func _setup(seed_v := 7) -> Array:
 
 func _layer(w: SimWorld) -> Array:
 	var v := _StubView.new()
-	v.world = w
+	v._world = w
 	var L = LayerScript.new()
 	v.add_child(L)
 	L.setup(v)

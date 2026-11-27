@@ -40,7 +40,7 @@ static func build_vehicles(out: Dictionary) -> void:
 		var style: Array = VEHICLES[id]
 		S._sheet_anim(out, id, "vehicles", func(cv, side, frame): _vehicle(cv, side, frame, style), FRAMES)
 		var spec: Dictionary = out.manifest.vehicles[id]
-		spec.g10 = {"candidate_look": true, "family": style[0], "profile": style[1]}
+		spec.g10 = {"owner_look_approved": true, "family": style[0], "profile": style[1]}
 
 
 static func _vehicle(cv, side: int, frame: String, style: Array) -> void:
@@ -184,7 +184,7 @@ const BUILDINGS := {
 static func build_buildings(out: Dictionary) -> void:
 	var rules: Dictionary = Content.rules().get("g10_buildings", {})
 	for id in BUILDINGS:
-		var spec := {"states": {}, "g5": {"variants": "rot"}, "g10": {"candidate_look": true}}
+		var spec := {"states": {}, "g5": {"variants": "rot"}, "g10": {"owner_look_approved": true}}
 		var footprint := float(Content.building(id).get("size", 2))
 		var hatch: bool = id in rules.get("hatch_surface_defs", [])
 		var fw := ceili(64 * footprint) + 24

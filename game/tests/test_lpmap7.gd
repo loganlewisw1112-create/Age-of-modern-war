@@ -215,7 +215,7 @@ func test_lpmap7_world_layer_reacts() -> void:
 	var W7 = load("res://presentation/view/world7_layer.gd")
 	var m := _map()
 	var L = W7.new()
-	L.setup({"world": {"map": m}})
+	L.setup({"_world": {"map": m}})
 	check(L.herds.size() >= 20, "herds loaded from map.lp.world (%d)" % L.herds.size())
 	var v := PackedByteArray()
 	v.resize(128 * 128)

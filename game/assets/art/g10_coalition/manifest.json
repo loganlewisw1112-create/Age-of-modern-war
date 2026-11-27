@@ -49,10 +49,43 @@
     "WALKER",
     "CLOSE AIR"
   ],
+  "approved_look_ids": [
+    "x_technical_mg",
+    "x_technical_rocket",
+    "x_technical_aa",
+    "x_technical_mortar",
+    "x_technical_recoilless",
+    "x_captured_tank",
+    "x_refit_ifv",
+    "x_shock_truck",
+    "x_stealth_apc",
+    "x_ghost_runner",
+    "x_exo_mule",
+    "x_recovery_truck",
+    "x_ghost_drone_carrier",
+    "x_river_ghost",
+    "x_mini_sub",
+    "x_smuggler_boat",
+    "x_patrol_boat",
+    "x_safehouse",
+    "x_tunnel_entrance",
+    "x_cache",
+    "x_weld_shop",
+    "x_black_market",
+    "x_broker_exchange",
+    "x_patron_office",
+    "x_disguised_workshop",
+    "x_bunker_hatch",
+    "x_underground_barracks",
+    "x_underground_factory",
+    "x_ghost_complex",
+    "x_forward_repair",
+    "x_vault_core"
+  ],
   "buildings": {
     "x_black_market": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -178,7 +211,7 @@
     },
     "x_broker_exchange": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -304,7 +337,7 @@
     },
     "x_bunker_hatch": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -430,7 +463,7 @@
     },
     "x_cache": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -556,7 +589,7 @@
     },
     "x_disguised_workshop": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -682,7 +715,7 @@
     },
     "x_forward_repair": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -808,7 +841,7 @@
     },
     "x_ghost_complex": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -934,7 +967,7 @@
     },
     "x_patron_office": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -1060,7 +1093,7 @@
     },
     "x_safehouse": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -1186,7 +1219,7 @@
     },
     "x_tunnel_entrance": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -1312,7 +1345,7 @@
     },
     "x_underground_barracks": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -1438,7 +1471,7 @@
     },
     "x_underground_factory": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -1564,7 +1597,7 @@
     },
     "x_vault_core": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -1690,7 +1723,7 @@
     },
     "x_weld_shop": {
       "g10": {
-        "candidate_look": true
+        "owner_look_approved": true
       },
       "g5": {
         "variants": "rot"
@@ -1824,39 +1857,6 @@
     "hit",
     "battery",
     "shield"
-  ],
-  "candidate_look_ids": [
-    "x_technical_mg",
-    "x_technical_rocket",
-    "x_technical_aa",
-    "x_technical_mortar",
-    "x_technical_recoilless",
-    "x_captured_tank",
-    "x_refit_ifv",
-    "x_shock_truck",
-    "x_stealth_apc",
-    "x_ghost_runner",
-    "x_exo_mule",
-    "x_recovery_truck",
-    "x_ghost_drone_carrier",
-    "x_river_ghost",
-    "x_mini_sub",
-    "x_smuggler_boat",
-    "x_patrol_boat",
-    "x_safehouse",
-    "x_tunnel_entrance",
-    "x_cache",
-    "x_weld_shop",
-    "x_black_market",
-    "x_broker_exchange",
-    "x_patron_office",
-    "x_disguised_workshop",
-    "x_bunker_hatch",
-    "x_underground_barracks",
-    "x_underground_factory",
-    "x_ghost_complex",
-    "x_forward_repair",
-    "x_vault_core"
   ],
   "deferred": [
     "TECHNICAL",
@@ -6544,7 +6544,7 @@
   "look": "G10_GHOST_LOOK",
   "notes": "Post-lock polish — exo NVG up/down + green laser + fire hold; tilt-rotor transport; TECHNICAL/SAFEHOUSE deferred",
   "sample_gate": false,
-  "style_source": "Human A real anim boards + unique air silhouettes (g10_coalition_air); no purple; technical/buildings deferred",
+  "style_source": "Human A real anim boards + unique air silhouettes (g10_coalition_air); no purple; owner-approved technicals and facilities",
   "tile": [
     64,
     32
@@ -6562,8 +6562,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "tracked",
+        "owner_look_approved": true,
         "profile": "turret"
       },
       "mask": "units/x_captured_tank_mask.png",
@@ -6584,8 +6584,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "scout",
+        "owner_look_approved": true,
         "profile": "cargo"
       },
       "mask": "units/x_exo_mule_mask.png",
@@ -6606,8 +6606,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "heavy",
+        "owner_look_approved": true,
         "profile": "drone trays"
       },
       "mask": "units/x_ghost_drone_carrier_mask.png",
@@ -6628,8 +6628,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "scout",
+        "owner_look_approved": true,
         "profile": "sensor"
       },
       "mask": "units/x_ghost_runner_mask.png",
@@ -6650,8 +6650,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "sub",
+        "owner_look_approved": true,
         "profile": "periscope"
       },
       "mask": "units/x_mini_sub_mask.png",
@@ -6672,8 +6672,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "boat",
+        "owner_look_approved": true,
         "profile": "patrol turret"
       },
       "mask": "units/x_patrol_boat_mask.png",
@@ -6810,8 +6810,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "heavy",
+        "owner_look_approved": true,
         "profile": "boom"
       },
       "mask": "units/x_recovery_truck_mask.png",
@@ -6832,8 +6832,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "tracked",
+        "owner_look_approved": true,
         "profile": "sensor turret"
       },
       "mask": "units/x_refit_ifv_mask.png",
@@ -6854,8 +6854,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "boat",
+        "owner_look_approved": true,
         "profile": "low gun"
       },
       "mask": "units/x_river_ghost_mask.png",
@@ -6910,8 +6910,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "heavy",
+        "owner_look_approved": true,
         "profile": "emitter"
       },
       "mask": "units/x_shock_truck_mask.png",
@@ -6967,8 +6967,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "boat",
+        "owner_look_approved": true,
         "profile": "covered hold"
       },
       "mask": "units/x_smuggler_boat_mask.png",
@@ -6989,8 +6989,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "heavy",
+        "owner_look_approved": true,
         "profile": "troop ramp"
       },
       "mask": "units/x_stealth_apc_mask.png",
@@ -7080,8 +7080,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "technical",
+        "owner_look_approved": true,
         "profile": "air search"
       },
       "mask": "units/x_technical_aa_mask.png",
@@ -7102,8 +7102,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "technical",
+        "owner_look_approved": true,
         "profile": "ring gun"
       },
       "mask": "units/x_technical_mg_mask.png",
@@ -7124,8 +7124,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "technical",
+        "owner_look_approved": true,
         "profile": "short mortar"
       },
       "mask": "units/x_technical_mortar_mask.png",
@@ -7146,8 +7146,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "technical",
+        "owner_look_approved": true,
         "profile": "long tube"
       },
       "mask": "units/x_technical_recoilless_mask.png",
@@ -7168,8 +7168,8 @@
       ],
       "fw": 80,
       "g10": {
-        "candidate_look": true,
         "family": "technical",
+        "owner_look_approved": true,
         "profile": "rocket rack"
       },
       "mask": "units/x_technical_rocket_mask.png",

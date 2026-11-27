@@ -13,7 +13,7 @@ const ArtCat = preload("res://presentation/art/art_catalog.gd")
 
 class FakeMV extends Node:
 	signal world_events(evs)
-	var world = null
+	var _world = null
 	var snap: Dictionary = {}
 	var _alpha := 1.0
 	var _idx := {}
@@ -97,7 +97,7 @@ func _scenario(view: bool) -> Array:
 	var fid: int = r[1]
 	var F := CnFacility.fac(w, fid)
 	var mv := FakeMV.new()
-	mv.world = w
+	mv._world = w
 	var L = null
 	if view:
 		L = Seq.new()
@@ -179,7 +179,7 @@ func test_routes_walkable() -> void:
 	var r := _setup()
 	var w: SimWorld = r[0]
 	var mv := FakeMV.new()
-	mv.world = w
+	mv._world = w
 	var L = Seq.new()
 	L.setup(mv)
 	RenderSnap.build(w)
@@ -212,7 +212,7 @@ func test_routes_walkable() -> void:
 func test_no_facility_costs_nothing() -> void:
 	var w := make_world()
 	var mv := FakeMV.new()
-	mv.world = w
+	mv._world = w
 	var L = Seq.new()
 	L.setup(mv)
 	for _i in 40:
