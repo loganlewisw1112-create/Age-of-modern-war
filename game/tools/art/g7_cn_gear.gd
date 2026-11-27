@@ -107,21 +107,23 @@ static func chest(cv, R: Dictionary, kit: Dictionary) -> void:
 
 ## Head extras after the helmet: sealed visor + respirator, or NVG + face; leader band on the team mask.
 ## kit.nvg / head=="nvg": readable binocular NVGs. kit.nvg_down false = flipped UP (day); true = DOWN (dusk/night).
-static func head(cv, R: Dictionary, kit: Dictionary, hc: Vector2) -> void:
+static func head(cv, R: Dictionary, kit: Dictionary, hc: Vector2, modern_rig: bool) -> void:
 	var Z := _z(R)
 	var a: float = R.a
 	var fwd := C.sdir(a)
 	var side := C.sdir(a + PI / 2.0)
 	var front := C.depth(a, 1.0, 0.0) > -0.35
-	var want_nvg := bool(kit.get("nvg", false)) or String(kit.get("head", "")) == "nvg"
+	var want_nvg := modern_rig and (bool(kit.get("nvg", false)) or String(kit.get("head", "")) == "nvg")
 	if bool(kit.get("stripe", false)):   # leader: team band round the helmet
 		C.tube(cv, hc - side * 1.7 * Z + Vector2(0, -0.5 * Z), hc + side * 1.7 * Z + Vector2(0, -0.5 * Z), 0.55 * Z,
 			C.ramp(Color8(152, 152, 152)), true)
 	var sealed := String(kit.get("head", "sealed")) == "sealed"
 	if not front:
-		if want_nvg or not sealed:   # NVG battery / counterweight on the back of the helmet
+		if modern_rig and (want_nvg or not sealed):   # NVG battery / counterweight on the back of the helmet
 			C.blob(cv, hc - fwd * 1.4 * Z + Vector2(0, -0.2 * Z), 0.65 * Z, C.ramp(GUNM))
 			C.blob(cv, hc - fwd * 1.55 * Z + Vector2(0, 0.35 * Z), 0.35 * Z, C.ramp(Color8(56, 58, 62)))
+		elif not sealed:
+			C.blob(cv, hc - fwd * 1.4 * Z + Vector2(0, -0.2 * Z), 0.6 * Z, C.ramp(GUNM))
 		else:            # filter hose to the pack
 			cv.line_v(hc + Vector2(0, 1.4 * Z), hc - fwd * 1.6 * Z + Vector2(0, 3.0 * Z), C.ramp(Color8(60, 62, 64))[1])
 		return

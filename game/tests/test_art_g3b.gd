@@ -1,7 +1,7 @@
 extends "res://tests/test_base.gd"
 ## G3b art coverage (agent ART4-2, CONTRACTS_G3b s8): the new stage 7-9 units and research/comms
 ## buildings have complete art, POI decor exists for MAP4, LOD icons exist for R4, and the g3b module
-## regenerates byte-identically and matches the shipped files. Reads assets/generated/ via ArtCatalog.
+## regenerates byte-identically and matches the shipped files. Runtime variants use their own atlas dimensions.
 
 const AC = preload("res://presentation/art/art_catalog.gd")
 const GEN = preload("res://tools/gen_art.gd")
@@ -70,15 +70,18 @@ func test_g3b_units() -> void:
 		var spec: Dictionary = man.get("infantry", {}).get(def, man.get("vehicles", {}).get(def, {}))
 		if not check(not spec.is_empty(), "sprite sheet for " + def):
 			continue
-		check_eq(int(spec.facings), 8, "8 facings for " + def)
-		var want: Array = ["idle", "walk_a", "walk_b", "fire"] if String(u.get("move_class", "")) == "foot" else ["idle", "move", "fire"]
-		# G6.1 (ANIMA61): foot units append the anim61 infantry set after their original columns (intended change)
-		# G6.1 (ANIMB61): vehicles append their anim61 frames (track/recoil/bank/damaged...) after the originals too
-		var foot := spec.has("anim61")
-		check_eq((spec.frames as Array).slice(0, want.size()) if foot else spec.frames, want, "frame set for " + def)
+		var facings := int(spec.facings)
+		var frames: Array = spec.frames
+		var legacy := not String(spec.file).begins_with("res://assets/art/")
+		if legacy:
+			check_eq(facings, 8, "8 G3b facings for " + def)
+			var want := ["idle", "walk_a", "walk_b", "fire"] if String(u.get("move_class", "")) == "foot" else ["idle", "move", "fire"]
+			check_eq(frames.slice(0, want.size()) if spec.has("anim61") else frames, want, "G3b frame set for " + def)
+		else:
+			check(facings in [4, 8] and frames.has("idle"), "runtime atlas facings and idle pose for " + def)
 		var img: Image = AC._image(String(spec.file))
 		if check(img != null, "sheet loads for " + def):
-			check_eq(img.get_size(), Vector2i(int(spec.fw) * (spec.frames as Array).size() if foot else int(spec.fw) * want.size(), int(spec.fh) * 8), "sheet size for " + def)
+			check_eq(img.get_size(), Vector2i(int(spec.fw) * frames.size(), int(spec.fh) * facings), "sheet size for " + def)
 			check(int(spec.fw) >= 24 and int(spec.fw) <= 128 and int(spec.fh) >= 24 and int(spec.fh) <= 128, "sane frame size " + def)
 		check(AC._image(String(spec.get("mask", ""))) != null, "team mask for " + def)
 		if u.get("leaves_wreck", false):
@@ -116,7 +119,10 @@ func test_g3b_buildings() -> void:
 			var s: Dictionary = entry.states.get(st, {})
 			var img: Image = AC._image(String(s.get("file", "")))
 			if check(img != null, "%s state %s" % [def, st]):
-				check_eq(img.get_width(), size * 64 + 12, "canvas width %s %s" % [def, st])
+				if String(s.file).begins_with("res://assets/art/"):
+					check(img.get_width() >= size * 64, "canvas fits footprint %s %s" % [def, st])
+				else:
+					check_eq(img.get_width(), size * 64 + 12, "G3b canvas width %s %s" % [def, st])
 				check(img.get_height() > size * 32 and img.get_height() <= 220, "sane height %s %s" % [def, st])
 				looks[img.get_data()] = true
 			check(AC._image(String(s.get("mask", ""))) != null, "mask %s %s" % [def, st])

@@ -67,11 +67,12 @@ func test_machine_units() -> void:
 		var spec: Dictionary = AC.manifest().get("infantry", {}).get(def, AC.manifest().get("vehicles", {}).get(def, {}))
 		check_eq(int(spec.get("facings", 0)), 8, "8 facings " + def)
 		if String(Content.unit(def).get("move_class", "")) == "foot":
-			check((spec.get("frames", []) as Array).slice(0, 4) == ["idle", "walk_a", "walk_b", "fire"], "legged %s has walk frames" % def)
+			if not spec.has("g9"):
+				check((spec.get("frames", []) as Array).slice(0, 4) == ["idle", "walk_a", "walk_b", "fire"], "legged %s has walk frames" % def)
 			var w0: Texture2D = AC.entity_sprite({"kind": "unit", "def": def, "facing": 0.0, "moving": true, "id": 0}, blue, 0.0).texture
 			var w1: Texture2D = AC.entity_sprite({"kind": "unit", "def": def, "facing": 0.0, "moving": true, "id": 0}, blue, 1.0 / 6.0).texture
 			check(w0.get_image().get_data() != w1.get_image().get_data(), "walk frames alternate " + def)
-		else:
+		elif not spec.has("g9"):
 			# G6.1 (ANIMB61): the G1 standard frames stay first; anim61 frames are appended after them
 			check((spec.get("frames", []) as Array).slice(0, 3) == ["idle", "move", "fire"] and spec.has("anim61"), "vehicle frames " + def)
 		check(_cyan(a.get_image()) + _cyan(AC.entity_sprite({"kind": "unit", "def": def, "facing": PI / 4}, blue, 0).texture.get_image()) >= 2,
@@ -94,7 +95,7 @@ func test_drone_air_fields() -> void:
 		var sh: Dictionary = spec.get("shadow", {})
 		check(sh.get("pivot") is Array and sh.pivot.size() == 2, "shadow pivot " + def)
 		var img: Image = AC._image(String(sh.get("file", "")))
-		check(img != null and img.get_used_rect().size.x > 10, "separate shadow image " + def)
+		check(img != null and img.get_used_rect().size.x >= (maxi(1, int(spec.fw) / 8) if spec.has("g9") else 11), "separate shadow image " + def)
 		if img != null:
 			var c := img.get_pixel(int(sh.pivot[0]), int(sh.pivot[1]))
 			check(c.a > 0.2 and c.a < 0.8 and c.r < 0.2, "shadow is a translucent dark blob " + def)

@@ -311,12 +311,12 @@ static func _kit_walker(nvg_down: bool = false) -> Dictionary:
 
 ## CELL: Human A FIG drawer — real pose per anim-board frame (4-facing → even 8-dir index).
 static func _draw_cell_rifle(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_cell(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), FIG_SC)
+	FIG.draw(cv, _kit_cell(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), FIG_SC, true)
 
 
 ## DEATH: same Human A body, sealed elite black kit, slightly taller sample scale (NVG UP / day default).
 static func _draw_death_strike(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_death(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), DEATH_SC)
+	FIG.draw(cv, _kit_death(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), DEATH_SC, true)
 
 
 ## DEFERRED — not emitted to look package / strips (owner 2026-11-24). Kept for later redesign.
@@ -668,7 +668,7 @@ static func _draw_patron_cas(cv, k: int, fname: String = "idle") -> void:
 
 ## WALKER: Human A sealed elite body (taller sample scale) + heavy launcher — NOT stick / digitigrade / mecha.
 static func _draw_walker(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_walker(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), WLK_SC)
+	FIG.draw(cv, _kit_walker(fname.ends_with("_nvg_down")), (k % 4) * 2, _fig_pose(fname.trim_suffix("_nvg_down")), Vector2(PIVOT), WLK_SC, true)
 
 
 ## --- contact strips ----------------------------------------------------------
@@ -825,7 +825,7 @@ static func _write_nvg_strip() -> void:
 		for col in 2:
 			var down := col == 1
 			var cv = P.Canvas.new(FW, FH)
-			FIG.draw(cv, kit_fn.call(down), 2, "fire" if col == 1 else "idle", Vector2(PIVOT), sc)
+			FIG.draw(cv, kit_fn.call(down), 2, "fire" if col == 1 else "idle", Vector2(PIVOT), sc, true)
 			C.selout(cv)
 			sheet.blend_rect(cv.img, Rect2i(0, 0, FW, FH), Vector2i(col * cell_w + pad / 2, ri * cell_h + label_h))
 	var name := "strip_g10_exo_nvg.png"
