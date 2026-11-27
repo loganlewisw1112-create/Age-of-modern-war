@@ -20,3 +20,7 @@ Sources: [Development_Roadmap_v1.3](../source_text/Development_Roadmap_v1.3.md),
 ## Recommended next planning deliverable
 
 Claude should return a bounded G0 implementation plan after reading this package: file/module layout, chosen engine/version proposal, smallest runnable interaction, 64-actor profile scenario, seed/save strategy, exact acceptance evidence, art proof and unresolved material decisions. Mark assumptions clearly. The current request builds the handoff; beginning the game requires a subsequent user instruction. No full-game dates, staffing, budget or promised performance are derivable from the supplied sources.
+
+
+## Approved DLC addendum — 2026-11-27
+[DLC risks and production backlog](../../game/docs/DLC_DELIVERY_PLAN.md): final names, species/rosters, system catalog and coordinates, planet inventories, performance budgets, software and release contracts remain pending; no implementation claims.
