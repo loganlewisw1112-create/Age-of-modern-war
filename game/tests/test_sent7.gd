@@ -350,7 +350,7 @@ func _silence(w: SimWorld, fac: int) -> void:
 ## bay_off (BAL7, 13.9c-33): the facility drone bay's automatic release is switched off before the fight (the player's
 ## own toggle, 13.9c-27), so the Sentinel balance is measured without the drone hive; towers / checkpoint / wall turrets /
 ## roof CIWS still fire (quiet silences those too).
-func _fight(mix: Array, mult: float, secs: float, quiet: bool = false, bay_off: bool = false) -> Dictionary:
+func _fight(mix: Array, mult: float, secs: float, quiet: bool = false, bay_off: bool = false, tower_support: bool = false) -> Dictionary:
 	var a := _setup(60)
 	var w: SimWorld = a[0]
 	var o: Vector2i = a[1]
@@ -385,11 +385,8 @@ func _fight(mix: Array, mult: float, secs: float, quiet: bool = false, bay_off: 
 				cell = Vector2i(cell.x + 1, o.y + 2)
 		av += spent
 	var core: Vector2 = cr.get_center()
-	# SENT7-4: every attacker follows the same assault drill (no per-mix scripting): heavy weapons (weapon class at /
-	# artillery) concentrate on one breach section of the east wall (the wall segment nearest the attack axis); the
-	# rest close to a line 9 tiles out from it and attack-move from there (fighting what they meet); once the
-	# section is down everyone pushes through the breach to the core. (Was: everyone attack-moved at the core,
-	# re-pushed every 10 s, so walls were never breached and no assault of any kind could enter.)
+	# Heavy weapons concentrate on the east wall segment nearest the attack axis. Infantry stages nine tiles
+	# out, then pushes through the breach. The tower-support variant lets artillery suppress the nearest tower.
 	var axis := Vector2(cr.end.x, core.y)
 	var breach := -1
 	var bd := INF
@@ -412,8 +409,24 @@ func _fight(mix: Array, mult: float, secs: float, quiet: bool = false, bay_off: 
 				if e == null or Wounds.is_down(e):
 					continue
 				var ot := String(e.order.get("type", "idle"))
-				var heavy := ["at", "artillery"].has(String(SimWorld.Combat.stats(e).get("cls", "")))
-				if not open_ and heavy:
+				var weapon_class := String(SimWorld.Combat.stats(e).get("cls", ""))
+				var heavy := weapon_class in ["at", "artillery"]
+				var launcher := tower_support and weapon_class == "artillery"
+				var support_target := -1
+				if launcher:
+					var best := INF
+					for part_id in F.get("parts", []):
+						var part: Dictionary = w.entities.get(int(part_id), {})
+						if part.is_empty() or not String(part.def).contains("tower"):
+							continue
+						var distance := Vector2(part.pos).distance_squared_to(e.pos)
+						if distance < best:
+							best = distance
+							support_target = int(part_id)
+				if support_target >= 0:
+					if ot != "attack" or int(e.order.get("target_id", -1)) != support_target:
+						e.order = {"type": "attack", "target_id": support_target, "last_pos": Vector2(w.entities[support_target].pos), "lost": false}
+				elif not open_ and heavy:
 					if ot != "attack" or int(e.order.get("target_id", -1)) != breach:
 						e.order = {"type": "attack", "target_id": breach, "last_pos": Vector2(w.entities[breach].pos), "lost": false}
 				elif not open_:
@@ -486,8 +499,10 @@ func test_balance_fight() -> void:
 	_report("full facility: combined arms (armour + artillery + infantry) x2.5", r4)
 	var r5 := _fight(ca, 4.0, 240.0)
 	_report("full facility: combined arms x4", r5)
-	var r6 := _fight(ca, 2.5, 240.0, false, true)
-	_report("Sentinels (drone bay off): combined arms x2.5", r6)
+	var r6 := _fight(ca, 2.5, 240.0, false, true, true)
+	_report("Sentinels (drone bay off): combined arms x2.5 with tower suppression", r6)
+	var r7 := _fight(ca, 2.5, 240.0, false, false, true)
+	_report("full facility: combined arms x2.5 with tower suppression", r7)
 	print("  BALANCE events (inf x2): %s" % str(r1.events))
 	# Reported, not checked: the same fights with the facility's own guns silenced too (towers, checkpoint, wall turrets,
 	# drone bay: _silence).
@@ -508,7 +523,8 @@ func test_balance_fight() -> void:
 	# ... and only a much larger assault (about 4x the garrison value) breaks in (core reached or compound overrun).
 	check(int(r5.inside) > 0 or not bool(r5.core), "13.9c-33: a ~4x combined-arms assault breaks in (inside %d, core %s)" % [int(r5.inside), str(r5.core)])
 	# 13.9c-10 "dont make them invincible": the Sentinels alone (drone bay off) still lose to combined arms at 2.5x.
-	check(not bool(r6.held), "Sentinels alone (drone bay off) lose vs combined arms with armour + artillery x2.5")
+	check(not bool(r6.held), "Sentinels (drone bay off) lose vs combined arms x2.5 with tower suppression")
+	check(bool(r7.held) and int(r7.bay_launched) > 0, "the full facility holds the same assault with the drone bay firing")
 
 
 ## 13.9c-13: buddy pairs, bounding (one moves while the other covers), cover + sectors, gait, guard net, stand-to,
