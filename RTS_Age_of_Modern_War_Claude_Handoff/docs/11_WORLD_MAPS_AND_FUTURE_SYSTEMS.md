@@ -47,3 +47,10 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 Connected urban/wilderness/subterranean horror and five underground scenarios; reuse geology/world systems, no standalone UNDERSTRIKE expansion.
 
 [Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [PATHOGEN](../../game/docs/PATHOGEN_DIRECTOR.md) · [DEEPWAR](../../game/docs/DEEPWAR_DIRECTOR.md).
+
+
+## Expanded gameplay integration — 2026-11-27
+
+Procedural world, city, terrain and fortress generation must satisfy physical access, faction rights and functional economy. Shared scenario engine supports 34 additional families and creator configurations. [World/engineering](../../game/docs/PROCEDURAL_WORLD_AND_ENGINEERING.md).
+
+Eleven base-game experiences complete by G18; G17 full XENOGENESIS/Myrieme Forge acceptance and G19/G20 sequence retained. Seven directors only, Inheritance/Living World offline solo, UNDERSTRIKE Human A protected construction unchanged. Design only. [Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md).

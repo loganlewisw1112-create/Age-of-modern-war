@@ -88,3 +88,10 @@ Current G18 design: offline solo remains; Inheritance/Living World strictly offl
 Record G18 four tracks as owner-approved direction, and only G19/G20 as DLCs.
 
 [Master GDD](docs/G18_MASTER_GDD.md) · [G18 delivery](docs/G18_DELIVERY_PLAN.md) · [Networking](docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](docs/G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](docs/DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](docs/SUBTERRANEAN_WARFARE_GDD.md).
+
+
+## Expanded gameplay and creator authority — 2026-11-27
+
+Expanded owner-approved design authority: eleven base-game experiences, including BLACK OPERATIONS (7), SIEGE WARFARE (7), CONQUEST (6), COMMANDER'S CRUCIBLE (7) and WAR THEATRE (7), in addition to the six existing/planned modes. Three shared systems (OPERATIONAL INTELLIGENCE, WORLD ARCHIVE, DYNAMIC SCENARIO ENGINE), procedural world/fortress generation, engineering templates, full scenario editor/SDK, free Workshop/Creator Store, complete replays/spectators/records, player experience, reusable platform and production readiness are integrated across G11–G18. G18 finalizes all base-game scope. Seven directors unchanged, no new director; no online Inheritance/Living World, no new official playable DLC factions outside Skirmish, Human A-only protected bunker/borer construction, no individual soldier-follow in new modes. Full XENOGENESIS and Forge acceptance at G17; G19 then G20 after G18. All planned, not implemented. Existing frozen scopes and G10.1 regression unchanged.
+
+[Master GDD](docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Delivery](docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](docs/DYNAMIC_SCENARIO_ENGINE.md) · [Creator tools](docs/CREATOR_TOOLKIT_AND_WORKSHOP.md) · [Platform](docs/PLATFORM_PRODUCT_ROADMAP.md).

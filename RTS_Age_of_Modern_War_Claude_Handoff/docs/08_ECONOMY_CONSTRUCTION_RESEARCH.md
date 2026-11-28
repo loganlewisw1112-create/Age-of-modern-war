@@ -49,3 +49,10 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 Survival logistics and underground engineering automated; finite resources and shared ledger; no worker or soldier micro.
 
 [Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [PATHOGEN](../../game/docs/PATHOGEN_DIRECTOR.md) · [DEEPWAR](../../game/docs/DEEPWAR_DIRECTOR.md).
+
+
+## Expanded gameplay integration — 2026-11-27
+
+Engineering templates, smart functional faction installations, actual construction costs, resource reservation, recovery priorities and modernization preserve economy and access constraints. [Engineering](../../game/docs/PROCEDURAL_WORLD_AND_ENGINEERING.md).
+
+Eleven base-game experiences complete by G18; G17 full XENOGENESIS/Myrieme Forge acceptance and G19/G20 sequence retained. Seven directors only, Inheritance/Living World offline solo, UNDERSTRIKE Human A protected construction unchanged. Design only. [Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md).

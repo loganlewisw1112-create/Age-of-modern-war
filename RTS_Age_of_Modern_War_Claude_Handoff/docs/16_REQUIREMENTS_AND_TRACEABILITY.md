@@ -51,3 +51,10 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 Trace 11 DEAD SECTOR decisions, nine warfare decisions, online/platform scope and G18-01–34 to G18 specs; do not confuse proposed IDs with implementation.
 
 [Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [PATHOGEN](../../game/docs/PATHOGEN_DIRECTOR.md) · [DEEPWAR](../../game/docs/DEEPWAR_DIRECTOR.md).
+
+
+## Expanded gameplay integration — 2026-11-27
+
+EX-01–33 register maps every approved proposal to canonical specs; expanded 40 checks supplement prior 34 G18 checks. [Master register](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Acceptance](../../game/docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md).
+
+Eleven base-game experiences complete by G18; G17 full XENOGENESIS/Myrieme Forge acceptance and G19/G20 sequence retained. Seven directors only, Inheritance/Living World offline solo, UNDERSTRIKE Human A protected construction unchanged. Design only. [Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md).

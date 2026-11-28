@@ -37,6 +37,11 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 | **Living World** | Autonomous civilizations and enduring history; offline solo only | Planned |
 | **DEAD SECTOR** | Dynamic zombie horror RTS; solo, co-op and optional competitive survival | Planned G18 |
 | **SUBTERRANEAN WARFARE** | Dedicated underground and combined-arms battles; solo, co-op and PvP | Planned G18 |
+| **BLACK OPERATIONS** | Elite covert military operations; seven scenarios | Planned G12–G18 |
+| **SIEGE WARFARE** | Smart faction-specific fortresses and asymmetric sieges; seven scenarios | Planned G18 |
+| **CONQUEST** | Meaningful territorial and economic warfare; six scenarios | Planned G18 |
+| **COMMANDER'S CRUCIBLE** | Quick, replayable military challenges; seven families | Planned G12–G18 |
+| **WAR THEATRE** | Persistent military campaigns across connected battlefields; seven families | Planned G15–G18 |
 | **Space Expansion (DLC 1)** | Interplanetary civilization | Planned G19 |
 | **Beyond Civilization (DLC 2)** | Finite interstellar civilization | Planned G20 |
 
@@ -560,6 +565,22 @@ Both modes use existing RTS systems, quick-start presets, optional advanced conf
 
 [Online and new modes design](game/docs/G18_MASTER_GDD.md) · [Networking](game/docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](game/docs/G18_OPEN_GAMING_PLATFORM.md) · [G18 delivery plan](game/docs/G18_DELIVERY_PLAN.md)
 
+## Expanded military experiences and community creation
+
+*Owner-approved design · 34 additional scenario families across five modes · planned, not shipped.*
+
+- **BLACK OPERATIONS:** Ghost Protocol, Counterstrike, Deep Recon, Asset Recovery, Silent War, Black Fortress, Total Black Operations.
+- **SIEGE WARFARE:** Fortress Assault, Fortress Defense, Urban Siege, Mountain Stronghold, Island Fortress, Industrial Siege, Total Siege. Functional faction-specific generated or authored bases, smart terrain adaptation and asymmetric objectives.
+- **CONQUEST:** Territorial Supremacy, Industrial Dominance, Regional Warfare, Coalition War, Technological Supremacy, Total Conquest. Capture, consolidate, fortify, exploit and expand through real infrastructure.
+- **COMMANDER'S CRUCIBLE:** Against the Odds, Last Stand, Encirclement, Counteroffensive, Resource Crisis, Combined Arms, Total Crisis. Quick challenges, meaningful medals and records.
+- **WAR THEATRE:** Regional, Continental, Expeditionary, Defensive, Coalition, Liberation and Total War Theatre campaigns. Persistent armies and real logistics across linked battles, no mandatory civilian management.
+
+Eleven base-game experiences; all support offline solo, eligible scenarios support online co-op/competition. Inheritance and Living World remain offline solo only. Existing faction and DLC restrictions apply. Seven directors remain, with three reusable shared services: **OPERATIONAL INTELLIGENCE** (doctrines, commanders, objectives and automated operations), **WORLD ARCHIVE** (formation identity, histories and honors), **DYNAMIC SCENARIO ENGINE** (procedural scenarios and objectives). Smart world/fortress generator, reusable engineering blueprints, simplified reconstruction, modernization and reorganization.
+
+Full procedural creator and edit mode, declarative mod SDK, shareable new game-mode configurations, community Workshop and Creator Store (free sharing at launch, optional paid marketplace phased), complete replays, eligible online spectators, achievements/trophies/records, Military Academy, contextual assistance and adaptive command dashboards. Independently owned reusable open-source gaming platform with game library, launcher, profiles, developer portal, public SDK/API, signed distribution, commerce/entitlements, safety and recovery. Durable saves, hardware benchmark, content validation and release qualification. No compulsory micro, login for offline or pay-to-win.
+
+[Expanded master design](game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](game/docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Creator tools](game/docs/CREATOR_TOOLKIT_AND_WORKSHOP.md) · [Platform product](game/docs/PLATFORM_PRODUCT_ROADMAP.md)
+
 ## Space Expansion
 
 *DLC 1 · Owner-approved planned design · G19 · Not implemented.*
@@ -808,14 +829,14 @@ Remaining development, in execution order. Complete the entire base game through
 | Gate | Development scope |
 |---|---|
 | G10.1 | **Stabilization** — full regression, outstanding fixes and acceptance. |
-| G11 | **UNDERSTRIKE I–II** — bunkers, underground construction and warfare; shared simulation and language-tool foundations. |
-| G12 | **Soldiers and Theatres** — training, careers, security, maps, weather, modes and optional uncapped skirmish; species, ecology and language systems. |
-| G13 | **UNDERSTRIKE III** — connected bunker cities, logistics, underground economy and research; ancient languages and archaeological integration. |
-| G14 | **All Thirteen** — remaining faction stages (1–6 and 11–13); civilization intelligence and language production engines. |
-| G15 | **Inheritance** — complete 13-chapter campaign, succession, persistent history, linguistic evolution and first contact. |
-| G16 | **UNDERSTRIKE IV** — advanced geology, destruction, underground command and survivor view; finish director integration and stress testing. |
-| G17 | **Living World** — autonomous civilizations, politics, economies, generations and continental warfare; full XENOGENESIS and Myrieme Forge acceptance. |
-| G18 | **Final Base Game** — Last Protocol online co-op, Skirmish co-op/PvP, owned open-source gaming platform, DEAD SECTOR (PATHOGEN) and SUBTERRANEAN WARFARE (DEEPWAR). |
+| G11 | **UNDERSTRIKE I–II** — bunkers, underground construction and warfare; shared simulation and language-tool foundations; tactical pause, engineering templates, durable save foundations. |
+| G12 | **Soldiers and Theatres** — training, careers, security, maps, weather, modes and optional uncapped skirmish; species, ecology and language systems; scenario creator and replay foundations, BLACK OPERATIONS/CRUCIBLE prototypes, Academy, doctrines/formation identity. |
+| G13 | **UNDERSTRIKE III** — connected bunker cities, logistics, underground economy and research; ancient languages and archaeological integration; procedural fortresses, industrial templates, reorganization and modernization. |
+| G14 | **All Thirteen** — remaining faction stages (1–6 and 11–13); civilization intelligence and language production engines; declarative mod SDK, content pipeline and doctrines. |
+| G15 | **Inheritance** — complete 13-chapter campaign, succession, persistent history, linguistic evolution and first contact; WAR THEATRE foundations, WORLD ARCHIVE and causal objectives. |
+| G16 | **UNDERSTRIKE IV** — advanced geology, destruction, underground command and survivor view; finish director integration and stress testing; procedural underground, recovery and benchmark/save hardening. |
+| G17 | **Living World** — autonomous civilizations, politics, economies, generations and continental warfare; full XENOGENESIS and Myrieme Forge acceptance; three shared services, world generation and strategic operation planning. |
+| G18 | **Final Base Game** — online multiplayer, independent platform, all eleven experiences, creator/editor/SDK, Workshop/Store, replays/spectators, achievements and release acceptance. |
 | G19 | **Space Expansion (DLC 1)** — 12 planets, 48 moons, five belts, orbital industry, autonomous colonies, space warfare and Hidden Chronicle. |
 | G20 | **Beyond Civilization (DLC 2)** — 50 star systems across seven regions, alien civilizations, interstellar exploration, industry and warfare. |
 

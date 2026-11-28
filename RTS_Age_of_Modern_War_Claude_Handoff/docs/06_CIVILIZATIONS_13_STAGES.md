@@ -365,3 +365,10 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 No new numbered civilization stages. Existing faction identities and restrictions govern G18 new modes.
 
 [Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [PATHOGEN](../../game/docs/PATHOGEN_DIRECTOR.md) · [DEEPWAR](../../game/docs/DEEPWAR_DIRECTOR.md).
+
+
+## Expanded gameplay integration — 2026-11-27
+
+All 13 stages constrain generation, doctrines, equipment modernization, creator and mode configuration; no extra stages or official factions. New official DLC factions playable only in Skirmish. [Operations](../../game/docs/OPERATIONAL_INTELLIGENCE.md).
+
+Eleven base-game experiences complete by G18; G17 full XENOGENESIS/Myrieme Forge acceptance and G19/G20 sequence retained. Seven directors only, Inheritance/Living World offline solo, UNDERSTRIKE Human A protected construction unchanged. Design only. [Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md).

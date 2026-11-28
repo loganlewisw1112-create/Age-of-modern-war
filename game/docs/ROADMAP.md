@@ -117,6 +117,8 @@ carriers, marketplace) → G6.1 "Field Command" (chain of command, suppression, 
 
 ## G11 "UNDERSTRIKE I–II" — underground bunkers, foundation + military (NEW, owner zip 2026-10-30)
 
+**Expanded design integration:** tactical pause, engineering templates, durable save foundations. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
+
 **Integrated XENOGENESIS / Myrieme Forge scope:** Shared stable IDs, versioned persistence, event ledger, bounded scheduler interfaces, Forge package/schema and independent tool foundation; reuse existing contracts.
 
 Human A only (decision 28: no other faction can ever build bunkers or the borer fleet, even by capture). Unlockable
@@ -138,6 +140,8 @@ branch, not required in every mode. Needs G9's destructible terrain and persiste
 
 ## G12 "Soldiers and Theatres" — human depth + maps and modes [PROPOSED split of the G8 list]
 
+**Expanded design integration:** scenario creator and replay foundations, BLACK OPERATIONS/CRUCIBLE prototypes, Academy, doctrines/formation identity. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
+
 **Integrated XENOGENESIS / Myrieme Forge scope:** Forge language generation and communication foundations; XENOGENESIS species, ecology, population and environment contracts; representative offline fixtures.
 
 - **Human depth:** training facilities and courses, learning by doing, readiness; bunk and rotation with refresher
@@ -152,6 +156,8 @@ branch, not required in every mode. Needs G9's destructible terrain and persiste
 
 ## G13 "UNDERSTRIKE III" — the networked underground civilization (NEW)
 
+**Expanded design integration:** procedural fortresses, industrial templates, reorganization and modernization. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
+
 **Integrated XENOGENESIS / Myrieme Forge scope:** Integrate resource, settlement, ecology and archaeology interfaces with underground discoveries; Forge ancient scripts, naming and historical language data; preserve UNDERSTRIKE faction restrictions.
 
 Multiple bunkers (no fixed cap), each up to 15 floors; tunnels, military roads, rail / armoured trains, transport hubs,
@@ -164,6 +170,8 @@ attacks on logistics and research. Tests LIFE-01, LOG-01..02.
 
 ## G14 "All Thirteen" — Stages 1–6 and 11–13 for every faction (original backlog F-025; campaign needs it)
 
+**Expanded design integration:** declarative mod SDK, content pipeline and doctrines. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
+
 **Integrated XENOGENESIS / Myrieme Forge scope:** Complete remaining Forge production engines and adapters against faction/stage content; develop XENOGENESIS civilization, economic, political, military, research and engineering capabilities using representative species and factions.
 
 Distinct playable mechanics for every stage and every faction, with full skirmish parity: Stages 1–6 (Scattered
@@ -172,6 +180,8 @@ bands **moved to G10** (owner 2026-11-23); G14 covers **other factions'** 1–6 
 unlock bands (early shelters, mechanized bunkers, advanced boring later).
 
 ## G15 "Inheritance" — the 13-chapter campaign (`CAMPAIGN_VISION.md` Part 1)
+
+**Expanded design integration:** WAR THEATRE foundations, WORLD ARCHIVE and causal objectives. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
 
 **Integrated XENOGENESIS / Myrieme Forge scope:** Integrate campaign history, generational state, linguistic evolution, communication, first-contact and archaeological interpretation; protect campaign secrets and personally played battle rules.
 
@@ -189,6 +199,8 @@ Listeners, full intel memory, turn path — per
 
 ## G16 "UNDERSTRIKE IV" — high-fidelity underground (NEW)
 
+**Expanded design integration:** procedural underground, recovery and benchmark/save hardening. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
+
 **Integrated XENOGENESIS / Myrieme Forge scope:** Complete outstanding XENOGENESIS subsystems and Forge integration; harden deterministic cross-director arbitration, persistence, performance, offline packages and representative stress tests.
 
 Mature chunk-based geology and groundwater; cascading multi-floor collapses with persistent ruins, surface subsidence
@@ -199,6 +211,8 @@ Tests DES-01..02, PER-01, PERF-01 at scale.
 
 ## G17 "Living World" — after the campaign (`CAMPAIGN_VISION.md` Part 1 + vision mockup 01)
 
+**Expanded design integration:** three shared services, world generation and strategic operation planning. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
+
 **Integrated XENOGENESIS / Myrieme Forge scope:** Mandatory full completion and acceptance: all XG-01–20 subsystems, all 15 Forge production engines, all eight integration adapters, lightweight offline runtime, full interoperability with the four existing directors, save/load, entitlement, determinism, performance and regression evidence. No deferral of system capabilities to G18/G19/G20.
 
 Endless world on the same save: continue the dynasty or start a new life; zoom levels settlement / army / nation /
@@ -207,6 +221,8 @@ map (territory %, fleets, convoy lanes, expeditionary forces, airlift, naval sup
 markets, politics, generations) and F-023 (full continent + underground / naval warfare) land here.
 
 ## G18 — Final Base Game: Online Multiplayer, Platform and New Modes
+
+**Expanded design integration:** all five modes, full creator/editor/SDK, Workshop/free Store, replay/spectator/records, player experience, platform and release qualification. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md); original frozen gates remain protected.
 
 G18 is final base-game completion: internet multiplayer, independently owned open-source gaming platform, Last Protocol co-op, Skirmish co-op/PvP, DEAD SECTOR (PATHOGEN), and SUBTERRANEAN WARFARE (DEEPWAR). Inheritance and Living World remain strictly offline solo. UNDERSTRIKE is an integrated Human A gameplay branch, not a separate expansion; dedicated warfare scenarios reuse it. New modes preserve existing faction rights, use traditional RTS controls and have no individual soldier-follow cameras. XENOGENESIS and Myrieme Forge must be fully accepted by G17. G19 Space Expansion and G20 Beyond Civilization follow G18 acceptance; civilization continuations remain offline, compatible owned expansion content extends Skirmish only for new playable DLC factions. No mandatory platform login offline, no Steam dependency. All G18 additions planned, not implemented.
 
@@ -253,7 +269,7 @@ endless crisis.
 Owner-approved sequence: G11–G17 full XENOGENESIS and Myrieme Forge integration and acceptance → G18 Online Multiplayer & Final Base Game → G19 Space Expansion → G20 Beyond Civilization (DLC 2). All 20 XENOGENESIS subsystems and full Myrieme Forge production/runtime integration (15 engines, eight adapters) must be implemented, integrated, tested and accepted by G17 exit (before G18 and G19), not merely prototyped. G20's actual interstellar gameplay and content development follows G19. G11–G17 validation may use bounded representative fixtures; it does not require the full G20 universe to be produced or exposed. DLC 2 runtime entitlement boundaries remain intact. No implementation or gate completion claimed.
 
 ## Parked / undecided (not in any slice until the owner says so)
-- Tactical pause with order queue (undecided since G8).
+- Tactical pause with order queue → **G11**, approved expanded direction; mode-specific rules retained pending frozen gate review.
 - Surface survivor controls: out for good (merge decision 1; underground survivor view is in G16).
 - Co-op LP → **G18**. No pop-cap skirmish → **G12**. Leftover dark + G7.1 ideas → **G10** (owner 2026-11-23).
 
@@ -277,7 +293,7 @@ Owner-approved sequence: G11–G17 full XENOGENESIS and Myrieme Forge integratio
 
 
 ## Owner-approved DLC extension — 2026-11-27
-UNDERSTRIKE is a base-game addition, not DLC. G19 is DLC 1 (one home star system); its existing six ship rosters and arrival war are preserved. G18 completes the base game with all four coordinated tracks in G18_MASTER_GDD.md. DLC 2 Beyond Civilization is G20 after G19; full XENOGENESIS and Myrieme Forge integration is mandatory by G17 exit. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
+UNDERSTRIKE is a base-game addition, not DLC. G19 is DLC 1 (one home star system); its existing six ship rosters and arrival war are preserved. G18 completes the base game with all four original tracks plus expanded gameplay, creator, shared systems, platform and release workstreams in EXPANDED_GAMEPLAY_DELIVERY_PLAN.md. DLC 2 Beyond Civilization is G20 after G19; full XENOGENESIS and Myrieme Forge integration is mandatory by G17 exit. See [master design and 26 decisions](BEYOND_CIVILIZATION_GDD.md), [delivery pipeline, dependencies and acceptance](DLC_DELIVERY_PLAN.md), [universe bible](INTERSTELLAR_UNIVERSE.md), [XENOGENESIS](XENOGENESIS.md) and [Myrieme Forge](MYRIEME_FORGE_INTEGRATION.md). Campaign outcomes directly determine DLC/Living World starts. Fully offline, familiar RTS controls; no new DLC faction playability outside Skirmish. All work pending implementation; G10.1 broader regression remains open.
 
 
 ## 2026-11-27 — Authoritative expansion integration
@@ -322,3 +338,10 @@ Owner-approved execution: distribute XENOGENESIS and full Myrieme Forge implemen
 G18 is final base-game completion: internet multiplayer, independently owned open-source gaming platform, Last Protocol co-op, Skirmish co-op/PvP, DEAD SECTOR (PATHOGEN), and SUBTERRANEAN WARFARE (DEEPWAR). Inheritance and Living World remain strictly offline solo. UNDERSTRIKE is an integrated Human A gameplay branch, not a separate expansion; dedicated warfare scenarios reuse it. New modes preserve existing faction rights, use traditional RTS controls and have no individual soldier-follow cameras. XENOGENESIS and Myrieme Forge must be fully accepted by G17. G19 Space Expansion and G20 Beyond Civilization follow G18 acceptance; civilization continuations remain offline, compatible owned expansion content extends Skirmish only for new playable DLC factions. No mandatory platform login offline, no Steam dependency. All G18 additions planned, not implemented.
 
 [G18 MASTER GDD](G18_MASTER_GDD.md) · [G18 ONLINE MULTIPLAYER](G18_ONLINE_MULTIPLAYER.md) · [G18 OPEN GAMING PLATFORM](G18_OPEN_GAMING_PLATFORM.md) · [DEAD SECTOR GDD](DEAD_SECTOR_GDD.md) · [PATHOGEN DIRECTOR](PATHOGEN_DIRECTOR.md) · [SUBTERRANEAN WARFARE GDD](SUBTERRANEAN_WARFARE_GDD.md) · [DEEPWAR DIRECTOR](DEEPWAR_DIRECTOR.md) · [G18 DELIVERY PLAN](G18_DELIVERY_PLAN.md)
+
+
+## Expanded gameplay and creator authority — 2026-11-27
+
+Expanded owner-approved design authority: eleven base-game experiences, including BLACK OPERATIONS (7), SIEGE WARFARE (7), CONQUEST (6), COMMANDER'S CRUCIBLE (7) and WAR THEATRE (7), in addition to the six existing/planned modes. Three shared systems (OPERATIONAL INTELLIGENCE, WORLD ARCHIVE, DYNAMIC SCENARIO ENGINE), procedural world/fortress generation, engineering templates, full scenario editor/SDK, free Workshop/Creator Store, complete replays/spectators/records, player experience, reusable platform and production readiness are integrated across G11–G18. G18 finalizes all base-game scope. Seven directors unchanged, no new director; no online Inheritance/Living World, no new official playable DLC factions outside Skirmish, Human A-only protected bunker/borer construction, no individual soldier-follow in new modes. Full XENOGENESIS and Forge acceptance at G17; G19 then G20 after G18. All planned, not implemented. Existing frozen scopes and G10.1 regression unchanged.
+
+[Master GDD](EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](DYNAMIC_SCENARIO_ENGINE.md) · [Creator tools](CREATOR_TOOLKIT_AND_WORKSHOP.md) · [Platform](PLATFORM_PRODUCT_ROADMAP.md).

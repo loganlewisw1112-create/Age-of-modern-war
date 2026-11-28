@@ -75,3 +75,10 @@ Current G18 design: offline solo remains; Inheritance/Living World strictly offl
 Reuse authoritative geology/structures/logistics in dedicated scenarios; networking adapter, host-only director decisions, per-team visibility and deterministic persistence. No separate engine.
 
 [Master GDD](../../G18_MASTER_GDD.md) · [G18 delivery](../../G18_DELIVERY_PLAN.md) · [Networking](../../G18_ONLINE_MULTIPLAYER.md) · [Platform](../../G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../../DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../../SUBTERRANEAN_WARFARE_GDD.md).
+
+
+## Expanded gameplay design integration — 2026-11-27
+
+Shared scenario, operations, archive and replay services reuse geometry/state/ledger; no second simulation or new director. Durable save, creator validation and online authority preserve persistent structural state and protected faction rights.
+
+[Expanded master](../../EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](../../EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](../../DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.

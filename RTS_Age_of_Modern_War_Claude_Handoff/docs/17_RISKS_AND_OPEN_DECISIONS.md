@@ -38,3 +38,10 @@ Provisional names, numerical orbital modeling, material properties, individual m
 ## G18 risk and production decisions
 
 G18 includes all online multiplayer, independently owned open-source platform, DEAD SECTOR/PATHOGEN and SUBTERRANEAN WARFARE/DEEPWAR. G17 acceptance precedes it, G19 and G20 only after full G18 acceptance. Inheritance/Living World remain offline solo. Risks: relay cost, NAT reachability, host trust and fog secrecy, migration split-brain, data privacy, dependency licensing, platform reliability, infection and underground simulation performance, horror accessibility, scope duplication. Mitigate with shared authority, direct hosting, bounded fixtures, measured budgets and signed releases; no guaranteed free hosting or perfect anti-cheat. Platform name/license, providers, transport, exact budget, content balance and dedicated hosting policy remain production choices. See [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) and [platform](../../game/docs/G18_OPEN_GAMING_PLATFORM.md). No code changes or tests claimed.
+
+
+## Expanded gameplay design integration — 2026-11-27
+
+Scope and delivery risk: reuse one scenario/authority engine and three shared services, vertical slices before scaling content, freeze per-gate contracts, measure performance and cost; online compatibility, rank policies, mod security, platform licensing/commerce, paid creator rollout, hardware, languages and pricing remain production decisions. Protect save migrations, accessibility and creator content rights.
+
+[Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](../../game/docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](../../game/docs/DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.

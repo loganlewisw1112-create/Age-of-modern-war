@@ -298,3 +298,10 @@ Current G18 design: offline solo remains; Inheritance/Living World strictly offl
 This is a historical playable-slice entry point; G18 is future scope, not a shipped feature.
 
 [Master GDD](docs/G18_MASTER_GDD.md) · [G18 delivery](docs/G18_DELIVERY_PLAN.md) · [Networking](docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](docs/G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](docs/DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](docs/SUBTERRANEAN_WARFARE_GDD.md).
+
+
+## Expanded gameplay design integration — 2026-11-27
+
+Historical playable slice retained; current roadmap adds five future modes and creator/community systems, all planned, no shipped claims.
+
+[Expanded master](docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](docs/DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.

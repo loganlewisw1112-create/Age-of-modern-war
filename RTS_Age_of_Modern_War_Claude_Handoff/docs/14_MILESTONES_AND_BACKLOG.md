@@ -222,3 +222,10 @@ Current G18 design: offline solo remains; Inheritance/Living World strictly offl
 G18 A/B/C/D all mandatory for base-game completion after G17; no DLC gameplay until G18 accepted. G19 then G20.
 
 [Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [Networking](../../game/docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](../../game/docs/G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../../game/docs/DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../../game/docs/SUBTERRANEAN_WARFARE_GDD.md).
+
+
+## Expanded gameplay integration — 2026-11-27
+
+G11–G18 expanded shared-system integration and full G18 acceptance, five additional modes, creator, replay, independent platform and production workstreams; no numbered gate or DLC added. [Integrated delivery](../../game/docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md).
+
+Eleven base-game experiences complete by G18; G17 full XENOGENESIS/Myrieme Forge acceptance and G19/G20 sequence retained. Seven directors only, Inheritance/Living World offline solo, UNDERSTRIKE Human A protected construction unchanged. Design only. [Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md).

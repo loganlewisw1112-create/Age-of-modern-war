@@ -41,3 +41,10 @@ Current G18 design: offline solo remains; Inheritance/Living World strictly offl
 Horror score, low-tone tension/silence, spatial audio, dynamic lighting, readable silhouettes; military atmosphere for warfare. No mandatory cinematics or new individual camera.
 
 [Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [Networking](../../game/docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](../../game/docs/G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../../game/docs/DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../../game/docs/SUBTERRANEAN_WARFARE_GDD.md).
+
+
+## Expanded gameplay integration — 2026-11-27
+
+Content validation pipeline, actual sprite/animation provenance and licensing, creator metadata, replay presentation and accessibility; preserve visual style. [Production](../../game/docs/PRODUCTION_RELEASE_FRAMEWORK.md).
+
+Eleven base-game experiences complete by G18; G17 full XENOGENESIS/Myrieme Forge acceptance and G19/G20 sequence retained. Seven directors only, Inheritance/Living World offline solo, UNDERSTRIKE Human A protected construction unchanged. Design only. [Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md).

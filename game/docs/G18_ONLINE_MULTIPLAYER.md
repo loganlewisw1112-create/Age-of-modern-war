@@ -43,3 +43,15 @@ Last Protocol preserve Human A vs Machine, shared core/countdown/creep/Tide, cla
 ## Future DLC compatibility
 Versioned protocol + content manifest (stable IDs, hashes, owned entitlements, required assets), negotiate exact supported ruleset; DLC 1/2 actual civilization continuations offline; owned factions in Skirmish only, shared compatible maps/units/buildings/tech where permitted, no leakage or forced purchase to play base maps. Define guest content/licensing rules before release; reject unavailable content clearly rather than silent substitution. Expand schema compat with migrations, feature flags and version matrix, not forks. No paid advantage or unsupported shared persistent universe.
 [Platform](G18_OPEN_GAMING_PLATFORM.md) · [Acceptance](G18_DELIVERY_PLAN.md).
+
+
+## Expanded online compatibility
+
+Five additional modes use the same authority/session protocol, with legal co-op/competitive variants per expanded master. Initial 2–4 target, compatible role/scale tests before release. No online Dynasty or unowned faction access. Versioned creator/mod manifests, replay recording and delayed spectator roles enforced at authority, not just UI. See [replays](REPLAY_SPECTATOR_AND_RECORDS.md) and [creator](CREATOR_TOOLKIT_AND_WORKSHOP.md).
+
+
+## Expanded gameplay and creator authority — 2026-11-27
+
+Expanded owner-approved design authority: eleven base-game experiences, including BLACK OPERATIONS (7), SIEGE WARFARE (7), CONQUEST (6), COMMANDER'S CRUCIBLE (7) and WAR THEATRE (7), in addition to the six existing/planned modes. Three shared systems (OPERATIONAL INTELLIGENCE, WORLD ARCHIVE, DYNAMIC SCENARIO ENGINE), procedural world/fortress generation, engineering templates, full scenario editor/SDK, free Workshop/Creator Store, complete replays/spectators/records, player experience, reusable platform and production readiness are integrated across G11–G18. G18 finalizes all base-game scope. Seven directors unchanged, no new director; no online Inheritance/Living World, no new official playable DLC factions outside Skirmish, Human A-only protected bunker/borer construction, no individual soldier-follow in new modes. Full XENOGENESIS and Forge acceptance at G17; G19 then G20 after G18. All planned, not implemented. Existing frozen scopes and G10.1 regression unchanged.
+
+[Master GDD](EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](DYNAMIC_SCENARIO_ENGINE.md) · [Creator tools](CREATOR_TOOLKIT_AND_WORKSHOP.md) · [Platform](PLATFORM_PRODUCT_ROADMAP.md).

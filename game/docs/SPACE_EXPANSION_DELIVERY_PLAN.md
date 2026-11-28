@@ -90,3 +90,10 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 All four G18 tracks must pass acceptance before DLC 1 G19; G20 after G19. Owned DLC content extends compatible Skirmish online rules, not shared Dynasty.
 
 [Master GDD](G18_MASTER_GDD.md) · [G18 delivery](G18_DELIVERY_PLAN.md) · [PATHOGEN](PATHOGEN_DIRECTOR.md) · [DEEPWAR](DEEPWAR_DIRECTOR.md).
+
+
+## Expanded gameplay design integration — 2026-11-27
+
+G19 blocked until original G18-01–34 and expanded EX-A01–40 accepted; compatible tool adaptations at G19; G20 follows G19. All checks pending.
+
+[Expanded master](EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.

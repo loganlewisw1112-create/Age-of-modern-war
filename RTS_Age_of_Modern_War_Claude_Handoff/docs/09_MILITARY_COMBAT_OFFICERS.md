@@ -51,3 +51,10 @@ Current G18 design: offline solo remains; Inheritance/Living World strictly offl
 Retain command scope, logistics, faction restrictions and takeovers; G18 co-op claims and autonomous replacement, DEEPWAR limited to its dedicated scenarios.
 
 [Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [Networking](../../game/docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](../../game/docs/G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../../game/docs/DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../../game/docs/SUBTERRANEAN_WARFARE_GDD.md).
+
+
+## Expanded gameplay integration — 2026-11-27
+
+Unified thirteen doctrine presets, autonomous operational planning, simple persistent formation identity, commander personalities, reorganization and recovery. [Operations](../../game/docs/OPERATIONAL_INTELLIGENCE.md) · [Archive](../../game/docs/WORLD_ARCHIVE.md).
+
+Eleven base-game experiences complete by G18; G17 full XENOGENESIS/Myrieme Forge acceptance and G19/G20 sequence retained. Seven directors only, Inheritance/Living World offline solo, UNDERSTRIKE Human A protected construction unchanged. Design only. [Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md).

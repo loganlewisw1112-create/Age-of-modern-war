@@ -13,12 +13,19 @@ G17 closes only after all 20 XENOGENESIS subsystems and all 15 Myrieme Forge eng
 | Living World | Yes | No | No |
 | DEAD SECTOR | Yes | Yes | Optional asymmetric/competitive survival |
 | SUBTERRANEAN WARFARE | Yes | Yes | Yes |
+| BLACK OPERATIONS | Yes | Yes | Compatible scenarios |
+| SIEGE WARFARE | Yes | Yes | Compatible asymmetric scenarios |
+| CONQUEST | Yes | Yes | Yes |
+| COMMANDER'S CRUCIBLE | Yes | Compatible challenges | Compatible challenges |
+| WAR THEATRE | Yes | Compatible campaigns | Compatible campaigns |
 | DLC civilization continuations | Yes | No | No |
 
 All current playable content remains protected. G18 networking is genuinely internet-capable, not merely LAN. LAN/direct connect optional, internet matchmaking/invites, relay fallback, reconnection, migration and optional dedicated hosting. Existing Last Protocol solo rules and G18 co-op scope remain; shared economy and claims, 2–4 human players, Quick/Full/Iron Co-op, no PvP or extra playable faction slots. Initial 2–4 player target shared for new modes; larger lobbies only after measurement. Skirmish legal existing team/faction/map combinations; no new player factions through other modes. No obligatory account for offline.
 
-## Four coordinated tracks
+## Four original coordinated tracks and expanded workstreams
 G18-A: shared multiplayer, Last Protocol and Skirmish online; G18-B: independently controlled open-source platform; G18-C: DEAD SECTOR four horror scenarios and PATHOGEN; G18-D: SUBTERRANEAN WARFARE five scenarios and DEEPWAR. Both directors are mode-exclusive, one authoritative simulation, no duplicate engine, no always-running AI. Names and track IDs working names. All 11 DEAD SECTOR and nine SUBTERRANEAN decisions approved; see individual documents.
+
+The original G18-A/B/C/D scope remains mandatory; EX-A–H shared systems, five additional modes, creator ecosystem and production qualification extend it. See [expanded delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md).
 
 ## Gameplay contract
 Select, right-click, build, train, research, attack, defend, delegate, intervene. Quick presets and optional advanced customizer; no individual soldier-follow camera in either new mode, no mandatory individual logistics/medical/engineering work. No new required game progression or grind. Deep simulation, exciting short operations and long persistent saves; causes not artificial punishment. Preserve core rendering style and low-detail RTS readability. Reuse existing assets/interfaces only where appropriate, original horror/warfare content and audio as needed. Performance budgets measured; no speculative maximum counts.
@@ -28,3 +35,10 @@ Four general directors (Dynamic World, Geopolitical, Historical & Generational, 
 
 ## Authoritative specifications
 [Online networking](G18_ONLINE_MULTIPLAYER.md) · [Platform](G18_OPEN_GAMING_PLATFORM.md) · [DEAD SECTOR](DEAD_SECTOR_GDD.md) · [PATHOGEN](PATHOGEN_DIRECTOR.md) · [SUBTERRANEAN WARFARE](SUBTERRANEAN_WARFARE_GDD.md) · [DEEPWAR](DEEPWAR_DIRECTOR.md) · [Delivery/acceptance](G18_DELIVERY_PLAN.md).
+
+
+## Expanded gameplay and creator authority — 2026-11-27
+
+Expanded owner-approved design authority: eleven base-game experiences, including BLACK OPERATIONS (7), SIEGE WARFARE (7), CONQUEST (6), COMMANDER'S CRUCIBLE (7) and WAR THEATRE (7), in addition to the six existing/planned modes. Three shared systems (OPERATIONAL INTELLIGENCE, WORLD ARCHIVE, DYNAMIC SCENARIO ENGINE), procedural world/fortress generation, engineering templates, full scenario editor/SDK, free Workshop/Creator Store, complete replays/spectators/records, player experience, reusable platform and production readiness are integrated across G11–G18. G18 finalizes all base-game scope. Seven directors unchanged, no new director; no online Inheritance/Living World, no new official playable DLC factions outside Skirmish, Human A-only protected bunker/borer construction, no individual soldier-follow in new modes. Full XENOGENESIS and Forge acceptance at G17; G19 then G20 after G18. All planned, not implemented. Existing frozen scopes and G10.1 regression unchanged.
+
+[Master GDD](EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](DYNAMIC_SCENARIO_ENGINE.md) · [Creator tools](CREATOR_TOOLKIT_AND_WORKSHOP.md) · [Platform](PLATFORM_PRODUCT_ROADMAP.md).
