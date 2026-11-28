@@ -61,13 +61,15 @@ const Fog = preload("res://sim/systems/fog.gd")         # G6 PERF6-4: native_gat
 ## (~1.7x open ground with terrain modifiers). Two independent parallel runs of .plan/gold61.gd on the Pre-G10 tree
 ## produced identical 16/16 hashes with Godot 4.7.2 and rts_core 0.6.5
 ## (.plan/pre_g10_gold_run1.log, .plan/pre_g10_gold_run2.log).
+## G10.1 restores large-battle activity by keeping routes unaffected by craters active (4e92b1d7).
+## Two independent captures matched all 16 native/fallback and elevated/flat references. March hashes are unchanged.
 const GOLD := {
-	"2k_fight/on": "b7f1ba00cd6b922e34f85acf08fa1418728b3ef11a975598553ad779e7c3f2f2",
-	"2k_fight/off": "51180365629c40b52d327b66ebf25372d5fb23272a7be19674bc8b5d3ccee495",
-	"2k_mixed/on": "68bad4d2e695c2ce661c8a5822a7db8cd5514f588c7485c436112bdf0c44b4e3",
-	"2k_mixed/off": "a614137379d0f3e1cc95e0ca57a0c432ec2d8e8d5ba9a267f00f95a0d5f7a5b7",
-	"10k_fight/on": "a6da3ab988764e0d404d359cee8bd9b5ef0bb7a90e06d8a40c3601c963df0f43",
-	"10k_fight/off": "16773f46dc3df7d323048e8c4fbee3c20eef3747be70bc176444eacc8e59daef",
+	"2k_fight/on": "b36924a1d207afdc3f01f894538a66091f98c6575b16c9110cf7c1dcb786584e",
+	"2k_fight/off": "d541e61994d9d7c8f79439780f43e689ac9c57c129ea32875f5c4286a1145b4d",
+	"2k_mixed/on": "de09a1bf57b232291c428d3302af0ebf4b022a76299897b003798ffb9fbd0dc4",
+	"2k_mixed/off": "65fdfa6a362ebfdb9ce7acabc0eaad4b4b8dfb56d7221cdfe7b4c73c534b75f7",
+	"10k_fight/on": "217c0a7f761cbe2c8cf462bdbd171833a08d525d07b72780a0962647653af173",
+	"10k_fight/off": "dea90ea25dc621622354535c81fc7852cc58f22d5cf43c1cda3e07e334aec8ca",
 	"10k_march/on": "9a5ffe3214664e25a71c9b0b6deb3e39dbc2097bc86c8895871c3c65d4cf2a5a",
 	"10k_march/off": "204d78043ef8ef42585c172dc6003cf15a94c28203c119c68e6eda4811f0f8a1",
 }
@@ -75,12 +77,12 @@ const GOLD := {
 ## What the AB scenarios give with the height flattened. G6.1 values (see the GOLD comment); before G6.1 this was the
 ## G5 GOLD (CORE10K-2, 2026-10-24), which G6 still reproduced flattened.
 const GOLD_FLAT := {
-	"2k_fight/on": "b0c71c4fcc2b4fc43d0640a6eba4e59a1a4df2928c4d7a07569558ea7b112df4",
-	"2k_fight/off": "f3d4621b5d0c294b9b7418db0977e87179277857d915700ecef91efbb50c2903",
-	"2k_mixed/on": "0cdcd0eb0a06cf8675d534dba0fb86200c6d12a13ac449d7c024e82cf8aa2193",
-	"2k_mixed/off": "71bb26ece2749b6660244e1ab55080ad1875a95f35346fbd0cefad8a247b927e",
-	"10k_fight/on": "46c3eb49cee035a2550da850a4a171d87f8671485262ab4fe01020bc70bae25f",
-	"10k_fight/off": "674d747909cc06fcd8959d200121d7ab1fc1bae3375f30bdc97ca3e58d3bf04c",
+	"2k_fight/on": "6bbc6073e7d54341da73b97fddf823a1cc386d4432bbc8c2279ba2a169a87f7e",
+	"2k_fight/off": "9a59b92b2f43d957e5aaae53b3558cc2aedaffe65074fcb365475ff27a3211d3",
+	"2k_mixed/on": "f8cd1149d36108d99a29e992351d0baa1ad49d20fe90273dfabafaacb8e184fe",
+	"2k_mixed/off": "97c03b1ac46c24b5cb14bf51ab95366f26f49c97c525f17773e47bfdfaac8a10",
+	"10k_fight/on": "6baaab2b6a53967c80f7b8d44a941cc7bcc8a41641c13f75a59f078dd0e2e84f",
+	"10k_fight/off": "3539142f4501474ec090bdf8ab608279194a09a41dc548b3b0cb367546a38b07",
 	"10k_march/on": "35b01e5040d3db12faf8ada4b0544c9f4cb202b77e6ac71769a60d94d77b2b81",
 	"10k_march/off": "95740a74a7d6d831cf1c4d28a903dd240a7e6c159112417894bb0ab9be0fa064",
 }
