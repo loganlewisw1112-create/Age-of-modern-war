@@ -1277,7 +1277,8 @@ static func classify(w: SimWorld, V: Dictionary, p: Vector2) -> Array:
 ## CnFacility hook (_order_slots): drives a team's APCs to `where` (pad | gate | decon | inner | garage).
 ## False = not handled (system not registered, unknown facility): CnFacility then uses Movement as before.
 static func order_team(w: SimWorld, T: Dictionary, aps: Array, where: String) -> bool:
-	if not registered() or CnFacility.fac(w, int(T.fac)).is_empty():
+	var F := CnFacility.fac(w, int(T.fac))
+	if not registered() or F.is_empty():
 		return false
 	var sl: Array = T.get("slots", [])
 	var o := _origin(w, int(T.fac))
@@ -1288,6 +1289,8 @@ static func order_team(w: SimWorld, T: Dictionary, aps: Array, where: String) ->
 	var any := false
 	for i in order_i:
 		var a: Dictionary = aps[i]
+		if where == "decon" and CnFacility._parked_in_garage(F, T, a, i):
+			continue
 		var gar := int(sl[mini(i, sl.size() - 1)]) if not sl.is_empty() else -1
 		var to := "b"
 		match where:
@@ -2487,7 +2490,7 @@ static func _sally_follow_stop(R: Dictionary, s: float, stop: float, px: Vector2
 ## move class air_low, was counted as a vehicle and held the inner gate open) and nobody up on the wall-walk (a
 ## Sentinel of the 13.9c-38 watch at the end of a south wall run, on the wall piece beside the gate, overlapped the
 ## opening by his body radius and held the outer gate open) stands in the gate's door.
-## G7.1 fleet: robot stubs seeded on the ring must not hold the airlock open — they are not facility APC traffic, and
+## G7.1 fleet: robot stubs seeded on the ring must not hold the airlock open - they are not facility APC traffic, and
 ## a mule/UGV on the apron under hardened sally was keeping outer/inner from cycling (0 of 8 APCs out).
 static func _gate_blocks(w: SimWorld, z: Rect2, e: Dictionary) -> bool:
 	var mc := Movement.move_class(e)

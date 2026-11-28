@@ -1210,6 +1210,11 @@ static func _apcs(w: SimWorld, T: Dictionary) -> Array:
 
 
 ## Orders the team's APCs to their slot in a zone ("pad" spread in a row, "garage" = own slots).
+## A fly mission can leave a spare APC in its assigned stall. It never enters the wash queue.
+static func _parked_in_garage(F: Dictionary, T: Dictionary, a: Dictionary, slot: int) -> bool:
+	return not bool(a.get("moving", false)) and Vector2(a.pos).distance_to(_slot_pos(F, T, "garage", slot)) <= 0.1
+
+
 static func _order_slots(w: SimWorld, T: Dictionary, where: String) -> void:
 	var F := fac(w, int(T.fac))
 	if F.is_empty():
@@ -1218,7 +1223,8 @@ static func _order_slots(w: SimWorld, T: Dictionary, where: String) -> void:
 	if _callf(FD7_PATH, "order_team", [w, T, aps, where], false) == true:
 		return   # APCMOV7 (13.9c-16): the facility traffic controller drives them on the lanes (smooth, no overlaps)
 	for i in aps.size():
-		Movement.order_move(w, aps[i], _slot_pos(F, T, where, i))
+		if where != "decon" or not _parked_in_garage(F, T, aps[i], i):
+			Movement.order_move(w, aps[i], _slot_pos(F, T, where, i))
 
 
 static func _slot_pos(F: Dictionary, T: Dictionary, where: String, i: int) -> Vector2:
@@ -1287,8 +1293,9 @@ static func _tick_team(w: SimWorld, T: Dictionary) -> void:
 			if _turn_on() and not F.is_empty():
 				_turn_service(w, F, T, aps)
 			var all_clean := true
-			for a in aps:
-				if int(a.get("cn_rinsed", -1)) < int(T.t):
+			for i in aps.size():
+				var a: Dictionary = aps[i]
+				if int(a.get("cn_rinsed", -1)) < int(T.t) and not _parked_in_garage(F, T, a, i):
 					all_clean = false
 			if all_clean:   # BASE7-3 (13.9c-2): rinsed in the wash -> through the inner gate layer -> garage
 				T.phase = "to_inner"

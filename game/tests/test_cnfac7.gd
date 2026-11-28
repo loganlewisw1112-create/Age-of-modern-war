@@ -1777,3 +1777,28 @@ func test_facb77_suits_never_use_the_mantrap_or_decon_hall() -> void:
 			break
 	check(bad.is_empty(), "the suit never enters the mantrap or the decon hall (at %s)" % str(bad))
 	check(arrived, "the suit reaches the staging yard by the vehicle route (at %s)" % str(Vector2(u.pos) - Vector2(O)))
+
+
+func test_return_leaves_spare_apc_in_its_garage() -> void:
+	var setup := _setup()
+	var w: SimWorld = setup[0]
+	var fid := _facility(w, setup[1])
+	var tid := _train(w, fid, "strike_team")
+	var team := CnFacility.team(w, tid)
+	var returning: Dictionary = w.entities[int(team.apcs[0])]
+	var spare: Dictionary = w.entities[int(team.apcs[1])]
+	var parked := Vector2(spare.pos)
+	var fac := CnFacility.fac(w, fid)
+	# The dropship can carry just one APC. The other never leaves its stall.
+	SimWorld.HotState.set_pos(w, int(returning.id), CnFacility.compound_rect(fac).end + Vector2(-14, 8))
+	team.phase = "out"
+	_cmd(w, {"type": "cn_return", "team": tid})
+	var spare_stayed := true
+	for tick in 1600:
+		w.step()
+		spare_stayed = spare_stayed and Vector2(spare.pos) == parked
+		if team.phase == "garage":
+			break
+	check(spare_stayed, "the unused APC stays in its garage")
+	check(int(returning.get("cn_rinsed", -1)) >= int(team.t), "the returning APC went through the wash")
+	check_eq(String(team.phase), "garage", "the team completes its return")
