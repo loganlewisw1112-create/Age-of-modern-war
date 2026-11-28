@@ -39,3 +39,12 @@ Tutorial in ≤5 missions: unlock bunker; place Floor 1 module; approve excavati
 
 ## Acceptance for Decision 32
 A first-time RTS player can perform the five core tasks with standard selection/context interactions without issuing laborer, elevator, electrical cable or civilian orders. Detailed panels remain available, and no routine automation becomes unresponsive after manual intervention. Switching surface/bunker/floor views has consistent selection state and no duplicate unit movement.
+
+
+## G18 design integration
+
+Current G18 design: offline solo remains; Inheritance/Living World strictly offline single-player; internet Last Protocol co-op, Skirmish co-op/PvP, DEAD SECTOR and SUBTERRANEAN WARFARE. Independently controlled open-source gaming platform; indie-cost direct hosting and relay fallback; mode-exclusive PATHOGEN and DEEPWAR. UNDERSTRIKE is an integrated Human A branch, not DLC. G17 full XENOGENESIS/Myrieme Forge acceptance; G18 final base game; G19 Space Expansion; G20 Beyond Civilization. No code changes or implementation claimed.
+
+Standalone warfare and horror modes use standard RTS camera and surface/underground transitions only; no individual soldier-follow in those modes. Existing G16 authorized survivor view in other contexts unaffected.
+
+[Master GDD](../../G18_MASTER_GDD.md) · [G18 delivery](../../G18_DELIVERY_PLAN.md) · [Networking](../../G18_ONLINE_MULTIPLAYER.md) · [Platform](../../G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../../DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../../SUBTERRANEAN_WARFARE_GDD.md).

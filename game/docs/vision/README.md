@@ -32,3 +32,12 @@ These images show where the owner wants the game to go visually and in scale. Th
 ## Future expansion authority (2026-11-27)
 
 [Space Expansion master design](../SPACE_EXPANSION_GDD.md) records the approved DLC 1 / DLC 2 numbering, True Dynasty and independent starts, stellar catalog, Hidden Chronicle and engineering guidance. These are future planning specifications only; do not implement ahead of existing gates. No change to current source, build, save format or completion status.
+
+
+## G18 design integration
+
+Current G18 design: offline solo remains; Inheritance/Living World strictly offline single-player; internet Last Protocol co-op, Skirmish co-op/PvP, DEAD SECTOR and SUBTERRANEAN WARFARE. Independently controlled open-source gaming platform; indie-cost direct hosting and relay fallback; mode-exclusive PATHOGEN and DEEPWAR. UNDERSTRIKE is an integrated Human A branch, not DLC. G17 full XENOGENESIS/Myrieme Forge acceptance; G18 final base game; G19 Space Expansion; G20 Beyond Civilization. No code changes or implementation claimed.
+
+Add G18 current design references to future vision.
+
+[Master GDD](../G18_MASTER_GDD.md) · [G18 delivery](../G18_DELIVERY_PLAN.md) · [Networking](../G18_ONLINE_MULTIPLAYER.md) · [Platform](../G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../SUBTERRANEAN_WARFARE_GDD.md).

@@ -32,3 +32,12 @@ Author source files with stable asset IDs and record license/provenance, faction
 Readability review: unit vs ground contrast; infantry vs vehicles; friend vs foe with shape and color; obscured selections; cover/height; fog; projectiles; casualties; component disable states; reduced flash. Smoke and foreground layers must not hide critical commands. Benchmark effects density and draw cost before multiplying content.
 
 Audio: local and distant weapons, machines, weather, civilian ambience and underground reverb; layered combat mixing and contextual music. Provide subtitles and visual alert equivalents. Final music, voice, source recordings and audio asset licenses are not supplied.
+
+
+## G18 design integration
+
+Current G18 design: offline solo remains; Inheritance/Living World strictly offline single-player; internet Last Protocol co-op, Skirmish co-op/PvP, DEAD SECTOR and SUBTERRANEAN WARFARE. Independently controlled open-source gaming platform; indie-cost direct hosting and relay fallback; mode-exclusive PATHOGEN and DEEPWAR. UNDERSTRIKE is an integrated Human A branch, not DLC. G17 full XENOGENESIS/Myrieme Forge acceptance; G18 final base game; G19 Space Expansion; G20 Beyond Civilization. No code changes or implementation claimed.
+
+Horror score, low-tone tension/silence, spatial audio, dynamic lighting, readable silhouettes; military atmosphere for warfare. No mandatory cinematics or new individual camera.
+
+[Master GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) · [Networking](../../game/docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](../../game/docs/G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../../game/docs/DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../../game/docs/SUBTERRANEAN_WARFARE_GDD.md).

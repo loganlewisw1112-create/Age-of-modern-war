@@ -10,7 +10,7 @@ Current user instructions control this handoff. The v1.3 documents explicitly di
 
 | ID | Direction | Status and evidence |
 |---|---|---|
-| DEC-01 | Offline single-player; no required cloud, multiplayer or runtime language model | v1.3 Master §§1,10 |
+| DEC-01 | Offline solo; optional online modes at G18; no required cloud or runtime language model | v1.3 Master §§1,10 |
 | DEC-02 | Classic RTS Custom Skirmish first; survivor expansion later | v1.3 Master §§2–3,13; Roadmap G0–G6 |
 | DEC-03 | Exactly 13 stable stages for humans and machines | v1.3 Master §5; Bible §§1–2,6 |
 | DEC-04 | Slice playable stages 7–9, Stage 8 focus; others visible and disabled | Master §§3–5; First Playable §§1,9 |
@@ -45,12 +45,21 @@ Approved 15 space decisions, stellar design and four final decisions: Hidden His
 
 ## Corrected owner-approved execution sequence
 
-G11–G17 full XENOGENESIS and Myrieme Forge acceptance → G18 Last Protocol: Combined Arms → G19 Space Expansion → G20 Beyond Civilization (DLC 2). Both systems must be fully implemented, integrated, tested and accepted by G17 exit (before G18 and G19): all 20 XENOGENESIS subsystems; all 15 Myrieme Forge engines and eight integration adapters, including offline runtime. Earlier development is permitted. G20 interstellar gameplay/content production happens after G19; G11–G17 testing uses representative fixtures without requiring full G20 content or exposing unowned DLC. No implementation or gate completion is claimed.
+G11–G17 full XENOGENESIS and Myrieme Forge acceptance → G18 Online Multiplayer & Final Base Game → G19 Space Expansion → G20 Beyond Civilization (DLC 2). Both systems must be fully implemented, integrated, tested and accepted by G17 exit (before G18 and G19): all 20 XENOGENESIS subsystems; all 15 Myrieme Forge engines and eight integration adapters, including offline runtime. Earlier development is permitted. G20 interstellar gameplay/content production happens after G19; G11–G17 testing uses representative fixtures without requiring full G20 content or exposing unowned DLC. No implementation or gate completion is claimed.
 
 
 ## G11–G17 integrated system development — current owner authority
 
-G11–G17 integrated development of XENOGENESIS and full Myrieme Forge; both fully implemented, integrated, tested and accepted as mandatory G17 exit criteria. G18 Last Protocol Combined Arms → G19 Space Expansion → G20 Beyond Civilization. No separate integration checkpoint; G20 gameplay and full universe content production remain after G19. All 20 XENOGENESIS subsystems, 15 Forge engines and eight integration modules, offline runtime and shared director interoperability required by G17. Representative validation fixtures, not premature DLC gameplay; ownership boundaries remain. See the current ROADMAP and DLC delivery plan for per-gate assignments. No implementation or gate completion claimed.
+G11–G17 integrated development of XENOGENESIS and full Myrieme Forge; both fully implemented, integrated, tested and accepted as mandatory G17 exit criteria. G18 Online Multiplayer & Final Base Game → G19 Space Expansion → G20 Beyond Civilization. No separate integration checkpoint; G20 gameplay and full universe content production remain after G19. All 20 XENOGENESIS subsystems, 15 Forge engines and eight integration modules, offline runtime and shared director interoperability required by G17. Representative validation fixtures, not premature DLC gameplay; ownership boundaries remain. See the current ROADMAP and DLC delivery plan for per-gate assignments. No implementation or gate completion claimed.
 
 
-**Current gate authority:** G17 Living World and full XENOGENESIS/Myrieme Forge acceptance → G18 Last Protocol: Combined Arms (base-game completion) → G19 Space Expansion (DLC 1) → G20 Beyond Civilization (DLC 2). Both DLCs begin only after the base game is complete. No runtime changes or gate completion claimed.
+**Current gate authority:** G17 Living World and full XENOGENESIS/Myrieme Forge acceptance → G18 Online Multiplayer & Final Base Game → G19 Space Expansion (DLC 1) → G20 Beyond Civilization (DLC 2). Both DLCs begin only after the base game is complete. No runtime changes or gate completion claimed.
+
+
+## G18 current approved design authority
+
+G18 final base game: internet multiplayer, independently owned open-source gaming platform, Last Protocol online co-op, Skirmish co-op/PvP, DEAD SECTOR (PATHOGEN) and SUBTERRANEAN WARFARE (DEEPWAR). Inheritance and Living World remain strictly offline solo. UNDERSTRIKE remains integrated, Human A-exclusive construction rights unchanged, not a standalone expansion. Neither new mode has individual soldier-follow. All XENOGENESIS and Myrieme Forge accepted by G17. G19 Space Expansion (DLC 1), G20 Beyond Civilization (DLC 2) only after G18; civilization continuations offline, compatible owned content in Skirmish. No mandatory platform login offline. Planned only.
+
+All eleven DEAD SECTOR and nine SUBTERRANEAN WARFARE decisions approved; G18 four tracks, no Steam requirement, indie costs, no online campaign.
+
+[G18 MASTER GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 ONLINE MULTIPLAYER](../../game/docs/G18_ONLINE_MULTIPLAYER.md) · [G18 OPEN GAMING PLATFORM](../../game/docs/G18_OPEN_GAMING_PLATFORM.md) · [DEAD SECTOR GDD](../../game/docs/DEAD_SECTOR_GDD.md) · [PATHOGEN DIRECTOR](../../game/docs/PATHOGEN_DIRECTOR.md) · [SUBTERRANEAN WARFARE GDD](../../game/docs/SUBTERRANEAN_WARFARE_GDD.md) · [DEEPWAR DIRECTOR](../../game/docs/DEEPWAR_DIRECTOR.md) · [G18 DELIVERY PLAN](../../game/docs/G18_DELIVERY_PLAN.md)
