@@ -1,0 +1,17 @@
+# G10.1 stabilization lock
+
+**Status** CLOSED  
+**Branch** `g71`  
+**Windows runtime commit** `592bebd7`  
+**Regression source commit** `8dcfab08`
+
+- All 1,842 distinct tests passed across 242 headless suites in 12 batches. Every batch exited zero and reported zero script, parse or compile errors.
+- The flying purge returned to the garage at tick 4,449. The facility return tests verified the wash and all eight APCs parking at their own stalls.
+- The Sentinel fixture verified that a 2.5× assault with tower suppression breached with the drone bay off and was held with it on. The original 4× assault breached the full facility.
+- The Windows ZIP launched Stage 8 and Stage 13 Coalition skirmishes from a clean extract with the native runtime.
+
+**Windows ZIP** `RTS_Age_of_Modern_War_G10.1_592bebd7.zip`  
+**Data pack SHA-256** `79594f5d99e2cac40507753ca8095f455944fad805e508da0735795526e5a1e1`  
+**ZIP SHA-256** `006bc000820b31fdda8aa9fc3aaeb70087258a060f0d8ea55839e97b365c5881`
+
+[Stabilization report](g10.1-stabilization-report.md)

@@ -810,7 +810,7 @@ Internal phases are dependency-driven and may overlap where safe. Release requir
 
 ## Development status
 
-**Latest documented stabilization build:** G10.1 · November 27, 2026 · `7cc674aa` · `g71`. The G10 gate is closed; wider regression acceptance remains open.
+**Latest verified stabilization build:** G10.1 · `592bebd7` · `g71`. The [G10.1 stabilization gate](.superpowers/sdd/g10.1.lock) is closed.
 
 ### Shipped milestones
 
@@ -861,15 +861,15 @@ Reported results from the [November 27 stabilization report](.superpowers/sdd/g1
 
 ### Known issues / acceptance
 
-The historical broad run recorded 1,738 passes and 85 assertion failures with script errors; subsequent targeted fixes and reruns passed several affected suites. A clean full regression rerun is still required. Drive rescue delivery, tower revival, walker damage and all 24 APC and convoy movement checks now pass. The combined drive mission and the 2,000-unit gate fight also pass. The authored vehicle animation check passes, and all 16 simulation references match on independent runs. G10.1 acceptance remains open pending the full suite. See the stabilization report for details.
+G10.1 passed all 1,842 headless checks across 242 suites with zero assertion failures and zero script errors. The flying purge completes its garage return, and the Sentinel suite verifies the effect of the drone bay in matched assaults. The stabilization report records the full regression and package evidence.
 
 ---
 
 ## Play the packaged build
 
-Latest documented verified Windows package: `RTS_Age_of_Modern_War_G71_2026-11-27_7cc674aa.zip`.
+Latest verified Windows package: `RTS_Age_of_Modern_War_G10.1_592bebd7.zip`.
 
-The extracted executable launched a Stage 8 Coalition skirmish headlessly with `rts_core 0.6.5` active and zero script errors. The extracted data pack hash matched the export. [Package verification and hashes](.superpowers/sdd/g10.1-stabilization-report.md).
+The extracted Windows build launched Coalition skirmishes at Stages 8 and 13 with `rts_core 0.6.5` and zero script errors. Its data pack hash matched the export. [Package verification and hashes](.superpowers/sdd/g10.1-stabilization-report.md).
 
 Local packaging destination: `Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_*`. This is not a public download URL. If you do not have the package, follow the source instructions below.
 
