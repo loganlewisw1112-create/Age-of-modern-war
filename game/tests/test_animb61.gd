@@ -145,6 +145,17 @@ func test_every_vehicle_def_has_its_frames() -> void:
 			# owner-approved rev4 dropship (C-17 scale, 2556 px wide sheet) and are checked by test_artcn7 / test_cnfac7 /
 			# test_vis7. Every other vehicle keeps every check below.
 			continue
+		var frames: Array = sp.get("frames", [])
+		if sp.has("g10"):
+			var locomotion := "flight" if frames.has("flight") else "walk_a" if frames.has("walk_a") else "move"
+			_check_authored_atlas(String(def), sp, 4, ["idle", locomotion, "fire"])
+			continue
+		if not sp.has("anim61") and sp.get("g71", {}).get("base") == "m_maint_swarm":
+			_check_authored_atlas(String(def), sp, 8, ["idle", "walk_a", "walk_b", "work"])
+			continue
+		if sp.has("g9") and sp.has("anim61") and sp.anim61.has("base"):
+			_check_authored_atlas(String(def), sp, 8, ["idle", "walk_a", "walk_b", "fire", "wounded", "die_0"])
+			continue
 		var k := V.kind(sp)
 		by_kind[k] = int(by_kind.get(k, 0)) + 1
 		var fr: Array = sp.get("frames", [])
@@ -172,6 +183,26 @@ func test_every_vehicle_def_has_its_frames() -> void:
 			bad.append("%s: %s" % [def, str(miss)])
 	print("ANIMB61 vehicle defs by kind: %s" % str(by_kind))
 	check(bad.is_empty(), "vehicle defs missing G6.1 frames (%d): %s" % [bad.size(), str(bad.slice(0, 8))])
+
+
+## Later designs ship their own animation layouts. Check the authored poses in every facing.
+func _check_authored_atlas(def: String, spec: Dictionary, facings: int, required: Array) -> void:
+	check_eq(int(spec.get("facings", 0)), facings, def + " facing count")
+	var frames: Array = spec.get("frames", [])
+	var fw := int(spec.fw)
+	var fh := int(spec.fh)
+	var image: Image = AC._image(String(spec.file))
+	if not check(image != null and image.get_size() == Vector2i(fw * frames.size(), fh * facings), def + " atlas dimensions"):
+		return
+	var mask: Image = AC._image(String(spec.mask))
+	check(mask != null and mask.get_size() == image.get_size(), def + " team mask dimensions")
+	for frame in required:
+		var column := frames.find(frame)
+		if not check(column >= 0, "%s has %s" % [def, frame]):
+			continue
+		for row in facings:
+			var cell := Rect2i(column * fw, row * fh, fw, fh)
+			check(not image.get_region(cell).is_invisible(), "%s %s facing %d is drawn" % [def, frame, row])
 
 
 class FakeMotion:

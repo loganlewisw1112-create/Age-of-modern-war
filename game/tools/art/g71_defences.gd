@@ -113,6 +113,7 @@ static func build() -> Dictionary:
 	var dz := _relay(out, g6.vehicles.b_armored_dozer, "g6_units", "units/a_g71_breacher",
 		["idle", "move", "recoil", "work", "track_1", "track_2", "recoil", "damaged"],
 		["idle", "move", "fire", "work", "track_1", "track_2", "recoil", "damaged"], "dozer")
+	dz["anim61"] = g6.vehicles.b_armored_dozer.anim61.duplicate(true)
 	dz["g71"] = {"base": "b_armored_dozer", "mark": "Human A drab + blade hazard band"}
 	man.vehicles["a_g71_breacher"] = dz
 	var wr: Dictionary = (g6.vehicle_wrecks.b_armored_dozer as Dictionary).duplicate(true)
