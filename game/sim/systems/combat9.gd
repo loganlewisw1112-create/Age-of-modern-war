@@ -104,7 +104,8 @@ static func _paint_crater(w: SimWorld, c: Vector2i) -> void:
 		return
 	t[i] = code
 	w.map.terrain = t
-	Movement.on_terrain_changed(w)
+	# Replan routes that cross this crater while other orders keep advancing.
+	Movement.on_cells_changed(w, [i])
 
 
 ## Field-fortification breach marker (geometry record; walls71 / fortify may call later).

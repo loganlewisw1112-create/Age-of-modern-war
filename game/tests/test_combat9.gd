@@ -34,6 +34,40 @@ func test_crater_persists_save_load() -> void:
 	check(Combat9.crater_at(w2, cell), "crater terrain survives save/load")
 
 
+func test_crater_repaths_only_routes_it_crosses() -> void:
+	var w := make_world({"seed": 902})
+	var terrain: PackedByteArray = w.map.terrain
+	for y in range(26, 34):
+		for x in range(20, 36):
+			terrain[y * int(w.map.w) + x] = Terrain.GRASS
+	w.map.terrain = terrain
+	w.map.erase("height")
+	w.map.erase("ramps")
+	Movement.rebuild_nav(w)
+
+	var crossing := w.entities[w.spawn_unit("mbt", 0, Vector2(21.5, 28.5))] as Dictionary
+	var clear := w.entities[w.spawn_unit("mbt", 0, Vector2(21.5, 31.5))] as Dictionary
+	Movement.order_path(w, crossing, Vector2(34.5, 28.5))
+	Movement.order_path(w, clear, Vector2(34.5, 31.5))
+	for i in 4:
+		w.step()
+	if not check(crossing.path_req < 0 and clear.path_req < 0 and not crossing.path.is_empty() and not clear.path.is_empty(),
+			"both vehicles have an active route"):
+		return
+
+	var crossing_path: Array = crossing.path.duplicate()
+	var clear_path: Array = clear.path.duplicate()
+	var clear_index := int(clear.path_i)
+	var impact := Vector2i(28, 28)
+	Combat9.add_crater(w, Vector2(impact))
+	check(Combat9.crater_at(w, impact) and not Movement.is_passable(w, impact, "vehicle"), "crater remains a vehicle obstacle")
+	check(crossing.moving and (int(crossing.path_req) >= 0 or crossing.path != crossing_path),
+		"the route through the impact cell is replaced or queued for replanning")
+	check_eq(int(clear.path_req), -1, "the route clear of the impact cell keeps its request state")
+	check_eq(clear.path, clear_path, "the route clear of the impact cell keeps its waypoints")
+	check_eq(int(clear.path_i), clear_index, "the route clear of the impact cell keeps its progress")
+
+
 func test_breach_persists_save_load() -> void:
 	var w := make_world({"seed": 903})
 	var cell := Vector2i(40, 40)
