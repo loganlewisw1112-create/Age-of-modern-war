@@ -83,3 +83,7 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 Myrieme Forge full G17 acceptance; G18 platform and multiplayer can consume compatible signed versioned language assets without mandatory cloud or duplicate inference; no deferred Forge system capabilities.
 
 [Master GDD](G18_MASTER_GDD.md) · [G18 delivery](G18_DELIVERY_PLAN.md) · [PATHOGEN](PATHOGEN_DIRECTOR.md) · [DEEPWAR](DEEPWAR_DIRECTOR.md).
+
+## G21 — Beyond Evolution extension (2026-11-27)
+
+G21 consumes versioned offline language generation for runtime-created civilizations; canon locks and full G17 acceptance unchanged. Planned only; no runtime or frozen gate changes. This additive scope supersedes earlier two-DLC-only roadmap wording where applicable, not earlier mode restrictions. [Master GDD](BEYOND_EVOLUTION_GDD.md) · [Architecture](BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](BEYOND_EVOLUTION_DELIVERY_PLAN.md).

@@ -68,3 +68,7 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 No new multiplayer universe service. Entitled G20 offline civilization content and compatible Skirmish catalog only; mode/ownership rules protected.
 
 [Master GDD](G18_MASTER_GDD.md) · [G18 delivery](G18_DELIVERY_PLAN.md) · [PATHOGEN](PATHOGEN_DIRECTOR.md) · [DEEPWAR](DEEPWAR_DIRECTOR.md).
+
+## G21 — Beyond Evolution extension (2026-11-27)
+
+Canonical 50 systems/seven regions remain initial catalog; G21 may append generated entities with stable IDs without rewriting canon. Planned only; no runtime or frozen gate changes. This additive scope supersedes earlier two-DLC-only roadmap wording where applicable, not earlier mode restrictions. [Master GDD](BEYOND_EVOLUTION_GDD.md) · [Architecture](BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](BEYOND_EVOLUTION_DELIVERY_PLAN.md).

@@ -81,3 +81,7 @@ G18 final base-game completion includes online Last Protocol co-op, Skirmish co-
 XENOGENESIS is fifth director, mandatory full G17 acceptance; no cross-activation of PATHOGEN or DEEPWAR in its content. Use shared validated ledger.
 
 [Master GDD](G18_MASTER_GDD.md) · [G18 delivery](G18_DELIVERY_PLAN.md) · [PATHOGEN](PATHOGEN_DIRECTOR.md) · [DEEPWAR](DEEPWAR_DIRECTOR.md).
+
+## G21 — Beyond Evolution extension (2026-11-27)
+
+G21 extends the fifth director with Evolution coordination and fictional runtime species engineering; DLC2-only wording applies to original activation scope, not G21 extension. No sixth director or competing state. Earlier species restrictions remain. Planned only; no runtime or frozen gate changes. This additive scope supersedes earlier two-DLC-only roadmap wording where applicable, not earlier mode restrictions. [Master GDD](BEYOND_EVOLUTION_GDD.md) · [Architecture](BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](BEYOND_EVOLUTION_DELIVERY_PLAN.md).

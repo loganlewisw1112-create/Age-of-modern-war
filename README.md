@@ -44,8 +44,9 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 | **WAR THEATRE** | Persistent military campaigns across connected battlefields; seven families | Planned G15–G18 |
 | **Space Expansion (DLC 1)** | Interplanetary civilization | Planned G19 |
 | **Beyond Civilization (DLC 2)** | Finite interstellar civilization | Planned G20 |
+| **Beyond Evolution (DLC 3)** | Planetary, stellar, species and civilization engineering | Planned G21 |
 
-UNDERSTRIKE is an integrated gameplay system within Inheritance and Living World, with the same systems reused in dedicated warfare and compatible scenarios. It is not a standalone expansion. Both DLC civilization experiences remain offline solo; compatible owned content can extend Skirmish multiplayer.
+UNDERSTRIKE is an integrated gameplay system within Inheritance and Living World, with the same systems reused in dedicated warfare and compatible scenarios. It is not a standalone expansion. All three DLC civilization experiences remain offline solo; compatible owned content can extend Skirmish multiplayer.
 
 ## Core gameplay systems
 
@@ -824,7 +825,7 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 
 ### Roadmap
 
-Remaining development, in execution order. Complete the entire base game through G18 before either DLC begins.
+Remaining development, in execution order. Complete the entire base game through G18 before any DLC begins.
 
 | Gate | Development scope |
 |---|---|
@@ -839,6 +840,7 @@ Remaining development, in execution order. Complete the entire base game through
 | G18 | **Final Base Game** — online multiplayer, independent platform, all eleven experiences, creator/editor/SDK, Workshop/Store, replays/spectators, achievements and release acceptance. |
 | G19 | **Space Expansion (DLC 1)** — 12 planets, 48 moons, five belts, orbital industry, autonomous colonies, space warfare and Hidden Chronicle. |
 | G20 | **Beyond Civilization (DLC 2)** — 50 star systems across seven regions, alien civilizations, interstellar exploration, industry and warfare. |
+| G21 | **Beyond Evolution (DLC 3)** — progressive terraforming, Dyson infrastructure, artificial worlds/systems, fictional species engineering and autonomous civilizations. |
 
 **G17 completion requirement:** XENOGENESIS (20 subsystems) and Myrieme Forge (15 engines, eight integration modules and offline runtime) must be fully implemented, integrated and tested across G11–G17. Both must pass acceptance before G18 begins. G20 uses these completed systems; its interstellar content is developed after G19.
 
@@ -955,3 +957,9 @@ Detailed narrative design material is not linked from this public overview. Some
 ---
 
 **Win the war. Survive the siege. Build the legacy. Shape the world. Reach beyond it.**
+
+## Beyond Evolution — DLC 3 (G21)
+
+Planned after G20. Continue your inherited universe: terraform planets one by one, accelerate through Dyson infrastructure and autonomous engineering fleets, build artificial worlds and systems, then unlock fictional gene splicing, species hybridization and independent civilization creation. Vhessar and other autonomous powers compete and wage war over your creations. Classic RTS controls, optional advanced editors, offline solo and five coordinated directors remain. All twelve proposed gameplay additions are retained through shared systems. No implementation or release date claimed.
+
+[Master GDD](game/docs/BEYOND_EVOLUTION_GDD.md) · [Architecture](game/docs/BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](game/docs/BEYOND_EVOLUTION_DELIVERY_PLAN.md)

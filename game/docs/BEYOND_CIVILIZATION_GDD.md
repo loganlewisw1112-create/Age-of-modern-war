@@ -97,3 +97,7 @@ G18 is final base-game completion: internet multiplayer, independently owned ope
 DLC 2 follows G19; compatible shared systems adapt to entitled interstellar content only, no new systems/regions/factions implied by this update. XENOGENESIS and Forge acceptance by G17 unchanged, no new directors.
 
 [Expanded master](EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.
+
+## G21 — Beyond Evolution extension (2026-11-27)
+
+G20 finite canonical starting universe and inherited civilization rules remain; G21 adds runtime artificial systems and civilization seeding only after G20 acceptance. Planned only; no runtime or frozen gate changes. This additive scope supersedes earlier two-DLC-only roadmap wording where applicable, not earlier mode restrictions. [Master GDD](BEYOND_EVOLUTION_GDD.md) · [Architecture](BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](BEYOND_EVOLUTION_DELIVERY_PLAN.md).

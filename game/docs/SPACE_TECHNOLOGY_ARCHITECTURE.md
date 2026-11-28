@@ -22,3 +22,7 @@ Each archetype requires role, credible dimensions, clearance, cost, production t
 
 ## Proposed schemas
 TechDef {id, prerequisites, faction_scope, discovery_requirements, research_cost, unlock_ids}; VehicleDef {id,dimensions_m,mass_kg,environment_mask,propulsion,cargo,capabilities,cost,production_facility}; BuildDef {id,footprint,clearance,modules,energy,crew,material_cost,construction_capability}; Project {id,site,phase,reserved_material,completed_work,assigned_fleet}. Reuse existing registries after audit. Validate acyclic prerequisites, reachable production, ownership, environmental suitability, actual transportation and resources. Player places projects and selects priority; automated construction executes.
+
+## G21 — Beyond Evolution extension (2026-11-27)
+
+Extend existing Project contract for phased planetary/stellar transformations, Dyson infrastructure, artificial worlds and late system assembly. Planned only; no runtime or frozen gate changes. This additive scope supersedes earlier two-DLC-only roadmap wording where applicable, not earlier mode restrictions. [Master GDD](BEYOND_EVOLUTION_GDD.md) · [Architecture](BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](BEYOND_EVOLUTION_DELIVERY_PLAN.md).
