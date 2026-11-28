@@ -10,7 +10,7 @@ Source: reference/RTS_Age_of_Modern_War_Four_Documents_v1.3(1)/Master_GDD_v1.3.d
 
 RTS - Age of Modern War
 Master Game Design Document v1.3
-Status: Consolidated approved vision plus implementable design specifications | Date: 22 October 2026 | Platform: Offline single-player | Title: Working title
+Status: Consolidated approved vision plus implementable design specifications | Date: 22 October 2026 | Platform: Offline-first; selected G18 modes support online multiplayer | Title: Working title
 Authority. Approved direction records the user's locked creative choices. The implementation specification provides concrete mechanics to implement that intent, but numbers, map/faction names and balance values are provisional. v1.3 supersedes the old v1.2 survival-first development sequence; survivor gameplay remains in the full-game vision.
 1. Vision and Product Identity
 1.1 High concept
@@ -24,7 +24,7 @@ Optional depth. Economy, military command, construction and diplomacy are delega
 Exactly 13 civilization stages. Stable stage IDs across every mode; stage signifies real capabilities rather than a combat buff.
 Grounded cinematic identity. Detailed atmospheric 2D/2.5D pixel art while preserving clear unit silhouettes and functional proportions.
 1.3 Hard boundaries and non-goals
-Offline single-player; no multiplayer, cloud requirement, pay-to-win, or mandatory AI model runtime. Sci-fi requires internally consistent costs/vulnerabilities, not magical warfare. No claim that thousands of detailed soldiers can be rendered in real time before measured profiling. First playable is not the full survivor / naval / politics / continent renderer.
+Offline solo supported; selected G18 modes offer optional online multiplayer. No mandatory cloud, pay-to-win or AI model runtime. Sci-fi requires internally consistent costs/vulnerabilities, not magical warfare. No claim that thousands of detailed soldiers can be rendered in real time before measured profiling. First playable is not the full survivor / naval / politics / continent renderer.
 2. Modes and Core Loops
 Custom Skirmish | Player loop: Configure continent, map, factions, stage, credits and victory; build, research, produce, scout, fight | Availability: First playable priority
 Living World | Player loop: Survive, scavenge, befriend, settle, expand, pass on legacy | Availability: Full-game expansion
@@ -97,7 +97,7 @@ A fully offline, single-player, persistent post-nuclear world combining intimate
 Experience pillars
 1. Deep simulation, effortless controls. 2. Meaningful agency at personal, tactical and strategic scales. 3. Autonomous civilizations with observable goals and consequences. 4. Persistent history, damage, knowledge and legacy. 5. Visually stunning yet readable cinematic 2D/2.5D pixel art. 6. Genuine freedom to ignore the central mystery.
 Non-goals and hard boundaries
-No multiplayer, mandatory online services, cloud inference, or pay-to-win systems. Orbital warfare is a distant optional expansion, not initial scope. No claim that every inhabitant is fully simulated at maximum fidelity or every soldier rendered simultaneously.
+No multiplayer in Inheritance or Living World; other G18 modes support optional internet multiplayer. No mandatory online services, cloud inference or pay-to-win systems. Orbital warfare is a distant optional expansion, not initial scope. No claim that every inhabitant is fully simulated at maximum fidelity or every soldier rendered simultaneously.
 02 / World, Setting & Story
 World framework
 Original fictional planet with handcrafted macro-geography, ruined surface cities, vast underground complexes, ecological regions and multiple historically distinct civilizations. Procedural systems fill local detail, settlement variation, resources, events and campaign evolution. Nuclear/geopolitical collapse and pre-collapse infrastructure secrets underpin the world; final lore, names and chronology remain open.
@@ -206,8 +206,26 @@ Full approved expansion design is incorporated by reference: [master DLC GDD](..
 
 ## 2026-11-27 — Current expansion design authority
 
-DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+DLC 1 is Space Expansion (G19); DLC 2 is Beyond Civilization (G20). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
 
 Seven nonlinear Space Expansion phases; 12 planets, 48 moons, five belts; 50 systems total in DLC 2 including home. Traditional RTS controls and optional delegation.
 
 [SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)
+
+
+## G18 current approved design authority
+
+G18 final base game: internet multiplayer, independently owned open-source gaming platform, Last Protocol online co-op, Skirmish co-op/PvP, DEAD SECTOR (PATHOGEN) and SUBTERRANEAN WARFARE (DEEPWAR). Inheritance and Living World remain strictly offline solo. UNDERSTRIKE remains integrated, Human A-exclusive construction rights unchanged, not a standalone expansion. Neither new mode has individual soldier-follow. All XENOGENESIS and Myrieme Forge accepted by G17. G19 Space Expansion (DLC 1), G20 Beyond Civilization (DLC 2) only after G18; civilization continuations offline, compatible owned content in Skirmish. No mandatory platform login offline. Planned only.
+
+The approved mode matrix and G18 master govern final product design. No new DLC or standalone UNDERSTRIKE expansion.
+
+[G18 MASTER GDD](../../game/docs/G18_MASTER_GDD.md) · [G18 ONLINE MULTIPLAYER](../../game/docs/G18_ONLINE_MULTIPLAYER.md) · [G18 OPEN GAMING PLATFORM](../../game/docs/G18_OPEN_GAMING_PLATFORM.md) · [DEAD SECTOR GDD](../../game/docs/DEAD_SECTOR_GDD.md) · [PATHOGEN DIRECTOR](../../game/docs/PATHOGEN_DIRECTOR.md) · [SUBTERRANEAN WARFARE GDD](../../game/docs/SUBTERRANEAN_WARFARE_GDD.md) · [DEEPWAR DIRECTOR](../../game/docs/DEEPWAR_DIRECTOR.md) · [G18 DELIVERY PLAN](../../game/docs/G18_DELIVERY_PLAN.md)
+
+
+## Expanded gameplay authority — 2026-11-27
+
+Current owner-approved expanded design: G11–G18 integrates 33 additions and five additional modes (34 scenario families), three shared systems, procedural world/fortresses, creator/SDK/Workshop/Store, replay/spectators/records, player experience, independent platform and release qualification. G18 finalizes eleven base-game experiences. Inheritance/Living World offline solo only; no additional global directors or new official DLC playable factions outside Skirmish; Human A-only bunker/borer construction. G17 full XENOGENESIS/Myrieme Forge acceptance unchanged; G19 then G20 after G18. Planned only; no source changes or milestone acceptance.
+
+Five new experiences: BLACK OPERATIONS, SIEGE WARFARE, CONQUEST, COMMANDER'S CRUCIBLE, WAR THEATRE. 34 new families; all offline solo, compatible online variants. Creator ecosystem and player experience are integral, not extra DLC.
+
+[Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Delivery and acceptance](../../game/docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Scenario engine](../../game/docs/DYNAMIC_SCENARIO_ENGINE.md) · [Operations](../../game/docs/OPERATIONAL_INTELLIGENCE.md) · [Archive](../../game/docs/WORLD_ARCHIVE.md) · [Creator toolkit](../../game/docs/CREATOR_TOOLKIT_AND_WORKSHOP.md) · [Platform](../../game/docs/PLATFORM_PRODUCT_ROADMAP.md).

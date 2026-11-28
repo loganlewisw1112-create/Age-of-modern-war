@@ -66,3 +66,19 @@ Do not promise numeric scale before testing on specified hardware. Instrument `s
 
 ## Security and exploit-resistance within game rules
 Restrict bunker-build commands to Modern Human. Validate captured-building usage by tech compatibility; do not allow unauthorized unique production from a stolen facility. Reject path commands that exploit unloaded chunks, shaft collisions or floor hiding. Queue cancellation/refund semantics must prevent duplicate resources. Ensure no secret-intel leakage through minimap, AI logs or UI cameras before discovery.
+
+
+## G18 design integration
+
+Current G18 design: offline solo remains; Inheritance/Living World strictly offline single-player; internet Last Protocol co-op, Skirmish co-op/PvP, DEAD SECTOR and SUBTERRANEAN WARFARE. Independently controlled open-source gaming platform; indie-cost direct hosting and relay fallback; mode-exclusive PATHOGEN and DEEPWAR. UNDERSTRIKE is an integrated Human A branch, not DLC. G17 full XENOGENESIS/Myrieme Forge acceptance; G18 final base game; G19 Space Expansion; G20 Beyond Civilization. No code changes or implementation claimed.
+
+Reuse authoritative geology/structures/logistics in dedicated scenarios; networking adapter, host-only director decisions, per-team visibility and deterministic persistence. No separate engine.
+
+[Master GDD](../../G18_MASTER_GDD.md) · [G18 delivery](../../G18_DELIVERY_PLAN.md) · [Networking](../../G18_ONLINE_MULTIPLAYER.md) · [Platform](../../G18_OPEN_GAMING_PLATFORM.md) · [New mode designs](../../DEAD_SECTOR_GDD.md), [SUBTERRANEAN WARFARE](../../SUBTERRANEAN_WARFARE_GDD.md).
+
+
+## Expanded gameplay design integration — 2026-11-27
+
+Shared scenario, operations, archive and replay services reuse geometry/state/ledger; no second simulation or new director. Durable save, creator validation and online authority preserve persistent structural state and protected faction rights.
+
+[Expanded master](../../EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](../../EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](../../DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.

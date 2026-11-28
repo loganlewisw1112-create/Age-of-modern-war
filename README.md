@@ -8,7 +8,7 @@
 
 **Build a military civilization. Command its armies. Survive an enemy that adapts.**
 
-Age of Modern War is an offline, single-player real-time strategy game built in **Godot 4.7.2** with a native **Rust simulation core**. It brings together civilization-scale technological progression, combined-arms warfare, asymmetric factions, autonomous military command and persistent battlefield systems.
+Age of Modern War is an offline-first real-time strategy game with planned full internet multiplayer for selected modes, built in **Godot 4.7.2** with a native **Rust simulation core**. It brings together civilization-scale technological progression, combined-arms warfare, asymmetric factions, autonomous military command and persistent battlefield systems.
 
 From improvised settlements to advanced military-industrial powers, thirteen technological stages define a world in which the weapons, institutions and consequences of war evolve together. Fight customizable battles today; the longer-term vision extends into generational campaigns, underground civilization, a persistent continental sandbox and warfare beyond Earth.
 
@@ -23,38 +23,30 @@ From improvised settlements to advanced military-industrial powers, thirteen tec
 </p>
 <p align="center"><em>Dusk on the wire · core compound inside the inner wall</em></p>
 
-[Play](#play-the-packaged-build) · [Skirmish](#skirmish) · [Factions](#factions-playable-now) · [Last Protocol](#last-protocol) · [Inheritance](#inheritance--campaign) · [Living World](#living-world) · [UNDERSTRIKE](#understrike) · [Space Expansion](#space-expansion) · [Beyond Civilization](#beyond-civilization--DLC-2) · [Roadmap](#development-status) · [Developer guide](#technical-architecture)
+[Play](#play-the-packaged-build) · [Skirmish](#skirmish) · [Factions](#factions-playable-now) · [Last Protocol](#last-protocol) · [Inheritance](#inheritance--campaign) · [Living World](#living-world) · [UNDERSTRIKE](#understrike) · [Space Expansion](#space-expansion) · [Beyond Civilization](#beyond-civilization--DLC-2) · [Online & new modes](#online-multiplayer-and-new-modes) · [Roadmap](#development-status) · [Developer guide](#technical-architecture)
 
 ---
 
 ## One simulation. Distinct experiences.
 
-| Experience | What you do | Status |
+| Experience | Gameplay | Status |
 |---|---|---|
-| **Skirmish** | Build, research, command and defeat rival factions on customizable battlefields. | Playable |
-| **Last Protocol** | Hold an inherited fortress against an escalating Machine siege. | Playable |
-| **Inheritance** | Guide a civilization through thirteen chapters and successive generations. | Planned |
-| **Living World** | Shape an enduring world of autonomous civilizations after the campaign. | Planned |
-| **UNDERSTRIKE** | Build and defend an underground military-industrial civilization. | Planned base-game addition |
-| **Space Expansion (DLC 1)** | Extend civilization into one home star system. | Planned DLC |
-| **Beyond Civilization (DLC 2)** | Explore a finite authored interstellar expanse with autonomous alien civilizations. | Approved design; not implemented |
+| **Skirmish** | Custom RTS battles; offline solo, planned online co-op and PvP | Solo playable |
+| **Last Protocol** | Fortress siege; offline solo, planned 2–4-player online co-op | Solo playable |
+| **Inheritance** | Thirteen chapters, generations and civilization progression; offline solo only | Planned |
+| **Living World** | Autonomous civilizations and enduring history; offline solo only | Planned |
+| **DEAD SECTOR** | Dynamic zombie horror RTS; solo, co-op and optional competitive survival | Planned G18 |
+| **SUBTERRANEAN WARFARE** | Dedicated underground and combined-arms battles; solo, co-op and PvP | Planned G18 |
+| **BLACK OPERATIONS** | Elite covert military operations; seven scenarios | Planned G12–G18 |
+| **SIEGE WARFARE** | Smart faction-specific fortresses and asymmetric sieges; seven scenarios | Planned G18 |
+| **CONQUEST** | Meaningful territorial and economic warfare; six scenarios | Planned G18 |
+| **COMMANDER'S CRUCIBLE** | Quick, replayable military challenges; seven families | Planned G12–G18 |
+| **WAR THEATRE** | Persistent military campaigns across connected battlefields; seven families | Planned G15–G18 |
+| **Space Expansion (DLC 1)** | Interplanetary civilization | Planned G19 |
+| **Beyond Civilization (DLC 2)** | Finite interstellar civilization | Planned G20 |
+| **Beyond Evolution (DLC 3)** | Planetary, stellar, species and civilization engineering | Planned G21 |
 
-```mermaid
-flowchart LR
-    S[Shared RTS simulation] --> A[Skirmish]
-    S --> B[Last Protocol]
-    S -.-> C[Inheritance]
-    C -. Same world and save .-> D[Living World]
-    D -.-> E[Space Expansion]
-    E -.-> F3[Beyond Civilization]
-    S -.-> U[UNDERSTRIKE systems]
-    classDef live fill:#244b43,stroke:#6ca596,color:#fff
-    classDef future fill:#344052,stroke:#8199b5,color:#fff
-    class S,A,B live
-    class C,D,E,U future
-```
-
-*Solid connections represent current playable modes; dashed connections describe planned development. UNDERSTRIKE is a planned integrated base-game addition, not DLC.*
+UNDERSTRIKE is an integrated gameplay system within Inheritance and Living World, with the same systems reused in dedicated warfare and compatible scenarios. It is not a standalone expansion. All three DLC civilization experiences remain offline solo; compatible owned content can extend Skirmish multiplayer.
 
 ## Core gameplay systems
 
@@ -556,6 +548,40 @@ The simulation is intended to use hierarchical detail and persistence rather tha
 
 ---
 
+## Online multiplayer and new modes
+
+*G18 · Final base-game development milestone · Planned, not implemented.*
+
+Real internet multiplayer, not just LAN: public/private lobbies, matchmaking, invites, direct player-hosted sessions, relay fallback, reconnection, host migration and optional dedicated servers. The independently owned open-source gaming platform will be built without a mandatory Steam dependency. Direct hosting and on-demand infrastructure keep indie operating costs low. Offline gameplay never requires an account or internet connection.
+
+### DEAD SECTOR — survival horror RTS
+
+Horde Defense, Outbreak Survival, Operation Containment and Total Outbreak. The exclusive **PATHOGEN** director simulates evolving infection, migrating hordes, survivor communities and causal crises. Cinematic low-tone music, darkness, unsettling silence and spatial audio create horror without interrupting classic RTS controls. Short operations, persistent survival and extensive scenario customization; offline solo and online shared, allied or competitive survival.
+
+### SUBTERRANEAN WARFARE — dedicated underground combat
+
+Bunker Defense, Underground Assault, Underground Empire, Combined Arms and Total Underground War. The exclusive **DEEPWAR** director governs adaptive rival commanders, excavation, logistics, persistent destruction and simultaneous surface/underground warfare. Offline solo and online co-op or competition. Existing Human A bunker/borer construction restrictions apply.
+
+Both modes use existing RTS systems, quick-start presets, optional advanced configuration, automated routine management and direct player command. No individual soldier-follow cameras. Seven specialized directors across the game share simulation infrastructure; the two new directors run only in their own scenarios.
+
+[Online and new modes design](game/docs/G18_MASTER_GDD.md) · [Networking](game/docs/G18_ONLINE_MULTIPLAYER.md) · [Platform](game/docs/G18_OPEN_GAMING_PLATFORM.md) · [G18 delivery plan](game/docs/G18_DELIVERY_PLAN.md)
+
+## Expanded military experiences and community creation
+
+*Owner-approved design · 34 additional scenario families across five modes · planned, not shipped.*
+
+- **BLACK OPERATIONS:** Ghost Protocol, Counterstrike, Deep Recon, Asset Recovery, Silent War, Black Fortress, Total Black Operations.
+- **SIEGE WARFARE:** Fortress Assault, Fortress Defense, Urban Siege, Mountain Stronghold, Island Fortress, Industrial Siege, Total Siege. Functional faction-specific generated or authored bases, smart terrain adaptation and asymmetric objectives.
+- **CONQUEST:** Territorial Supremacy, Industrial Dominance, Regional Warfare, Coalition War, Technological Supremacy, Total Conquest. Capture, consolidate, fortify, exploit and expand through real infrastructure.
+- **COMMANDER'S CRUCIBLE:** Against the Odds, Last Stand, Encirclement, Counteroffensive, Resource Crisis, Combined Arms, Total Crisis. Quick challenges, meaningful medals and records.
+- **WAR THEATRE:** Regional, Continental, Expeditionary, Defensive, Coalition, Liberation and Total War Theatre campaigns. Persistent armies and real logistics across linked battles, no mandatory civilian management.
+
+Eleven base-game experiences; all support offline solo, eligible scenarios support online co-op/competition. Inheritance and Living World remain offline solo only. Existing faction and DLC restrictions apply. Seven directors remain, with three reusable shared services: **OPERATIONAL INTELLIGENCE** (doctrines, commanders, objectives and automated operations), **WORLD ARCHIVE** (formation identity, histories and honors), **DYNAMIC SCENARIO ENGINE** (procedural scenarios and objectives). Smart world/fortress generator, reusable engineering blueprints, simplified reconstruction, modernization and reorganization.
+
+Full procedural creator and edit mode, declarative mod SDK, shareable new game-mode configurations, community Workshop and Creator Store (free sharing at launch, optional paid marketplace phased), complete replays, eligible online spectators, achievements/trophies/records, Military Academy, contextual assistance and adaptive command dashboards. Independently owned reusable open-source gaming platform with game library, launcher, profiles, developer portal, public SDK/API, signed distribution, commerce/entitlements, safety and recovery. Durable saves, hardware benchmark, content validation and release qualification. No compulsory micro, login for offline or pay-to-win.
+
+[Expanded master design](game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](game/docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Creator tools](game/docs/CREATOR_TOOLKIT_AND_WORKSHOP.md) · [Platform product](game/docs/PLATFORM_PRODUCT_ROADMAP.md)
+
 ## Space Expansion
 
 *DLC 1 · Owner-approved planned design · G19 · Not implemented.*
@@ -799,21 +825,22 @@ G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–
 
 ### Roadmap
 
-Remaining development, in execution order. Complete the entire base game through G18 before either DLC begins.
+Remaining development, in execution order. Complete the entire base game through G18 before any DLC begins.
 
 | Gate | Development scope |
 |---|---|
 | G10.1 | **Stabilization** — full regression, outstanding fixes and acceptance. |
-| G11 | **UNDERSTRIKE I–II** — bunkers, underground construction and warfare; shared simulation and language-tool foundations. |
-| G12 | **Soldiers and Theatres** — training, careers, security, maps, weather, modes and optional uncapped skirmish; species, ecology and language systems. |
-| G13 | **UNDERSTRIKE III** — connected bunker cities, logistics, underground economy and research; ancient languages and archaeological integration. |
-| G14 | **All Thirteen** — remaining faction stages (1–6 and 11–13); civilization intelligence and language production engines. |
-| G15 | **Inheritance** — complete 13-chapter campaign, succession, persistent history, linguistic evolution and first contact. |
-| G16 | **UNDERSTRIKE IV** — advanced geology, destruction, underground command and survivor view; finish director integration and stress testing. |
-| G17 | **Living World** — autonomous civilizations, politics, economies, generations and continental warfare; full XENOGENESIS and Myrieme Forge acceptance. |
-| G18 | **Last Protocol: Combined Arms** — offline-first 2–4-player co-op; preserve solo gameplay. |
+| G11 | **UNDERSTRIKE I–II** — bunkers, underground construction and warfare; shared simulation and language-tool foundations; tactical pause, engineering templates, durable save foundations. |
+| G12 | **Soldiers and Theatres** — training, careers, security, maps, weather, modes and optional uncapped skirmish; species, ecology and language systems; scenario creator and replay foundations, BLACK OPERATIONS/CRUCIBLE prototypes, Academy, doctrines/formation identity. |
+| G13 | **UNDERSTRIKE III** — connected bunker cities, logistics, underground economy and research; ancient languages and archaeological integration; procedural fortresses, industrial templates, reorganization and modernization. |
+| G14 | **All Thirteen** — remaining faction stages (1–6 and 11–13); civilization intelligence and language production engines; declarative mod SDK, content pipeline and doctrines. |
+| G15 | **Inheritance** — complete 13-chapter campaign, succession, persistent history, linguistic evolution and first contact; WAR THEATRE foundations, WORLD ARCHIVE and causal objectives. |
+| G16 | **UNDERSTRIKE IV** — advanced geology, destruction, underground command and survivor view; finish director integration and stress testing; procedural underground, recovery and benchmark/save hardening. |
+| G17 | **Living World** — autonomous civilizations, politics, economies, generations and continental warfare; full XENOGENESIS and Myrieme Forge acceptance; three shared services, world generation and strategic operation planning. |
+| G18 | **Final Base Game** — online multiplayer, independent platform, all eleven experiences, creator/editor/SDK, Workshop/Store, replays/spectators, achievements and release acceptance. |
 | G19 | **Space Expansion (DLC 1)** — 12 planets, 48 moons, five belts, orbital industry, autonomous colonies, space warfare and Hidden Chronicle. |
 | G20 | **Beyond Civilization (DLC 2)** — 50 star systems across seven regions, alien civilizations, interstellar exploration, industry and warfare. |
+| G21 | **Beyond Evolution (DLC 3)** — progressive terraforming, Dyson infrastructure, artificial worlds/systems, fictional species engineering and autonomous civilizations. |
 
 **G17 completion requirement:** XENOGENESIS (20 subsystems) and Myrieme Forge (15 engines, eight integration modules and offline runtime) must be fully implemented, integrated and tested across G11–G17. Both must pass acceptance before G18 begins. G20 uses these completed systems; its interstellar content is developed after G19.
 
@@ -930,3 +957,9 @@ Detailed narrative design material is not linked from this public overview. Some
 ---
 
 **Win the war. Survive the siege. Build the legacy. Shape the world. Reach beyond it.**
+
+## Beyond Evolution — DLC 3 (G21)
+
+Planned after G20. Continue your inherited universe: terraform planets one by one, accelerate through Dyson infrastructure and autonomous engineering fleets, build artificial worlds and systems, then unlock fictional gene splicing, species hybridization and independent civilization creation. Vhessar and other autonomous powers compete and wage war over your creations. Classic RTS controls, optional advanced editors, offline solo and five coordinated directors remain. All twelve proposed gameplay additions are retained through shared systems. No implementation or release date claimed.
+
+[Master GDD](game/docs/BEYOND_EVOLUTION_GDD.md) · [Architecture](game/docs/BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](game/docs/BEYOND_EVOLUTION_DELIVERY_PLAN.md)

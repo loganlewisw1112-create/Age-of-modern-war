@@ -28,3 +28,7 @@ for commander in stable_order(due_commanders):
             submit_to_authoritative_validator(intent)
 ```
 CommandIntent {id,issuer,scope,target,objective,knowledge_tick,budget,priority,expected_state_version}. Validate authority, resource, tech, target and ownership; release reservations on rejection/cancel; deterministic conflict resolution. Takeover invalidates conflicting pending intents, preserves completed work and reconciles reservations; resume current state, never stale snapshot. UI directive, authority preset, takeover and actionable alerts. Test restricted scope, limited knowledge, shortages, conflicting orders, handoff, save/load and camera independence.
+
+## G21 — Beyond Evolution extension (2026-11-27)
+
+Engineering fleets reuse directive, authority, logistics, reservation and takeover contracts. Planned only; no runtime or frozen gate changes. This additive scope supersedes earlier two-DLC-only roadmap wording where applicable, not earlier mode restrictions. [Master GDD](BEYOND_EVOLUTION_GDD.md) · [Architecture](BEYOND_EVOLUTION_ARCHITECTURE.md) · [Delivery](BEYOND_EVOLUTION_DELIVERY_PLAN.md).

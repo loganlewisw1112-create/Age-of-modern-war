@@ -28,8 +28,20 @@ Claude should return a bounded G0 implementation plan after reading this package
 
 ## 2026-11-27 — Current expansion design authority
 
-DLC 1 is Space Expansion (G18); DLC 2 is Beyond Civilization (future unnumbered). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
+DLC 1 is Space Expansion (G19); DLC 2 is Beyond Civilization (G20). UNDERSTRIKE is base game. True Dynasty is the primary earned continuous campaign → Living World → DLC 1 → DLC 2 path; preset/custom independent starts are separate new saves. Existing game code, gate statuses, campaign canon and rosters are unchanged. All additions are planned, not implemented.
 
 Provisional names, numerical orbital modeling, material properties, individual model definitions, canonical narrative revelations, performance budgets and commercial entitlement details pending production.
 
 [SPACE EXPANSION GDD](../../game/docs/SPACE_EXPANSION_GDD.md) · [STELLAR SYSTEM BIBLE](../../game/docs/STELLAR_SYSTEM_BIBLE.md) · [EXOTIC RESOURCE BIBLE](../../game/docs/EXOTIC_RESOURCE_BIBLE.md) · [SPACE TECHNOLOGY ARCHITECTURE](../../game/docs/SPACE_TECHNOLOGY_ARCHITECTURE.md) · [DYNAMIC SPACE ENVIRONMENT](../../game/docs/DYNAMIC_SPACE_ENVIRONMENT.md) · [HIDDEN CHRONICLE](../../game/docs/HIDDEN_CHRONICLE.md) · [AUTONOMOUS SPACE COMMAND](../../game/docs/AUTONOMOUS_SPACE_COMMAND.md) · [SPACE EXPANSION DELIVERY PLAN](../../game/docs/SPACE_EXPANSION_DELIVERY_PLAN.md)
+
+
+## G18 risk and production decisions
+
+G18 includes all online multiplayer, independently owned open-source platform, DEAD SECTOR/PATHOGEN and SUBTERRANEAN WARFARE/DEEPWAR. G17 acceptance precedes it, G19 and G20 only after full G18 acceptance. Inheritance/Living World remain offline solo. Risks: relay cost, NAT reachability, host trust and fog secrecy, migration split-brain, data privacy, dependency licensing, platform reliability, infection and underground simulation performance, horror accessibility, scope duplication. Mitigate with shared authority, direct hosting, bounded fixtures, measured budgets and signed releases; no guaranteed free hosting or perfect anti-cheat. Platform name/license, providers, transport, exact budget, content balance and dedicated hosting policy remain production choices. See [G18 delivery](../../game/docs/G18_DELIVERY_PLAN.md) and [platform](../../game/docs/G18_OPEN_GAMING_PLATFORM.md). No code changes or tests claimed.
+
+
+## Expanded gameplay design integration — 2026-11-27
+
+Scope and delivery risk: reuse one scenario/authority engine and three shared services, vertical slices before scaling content, freeze per-gate contracts, measure performance and cost; online compatibility, rank policies, mod security, platform licensing/commerce, paid creator rollout, hardware, languages and pricing remain production decisions. Protect save migrations, accessibility and creator content rights.
+
+[Expanded master](../../game/docs/EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](../../game/docs/EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](../../game/docs/DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.

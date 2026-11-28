@@ -43,3 +43,10 @@ Represent geology in sparse chunks using a canonical collision/topology layer, e
 - A room support failure can destroy a reachable lower room only when physically coupled; no damage teleportation.
 - Surface crater/opening created by a vertical breakthrough persists and interrupts surface traversal until repaired or protected.
 - Save during active excavation/structural cascade; load restores coherent damage, queued jobs and safe actors.
+
+
+## Expanded gameplay design integration — 2026-11-27
+
+Universal engineering templates and world generator validate physical footprint, geology, utilities, routes, support and legal stage/faction; no free resources, no decorative fake doors or clearance, no prohibited construction by other factions.
+
+[Expanded master](../../EXPANDED_GAMEPLAY_MASTER_GDD.md) · [Integrated delivery](../../EXPANDED_GAMEPLAY_DELIVERY_PLAN.md) · [Shared scenario engine](../../DYNAMIC_SCENARIO_ENGINE.md). No implementation or gate completion claimed.
