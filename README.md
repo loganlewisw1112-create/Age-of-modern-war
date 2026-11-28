@@ -810,7 +810,7 @@ Internal phases are dependency-driven and may overlap where safe. Release requir
 
 ## Development status
 
-**Latest documented stabilization build:** G10.1 · November 27, 2026 · `4e92b1d7` · `g71`. The G10 gate is closed; wider regression acceptance remains open.
+**Latest documented stabilization build:** G10.1 · November 27, 2026 · `7cc674aa` · `g71`. The G10 gate is closed; wider regression acceptance remains open.
 
 ### Shipped milestones
 
@@ -867,7 +867,7 @@ The historical broad run recorded 1,738 passes and 85 assertion failures with sc
 
 ## Play the packaged build
 
-Latest documented verified Windows package: `RTS_Age_of_Modern_War_G71_2026-11-27_4e92b1d7.zip`.
+Latest documented verified Windows package: `RTS_Age_of_Modern_War_G71_2026-11-27_7cc674aa.zip`.
 
 The extracted executable launched a Stage 8 Coalition skirmish headlessly with `rts_core 0.6.5` active and zero script errors. The extracted data pack hash matched the export. [Package verification and hashes](.superpowers/sdd/g10.1-stabilization-report.md).
 
